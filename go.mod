@@ -1,4 +1,4 @@
-module github.com/k6io/xk6
+module github.com/grafana/xk6
 
 go 1.15
 

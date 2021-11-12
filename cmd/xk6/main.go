@@ -75,15 +75,31 @@ func runBuild(ctx context.Context, args []string) error {
 				Version:     ver,
 			})
 			if repl != "" {
-				if repl == "." {
-					if cwd, err := os.Getwd(); err != nil {
-						return err
-					} else {
-						repl = cwd
-					}
+				repl, err = expandPath(repl)
+				if err != nil {
+					return err
 				}
 				replacements = append(replacements, xk6.NewReplace(mod, repl))
 			}
+
+		case "--replace":
+			if i == len(args)-1 {
+				return fmt.Errorf("expected value after --replace flag")
+			}
+			i++
+			mod, _, repl, err := splitWith(args[i])
+			if err != nil {
+				return err
+			}
+			if repl != "" {
+				return fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
+			}
+			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			repl, err = expandPath(repl)
+			if err != nil {
+				return err
+			}
+			replacements = append(replacements, xk6.NewReplace(mod, repl))
 
 		case "--output":
 			if i == len(args)-1 {
@@ -296,4 +312,24 @@ func splitWith(arg string) (module, version, replace string, err error) {
 	}
 
 	return
+}
+
+func expandPath(path string) (string, error) {
+	// expand local directory
+	if path == "." {
+		if cwd, err := os.Getwd(); err != nil {
+			return "", err
+		} else {
+			return cwd, nil
+		}
+	}
+	// expand ~ as shortcut for home directory
+	if strings.HasPrefix(path, "~") {
+		if home, err := os.UserHomeDir(); err != nil {
+			return "", err
+		} else {
+			return strings.Replace(path, "~", home, 1), nil
+		}
+	}
+	return path, nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -123,4 +124,39 @@ func TestNormalizeImportPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExpandPath(t *testing.T) {
+	t.Run(". expands to current directory", func(t *testing.T) {
+		got, err := expandPath(".")
+		if got == "." {
+			t.Errorf("did not expand path")
+		}
+		if err != nil {
+			t.Errorf("failed to expand path")
+		}
+	})
+	t.Run("~ expands to user's home directory", func(t *testing.T) {
+		got, err := expandPath("~")
+		if got == "~" {
+			t.Errorf("did not expand path")
+		}
+		if err != nil {
+			t.Errorf("failed to expand path")
+		}
+		switch runtime.GOOS {
+		case "linux":
+			if !strings.HasPrefix(got, "/home") {
+				t.Errorf("did not expand home directory. want=/home/... got=%s", got)
+			}
+		case "darwin":
+			if !strings.HasPrefix(got, "/Users") {
+				t.Errorf("did not expand home directory. want=/Users/... got=%s", got)
+			}
+		case "windows":
+			if !strings.HasPrefix(got, "C:\\Users") { // could well be another drive letter, but let's assume C:\\
+				t.Errorf("did not expand home directory. want=C:\\Users\\... got=%s", got)
+			}
+		}
+	})
 }

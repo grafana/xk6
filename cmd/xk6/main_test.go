@@ -35,6 +35,12 @@ func TestSplitWith(t *testing.T) {
 			expectReplace: "replace",
 		},
 		{
+			input:         "module@module_version=replace@replace_version",
+			expectModule:  "module",
+			expectReplace: "replace@replace_version",
+			expectVersion: "module_version",
+		},
+		{
 			input:     "=replace",
 			expectErr: true,
 		},

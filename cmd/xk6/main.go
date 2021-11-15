@@ -88,10 +88,11 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			i++
 			mod, _, repl, err := splitWith(args[i])
+
 			if err != nil {
 				return err
 			}
-			if repl != "" {
+			if repl == "" {
 				return fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
 			}
 			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
@@ -289,22 +290,19 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 func splitWith(arg string) (module, version, replace string, err error) {
 	const versionSplit, replaceSplit = "@", "="
 
-	parts := strings.SplitN(arg, versionSplit, 2)
+	parts := strings.SplitN(arg, replaceSplit, 2)
+	if len(parts) > 1 {
+		replace = parts[1]
+	} else {
+		replace = ""
+	}
+
 	module = parts[0]
 
-	if len(parts) == 1 {
-		parts := strings.SplitN(module, replaceSplit, 2)
-		if len(parts) > 1 {
-			module = parts[0]
-			replace = parts[1]
-		}
-	} else {
-		version = parts[1]
-		parts := strings.SplitN(version, replaceSplit, 2)
-		if len(parts) > 1 {
-			version = parts[0]
-			replace = parts[1]
-		}
+	moduleParts := strings.SplitN(module, versionSplit, 2)
+	if len(moduleParts) > 1 {
+		module = moduleParts[0]
+		version = moduleParts[1]
 	}
 
 	if module == "" {

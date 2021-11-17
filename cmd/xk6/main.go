@@ -88,14 +88,14 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			i++
 			mod, _, repl, err := splitWith(args[i])
-
 			if err != nil {
 				return err
 			}
 			if repl == "" {
 				return fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
 			}
-			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			// easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			mod = strings.TrimSuffix(mod, "/")
 			repl, err = expandPath(repl)
 			if err != nil {
 				return err

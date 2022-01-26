@@ -260,7 +260,7 @@ func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleV
 		return err
 	}
 	// tidy the module to ensure go.mod will not have versions such as `latest`
-	tidyCmd := env.newCommand("go", "mod", "tidy")
+	tidyCmd := env.newCommand("go", "mod", "tidy", "-compat=1.17")
 	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
 }
 

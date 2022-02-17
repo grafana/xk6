@@ -11,7 +11,7 @@ Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Requirements
 
-- [Go installed](https://golang.org/doc/install)
+- [Go installed](https://golang.org/doc/install). At least version 1.17 is needed.
 
 ## Install
 

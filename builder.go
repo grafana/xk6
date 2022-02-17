@@ -93,9 +93,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 
 	log.Println("[INFO] Building k6")
 
-	// tidy the module to ensure go.mod and go.sum are consistent with the module prereq
-	tidyCmd := buildEnv.newCommand("go", "mod", "tidy")
-	if err := buildEnv.runCommand(ctx, tidyCmd, b.TimeoutGet); err != nil {
+	if err := buildEnv.execGoModTidy(ctx); err != nil {
 		return err
 	}
 

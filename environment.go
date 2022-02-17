@@ -244,6 +244,12 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 	}
 }
 
+// tidy the module to ensure go.mod will not have versions such as `latest`
+func (env environment) execGoModTidy(ctx context.Context) error {
+	tidyCmd := env.newCommand("go", "mod", "tidy")
+	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
+}
+
 func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleVersion string) error {
 	mod := modulePath
 	if moduleVersion != "" {
@@ -256,21 +262,17 @@ func (env environment) execGoModRequire(ctx context.Context, modulePath, moduleV
 	if err != nil {
 		return err
 	}
-	// tidy the module to ensure go.mod will not have versions such as `latest`
-	tidyCmd := env.newCommand("go", "mod", "tidy")
-	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
+	return env.execGoModTidy(ctx)
 }
 
 func (env environment) execGoModReplace(ctx context.Context, modulePath, replaceRepo string) error {
 	replace := fmt.Sprintf("%s=%s", modulePath, replaceRepo)
 	cmd := env.newCommand("go", "mod", "edit", "-replace", replace)
-	err := env.runCommand(ctx, cmd, 10*time.Second)
+	err := env.runCommand(ctx, cmd, env.timeoutGoGet)
 	if err != nil {
 		return err
 	}
-	// tidy the module to ensure go.mod will not have versions such as `latest`
-	tidyCmd := env.newCommand("go", "mod", "tidy")
-	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
+	return env.execGoModTidy(ctx)
 }
 
 type goModTemplateContext struct {

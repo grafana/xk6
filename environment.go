@@ -246,7 +246,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 
 // tidy the module to ensure go.mod will not have versions such as `latest`
 func (env environment) execGoModTidy(ctx context.Context) error {
-	tidyCmd := env.newCommand("go", "mod", "tidy")
+	tidyCmd := env.newCommand("go", "mod", "tidy", "-compat=1.17")
 	return env.runCommand(ctx, tidyCmd, env.timeoutGoGet)
 }
 

@@ -46,10 +46,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	tplCtx := goModTemplateContext{
 		K6Module: k6ModulePath,
 	}
-	for _, p := range b.Extensions {
-		tplCtx.Extensions = append(tplCtx.Extensions, p.PackagePath)
-	}
-
 	// evaluate the template for the main module
 	var buf bytes.Buffer
 	tpl, err := template.New("main").Parse(mainModuleTemplate)
@@ -87,7 +83,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	// write the main module file to temporary folder
 	mainPath := filepath.Join(tempFolder, "main.go")
 	log.Printf("[INFO] Writing main module: %s", mainPath)
-	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0644)
+	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +140,10 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}
 nextExt:
 	for _, p := range b.Extensions {
+		err = env.writeExtensionImportFile(p.PackagePath)
+		if err != nil {
+			return nil, err
+		}
 		// if module is locally available, do not "go get" it;
 		// also note that we iterate and check prefixes, because
 		// an extension package may be a subfolder of a module, i.e.
@@ -188,6 +188,14 @@ func (env environment) Close() error {
 	}
 	log.Printf("[INFO] Cleaning up temporary folder: %s", env.tempFolder)
 	return os.RemoveAll(env.tempFolder)
+}
+
+func (env environment) writeExtensionImportFile(packagePath string) error {
+	fileContents := fmt.Sprintf(`package main
+import _ %q
+`, packagePath)
+	filePath := filepath.Join(env.tempFolder, strings.ReplaceAll(packagePath, "/", "_")+".go")
+	return ioutil.WriteFile(filePath, []byte(fileContents), 0600)
 }
 
 func (env environment) newCommand(command string, args ...string) *exec.Cmd {
@@ -276,8 +284,7 @@ func (env environment) execGoModReplace(ctx context.Context, modulePath, replace
 }
 
 type goModTemplateContext struct {
-	K6Module   string
-	Extensions []string
+	K6Module string
 }
 
 const mainModuleTemplate = `package main
@@ -288,9 +295,6 @@ import (
 	// plug in k6 modules here
 	// TODO: Create /modules/standard dir structure?
 	// _ "{{.K6Module}}/modules/standard"
-	{{- range .Extensions}}
-	_ "{{.}}"
-	{{- end}}
 )
 
 func main() {

@@ -160,6 +160,15 @@ func runBuild(ctx context.Context, args []string) error {
 		}
 	}
 
+	fmt.Println("***************************************************")
+	fmt.Println("* BUILD COMPLETE - FOLLOW THESE STEPS TO CONTINUE *")
+	fmt.Println("***************************************************")
+	fmt.Println("xk6 has now produced a new k6 binary with the following:")
+	for _, extension := range extensions {
+		fmt.Println(" -", extension.PackagePath)
+	}
+	fmt.Printf("To use it, call it directly as `%v run <SCRIPT_NAME>`.\n", output)
+
 	return nil
 }
 

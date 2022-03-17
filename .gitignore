@@ -1,9 +1,12 @@
+.idea/
 buildenv_*/
 _gitignore/
 
 # build artifacts
-cmd/xk6/xk6
-cmd/xk6/xk6.exe
+**/xk6
+**/xk6.exe
+# generated k6 binaries
+k6
 
 # mac
 .DS_Store

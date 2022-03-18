@@ -56,6 +56,7 @@ func main() {
 func runBuild(ctx context.Context, args []string) error {
 	// parse the command line args... rather primitively
 	var argK6Version, output string
+	var outputOverride bool
 	var extensions []xk6.Dependency
 	var replacements []xk6.Replace
 	for i := 0; i < len(args); i++ {
@@ -108,6 +109,7 @@ func runBuild(ctx context.Context, args []string) error {
 			}
 			i++
 			output = args[i]
+			outputOverride = true
 
 		default:
 			if argK6Version != "" {
@@ -158,6 +160,13 @@ func runBuild(ctx context.Context, args []string) error {
 		if err != nil {
 			log.Fatalf("[FATAL] %v", err)
 		}
+	}
+
+	if !outputOverride {
+		path, _ := os.Getwd()
+		fmt.Println()
+		fmt.Println("xk6 has now produced a new k6 binary which may be different than the command on your system path!")
+		fmt.Printf("Be sure to run '%v run <SCRIPT_NAME>' from the '%v' directory.\n", output, path)
 	}
 
 	return nil

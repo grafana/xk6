@@ -87,7 +87,7 @@ The binary will be built and run from the current directory, then cleaned up.
 
 The current working directory must be inside an initialized Go module.
 
-Also note that because of the way xk6 works, vendored dependencies (the vendor directory created by go mod vendor) will not be taken into account when building a binary, and you don't need to commit them to the extension repository.
+Also note that because of the way xk6 works, vendored dependencies (the vendor directory created by `go mod vendor`) will not be taken into account when building a binary, and you don't need to commit them to the extension repository.
 
 Syntax:
 
@@ -124,7 +124,6 @@ err := builder.Build(context.Background(), "./k6")
 Versions can be anything compatible with `go get`.
 
 
-
 ## Environment variables
 
 Because the subcommands and flags are constrained to benefit rapid extension prototyping, xk6 does read some environment variables to take cues for its behavior and/or configuration when there is no room for flags.
@@ -137,4 +136,4 @@ Because the subcommands and flags are constrained to benefit rapid extension pro
 
 ---
 
-&copy; 2020 Matthew Holt
+> This project originally forked from the [xcaddy](https://github.com/caddyserver/xcaddy) project. **Thank you!**

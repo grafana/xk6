@@ -80,14 +80,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}()
 	log.Printf("[INFO] Temporary folder: %s", tempFolder)
 
-	// write the main module file to temporary folder
-	mainPath := filepath.Join(tempFolder, "main.go")
-	log.Printf("[INFO] Writing main module: %s", mainPath)
-	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0600)
-	if err != nil {
-		return nil, err
-	}
-
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
 	cmd := env.newCommand("go", "mod", "init", "k6")
@@ -168,6 +160,25 @@ nextExt:
 		default:
 		}
 	}
+	// This is here as we could've not run go mod tidy due to a replace being the only extension
+	err = env.execGoModTidy(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// write the main module file to temporary folder
+	// we do this last so we get the needed versions from all the replacements and extensions instead of k6 if possible
+	mainPath := filepath.Join(tempFolder, "main.go")
+	log.Printf("[INFO] Writing main module: %s", mainPath)
+	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0o600)
+	if err != nil {
+		return nil, err
+	}
+
+	err = env.execGoModTidy(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Println("[INFO] Build environment ready")
 
@@ -199,7 +210,7 @@ func (env environment) writeExtensionImportFile(packagePath string) error {
 import _ %q
 `, packagePath)
 	filePath := filepath.Join(env.tempFolder, strings.ReplaceAll(packagePath, "/", "_")+".go")
-	return ioutil.WriteFile(filePath, []byte(fileContents), 0600)
+	return ioutil.WriteFile(filePath, []byte(fileContents), 0o600)
 }
 
 func (env environment) newCommand(command string, args ...string) *exec.Cmd {

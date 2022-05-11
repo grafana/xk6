@@ -167,11 +167,9 @@ nextExt:
 
 	// building with the default main repo
 	if b.K6Repo == "" && env.k6Version != "" {
-		// don't actually specify k6 version if it wasn't specified
-		// the extension(s) will require a version that they work with either way
-		// but if it was let specify it now
-		// all the previous steps should've worked so far as the extensions themselves would've required
-		// specific versions to begin with and they should work with those versions
+		// Only require a specific k6 version if provided. Otherwise extensions
+		// will require a version they depend on, and Go's module resolution
+		// algorithm will choose the highest one among all extensions.
 		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
 		if err != nil {
 			return nil, err

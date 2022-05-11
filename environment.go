@@ -118,9 +118,13 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	log.Println("[INFO] Pinning versions")
 	if b.K6Repo == "" {
 		// building with the default main repo
-		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
-		if err != nil {
-			return nil, err
+		if env.k6Version != "" {
+			// don't actually specify k6 version if it wasn't specified
+			// the extension(s) will require a version that they work with either way
+			err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		// building with a forked repo, so get the main one and replace it with

@@ -108,17 +108,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// pin versions by populating go.mod, first for k6 itself and then extensions
 	log.Println("[INFO] Pinning versions")
-	if b.K6Repo == "" {
-		// building with the default main repo
-		if env.k6Version != "" {
-			// don't actually specify k6 version if it wasn't specified
-			// the extension(s) will require a version that they work with either way
-			err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
+	if b.K6Repo != "" {
 		// building with a forked repo, so get the main one and replace it with
 		// the fork
 		err = env.execGoModRequire(ctx, k6ModulePath, "")
@@ -175,6 +165,18 @@ nextExt:
 		return nil, err
 	}
 
+	// building with the default main repo
+	if b.K6Repo == "" && env.k6Version != "" {
+		// don't actually specify k6 version if it wasn't specified
+		// the extension(s) will require a version that they work with either way
+		// but if it was let specify it now
+		// all the previous steps should've worked so far as the extensions themselves would've required
+		// specific versions to begin with and they should work with those versions
+		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
+		if err != nil {
+			return nil, err
+		}
+	}
 	err = env.execGoModTidy(ctx)
 	if err != nil {
 		return nil, err

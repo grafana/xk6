@@ -80,14 +80,6 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 	}()
 	log.Printf("[INFO] Temporary folder: %s", tempFolder)
 
-	// write the main module file to temporary folder
-	mainPath := filepath.Join(tempFolder, "main.go")
-	log.Printf("[INFO] Writing main module: %s", mainPath)
-	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0600)
-	if err != nil {
-		return nil, err
-	}
-
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
 	cmd := env.newCommand("go", "mod", "init", "k6")
@@ -116,13 +108,7 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// pin versions by populating go.mod, first for k6 itself and then extensions
 	log.Println("[INFO] Pinning versions")
-	if b.K6Repo == "" {
-		// building with the default main repo
-		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	if b.K6Repo != "" {
 		// building with a forked repo, so get the main one and replace it with
 		// the fork
 		err = env.execGoModRequire(ctx, k6ModulePath, "")
@@ -164,6 +150,35 @@ nextExt:
 		default:
 		}
 	}
+	// This is here as we could've not run go mod tidy due to a replace being the only extension
+	err = env.execGoModTidy(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// write the main module file to temporary folder
+	// we do this last so we get the needed versions from all the replacements and extensions instead of k6 if possible
+	mainPath := filepath.Join(tempFolder, "main.go")
+	log.Printf("[INFO] Writing main module: %s", mainPath)
+	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0o600)
+	if err != nil {
+		return nil, err
+	}
+
+	// building with the default main repo
+	if b.K6Repo == "" && env.k6Version != "" {
+		// Only require a specific k6 version if provided. Otherwise extensions
+		// will require a version they depend on, and Go's module resolution
+		// algorithm will choose the highest one among all extensions.
+		err = env.execGoModRequire(ctx, k6ModulePath, env.k6Version)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = env.execGoModTidy(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Println("[INFO] Build environment ready")
 
@@ -195,7 +210,7 @@ func (env environment) writeExtensionImportFile(packagePath string) error {
 import _ %q
 `, packagePath)
 	filePath := filepath.Join(env.tempFolder, strings.ReplaceAll(packagePath, "/", "_")+".go")
-	return ioutil.WriteFile(filePath, []byte(fileContents), 0600)
+	return ioutil.WriteFile(filePath, []byte(fileContents), 0o600)
 }
 
 func (env environment) newCommand(command string, args ...string) *exec.Cmd {

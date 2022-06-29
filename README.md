@@ -110,11 +110,11 @@ The race detector can be enabled by setting `XK6_RACE_DETECTOR=1`.
 
 ```go
 builder := xk6.Builder{
-	k6Version: "v0.35.0",
+	K6Version: "v0.35.0",
 	Extensions: []xk6.Dependency{
 		{
-			ModulePath: "github.com/grafana/xk6-browser",
-			Version:    "v0.1.1",
+			PackagePath: "github.com/grafana/xk6-browser",
+			Version:     "v0.1.1",
 		},
 	},
 }

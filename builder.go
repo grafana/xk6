@@ -139,7 +139,7 @@ type Dependency struct {
 	// The name (import path) of the Go package. If at a version > 1,
 	// it should contain semantic import version (i.e. "/v2").
 	// Used with `go get`.
-	PackagePath string `json:"module_path,omitempty"`
+	PackagePath string `json:"package_path,omitempty"`
 
 	// The version of the Go module, as used with `go get`.
 	Version string `json:"version,omitempty"`

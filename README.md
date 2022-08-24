@@ -21,6 +21,13 @@ You can [download binaries](https://github.com/grafana/xk6/releases) that are al
 $ go install go.k6.io/xk6/cmd/xk6@latest
 ```
 
+This will install the `xk6` binary in your `$GOPATH/bin` directory.
+
+If you're getting a `command not found` error when trying to run `xk6`, make sure that you precisely follow the [Go installation instructions](https://go.dev/doc/install) for your platform.
+Specifically, ensure that the `$GOPATH/bin` directory is part of your `$PATH`. For example, you might want to add this to your shell's initialization file: `export PATH=$(go env GOPATH)/bin:$PATH`. See [this article](https://go.dev/doc/gopath_code#GOPATH) for more information.
+
+If you're still struggling with this, consider downloading a pre-built binary from [our releases page](https://github.com/grafana/xk6/releases), and placing the binary in a directory already part of your `$PATH`.
+
 
 ## Command usage
 

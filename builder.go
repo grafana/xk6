@@ -100,7 +100,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	// compile
 	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
-		"-ldflags", "-w -s", // trim debug symbols
+		"-ldflags", b.osEnvOrDefaultValue("XK6_BUILD_LD_FLAGS", "-w -s"), // trim debug symbols by default
 		"-trimpath",
 	)
 	if b.RaceDetector {
@@ -257,3 +257,11 @@ const (
 
 	defaultK6ModulePath = "go.k6.io/k6"
 )
+
+func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
+	s := os.Getenv(name)
+	if s == "" {
+		return defaultValue
+	}
+	return s
+}

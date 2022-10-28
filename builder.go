@@ -85,7 +85,13 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	env = setEnv(env, "GOOS="+b.OS)
 	env = setEnv(env, "GOARCH="+b.Arch)
 	env = setEnv(env, "GOARM="+b.ARM)
-	if b.RaceDetector && !b.Compile.Cgo {
+
+	raceArg := "-race"
+
+	// trim debug symbols by default
+	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags=-w -s")
+
+	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
 		b.Compile.Cgo = true
 	}
@@ -100,11 +106,12 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	// compile
 	cmd := buildEnv.newCommand("go", "build",
 		"-o", absOutputFile,
-		"-ldflags", b.osEnvOrDefaultValue("XK6_BUILD_LD_FLAGS", "-w -s"), // trim debug symbols by default
+		buildFlags,
 		"-trimpath",
 	)
-	if b.RaceDetector {
-		cmd.Args = append(cmd.Args, "-race")
+	//dont add raceArg again if it already in place
+	if b.RaceDetector && !strings.Contains(buildFlags, raceArg) {
+		cmd.Args = append(cmd.Args, raceArg)
 	}
 	cmd.Env = env
 	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)

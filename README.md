@@ -110,7 +110,7 @@ $ xk6 version
 $ xk6 run -u 10 -d 10s test.js
 ```
 
-The race detector can be enabled by setting `XK6_RACE_DETECTOR=1`.
+The race detector can be enabled by setting the env variable `XK6_BUILD_FLAGS=1` or through the `XK6_BUILD_FLAGS` env variable.
 
 
 ## Library usage
@@ -136,6 +136,7 @@ Versions can be anything compatible with `go get`.
 Because the subcommands and flags are constrained to benefit rapid extension prototyping, xk6 does read some environment variables to take cues for its behavior and/or configuration when there is no room for flags.
 
 - `K6_VERSION` sets the version of k6 to build.
+- `XK6_BUILD_FLAGS` sets any go build flags if needed. Defaults to '-ldflags=-w -s'.
 - `XK6_RACE_DETECTOR=1` enables the Go race detector in the build.
 - `XK6_SKIP_CLEANUP=1` causes xk6 to leave build artifacts on disk after exiting.
 - `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.

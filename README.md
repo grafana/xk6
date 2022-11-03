@@ -110,7 +110,7 @@ $ xk6 version
 $ xk6 run -u 10 -d 10s test.js
 ```
 
-The race detector can be enabled by setting the env variable `XK6_BUILD_FLAGS=1` or through the `XK6_BUILD_FLAGS` env variable.
+The race detector can be enabled by setting the env variable `XK6_RACE_DETECTOR=1` or through the `XK6_BUILD_FLAGS` env variable.
 
 
 ## Library usage

@@ -266,8 +266,8 @@ const (
 )
 
 func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
-	s := os.Getenv(name)
-	if s == "" {
+	s, ok := os.LookupEnv(name)
+	if !ok {
 		return defaultValue
 	}
 	return s

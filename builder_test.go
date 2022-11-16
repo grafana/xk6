@@ -90,3 +90,52 @@ func TestNewReplace(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildCommandArgs(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		buildFlags string
+		want       []string
+	}{
+		{
+			buildFlags: "",
+			want: []string{
+				"build", "-o", "binfile", "-trimpath",
+			},
+		},
+		{
+			buildFlags: "-ldflags='-w -s'",
+			want: []string{
+				"build", "-o", "binfile", "-ldflags=-w -s", "-trimpath",
+			},
+		},
+		{
+			buildFlags: "-race -buildvcs=false",
+			want: []string{
+				"build", "-o", "binfile", "-race", "-buildvcs=false", "-trimpath",
+			},
+		},
+		{
+			buildFlags: `-buildvcs=false -ldflags="-s -w" -race`,
+			want: []string{
+				"build", "-o", "binfile", "-buildvcs=false", "-ldflags=-s -w", "-race", "-trimpath",
+			},
+		},
+		{
+			buildFlags: `-ldflags="-s -w" -race -buildvcs=false`,
+			want: []string{
+				"build", "-o", "binfile", "-ldflags=-s -w", "-race", "-buildvcs=false", "-trimpath",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.buildFlags, func(t *testing.T) {
+			t.Parallel()
+			if got := buildCommandArgs(tt.buildFlags, "binfile"); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("buildCommandArgs() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

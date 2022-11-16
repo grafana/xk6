@@ -126,6 +126,7 @@ func TestNormalizeImportPath(t *testing.T) {
 		tests = append(tests, windowsTests...)
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if got := normalizeImportPath(tt.args.currentModule, tt.args.cwd, tt.args.moduleDir); got != tt.want {

@@ -7,6 +7,7 @@ import (
 )
 
 func TestSplitWith(t *testing.T) {
+	t.Parallel()
 	for i, tc := range []struct {
 		input         string
 		expectModule  string
@@ -83,6 +84,7 @@ func TestSplitWith(t *testing.T) {
 }
 
 func TestNormalizeImportPath(t *testing.T) {
+	t.Parallel()
 	type (
 		args struct {
 			currentModule string
@@ -124,7 +126,9 @@ func TestNormalizeImportPath(t *testing.T) {
 		tests = append(tests, windowsTests...)
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := normalizeImportPath(tt.args.currentModule, tt.args.cwd, tt.args.moduleDir); got != tt.want {
 				t.Errorf("normalizeImportPath() = %v, want %v", got, tt.want)
 			}
@@ -134,6 +138,7 @@ func TestNormalizeImportPath(t *testing.T) {
 
 func TestExpandPath(t *testing.T) {
 	t.Run(". expands to current directory", func(t *testing.T) {
+		t.Parallel()
 		got, err := expandPath(".")
 		if got == "." {
 			t.Errorf("did not expand path")
@@ -143,6 +148,7 @@ func TestExpandPath(t *testing.T) {
 		}
 	})
 	t.Run("~ expands to user's home directory", func(t *testing.T) {
+		t.Parallel()
 		got, err := expandPath("~")
 		if got == "~" {
 			t.Errorf("did not expand path")

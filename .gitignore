@@ -5,6 +5,8 @@ _gitignore/
 # build artifacts
 **/xk6
 **/xk6.exe
+# but not the cmd/xk6 directory
+!**/xk6/
 # generated k6 binaries
 k6
 

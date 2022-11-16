@@ -85,7 +85,15 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	env = setEnv(env, "GOOS="+b.OS)
 	env = setEnv(env, "GOARCH="+b.Arch)
 	env = setEnv(env, "GOARM="+b.ARM)
-	if b.RaceDetector && !b.Compile.Cgo {
+
+	raceArg := "-race"
+
+	// trim debug symbols by default
+	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags=-w -s")
+
+	buildFlagsSlice := buildComandArgs(buildFlags, absOutputFile)
+
+	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
 		b.Compile.Cgo = true
 	}
@@ -98,13 +106,12 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	}
 
 	// compile
-	cmd := buildEnv.newCommand("go", "build",
-		"-o", absOutputFile,
-		"-ldflags", "-w -s", // trim debug symbols
-		"-trimpath",
+	cmd := buildEnv.newCommand("go",
+		buildFlagsSlice...,
 	)
-	if b.RaceDetector {
-		cmd.Args = append(cmd.Args, "-race")
+	//dont add raceArg again if it already in place
+	if b.RaceDetector && !strings.Contains(buildFlags, raceArg) {
+		cmd.Args = append(cmd.Args, raceArg)
 	}
 	cmd.Env = env
 	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)
@@ -257,3 +264,47 @@ const (
 
 	defaultK6ModulePath = "go.k6.io/k6"
 )
+
+func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
+	s, ok := os.LookupEnv(name)
+	if !ok {
+		return defaultValue
+	}
+	return s
+}
+
+// buildComandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
+// or the default values when no value for it is given
+// so we may pass args separately to newCommand()
+func buildComandArgs(buildFlags, absOutputFile string) (buildFlagsSlice []string) {
+
+	buildFlagsSlice = make([]string, 0, 10)
+
+	buildFlagsSlice = append(buildFlagsSlice, "build")
+	buildFlagsSlice = append(buildFlagsSlice, "-o")
+	buildFlagsSlice = append(buildFlagsSlice, absOutputFile)
+
+	tmp := []string{}
+	sb := &strings.Builder{}
+	quoted := false
+	for _, r := range buildFlags {
+		if r == '"' || r == '\'' {
+			quoted = !quoted
+		} else if !quoted && r == ' ' {
+			tmp = append(tmp, sb.String())
+			sb.Reset()
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	if sb.Len() > 0 {
+		tmp = append(tmp, sb.String())
+	}
+
+	buildFlagsSlice = append(buildFlagsSlice, tmp...)
+
+	buildFlagsSlice = append(buildFlagsSlice, "-trimpath")
+
+	return
+
+}

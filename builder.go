@@ -91,7 +91,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	// trim debug symbols by default
 	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags=-w -s")
 
-	buildFlagsSlice := buildComandArgs(buildFlags, absOutputFile)
+	buildFlagsSlice := buildCommandArgs(buildFlags, absOutputFile)
 
 	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
@@ -273,11 +273,10 @@ func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
 	return s
 }
 
-// buildComandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
+// buildCommandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
 // or the default values when no value for it is given
 // so we may pass args separately to newCommand()
-func buildComandArgs(buildFlags, absOutputFile string) (buildFlagsSlice []string) {
-
+func buildCommandArgs(buildFlags, absOutputFile string) (buildFlagsSlice []string) {
 	buildFlagsSlice = make([]string, 0, 10)
 
 	buildFlagsSlice = append(buildFlagsSlice, "build")

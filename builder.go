@@ -276,12 +276,9 @@ func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
 // buildCommandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
 // or the default values when no value for it is given
 // so we may pass args separately to newCommand()
-func buildCommandArgs(buildFlags, absOutputFile string) (buildFlagsSlice []string) {
-	buildFlagsSlice = make([]string, 0, 10)
-
-	buildFlagsSlice = append(buildFlagsSlice, "build")
-	buildFlagsSlice = append(buildFlagsSlice, "-o")
-	buildFlagsSlice = append(buildFlagsSlice, absOutputFile)
+func buildCommandArgs(buildFlags, absOutputFile string) []string {
+	buildFlagsSlice := make([]string, 0, 10)
+	buildFlagsSlice = append(buildFlagsSlice, "build", "-o", absOutputFile)
 
 	tmp := []string{}
 	sb := &strings.Builder{}
@@ -301,9 +298,7 @@ func buildCommandArgs(buildFlags, absOutputFile string) (buildFlagsSlice []strin
 	}
 
 	buildFlagsSlice = append(buildFlagsSlice, tmp...)
-
 	buildFlagsSlice = append(buildFlagsSlice, "-trimpath")
 
-	return
-
+	return buildFlagsSlice
 }

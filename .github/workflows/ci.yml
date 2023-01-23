@@ -39,12 +39,12 @@ jobs:
 
     steps:
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Print Go version and environment
       id: vars
@@ -60,7 +60,7 @@ jobs:
         echo "::set-output name=go_cache::$(go env GOCACHE)"
 
     - name: Cache the build cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ${{ steps.vars.outputs.go_cache }}
         key: ${{ runner.os }}-go-ci-${{ hashFiles('**/go.sum') }}
@@ -79,7 +79,7 @@ jobs:
         go build -trimpath -ldflags="-w -s" -v
 
     - name: Publish Build Artifact
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
         name: xk6_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
         path: ${{ matrix.XK6_BIN_PATH }}
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - uses: goreleaser/goreleaser-action@v1
         with:
           version: latest

@@ -16,12 +16,12 @@ jobs:
 
     steps:
     - name: Install Go
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # So GoReleaser can generate the changelog properly
     - name: Unshallowify the repo clone
@@ -40,7 +40,7 @@ jobs:
         echo "::set-output name=go_cache::$(go env GOCACHE)"
 
     - name: Cache the build cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ${{ steps.vars.outputs.go_cache }}
         key: ${{ runner.os }}-go-release-${{ hashFiles('**/go.sum') }}

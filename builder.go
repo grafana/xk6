@@ -17,7 +17,6 @@ package xk6
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -109,7 +108,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	cmd := buildEnv.newCommand("go",
 		buildFlagsSlice...,
 	)
-	//dont add raceArg again if it already in place
+	// dont add raceArg again if it already in place
 	if b.RaceDetector && !strings.Contains(buildFlags, raceArg) {
 		cmd.Args = append(cmd.Args, raceArg)
 	}
@@ -213,7 +212,7 @@ func newTempFolder() (string, error) {
 		}
 	}
 	ts := time.Now().Format(yearMonthDayHourMin)
-	return ioutil.TempDir(parentDir, fmt.Sprintf("buildenv_%s.", ts))
+	return os.MkdirTemp(parentDir, fmt.Sprintf("buildenv_%s.", ts))
 }
 
 // versionedModulePath helps enforce Go Module's Semantic Import Versioning (SIV) by

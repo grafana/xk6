@@ -29,6 +29,7 @@ jobs:
 
     - name: Print Go version and environment
       id: vars
+      shell: bash
       run: |
         printf "Using go at: $(which go)\n"
         printf "Go version: $(go version)\n"
@@ -36,8 +37,8 @@ jobs:
         go env
         printf "\n\nSystem environment:\n\n"
         env
-        echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
-        echo "::set-output name=go_cache::$(go env GOCACHE)"
+        echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "go_cache=$(go env GOCACHE)" >> $GITHUB_OUTPUT
 
     - name: Cache the build cache
       uses: actions/cache@v3

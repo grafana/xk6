@@ -109,7 +109,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: ${{ steps.version.outputs.Version }}          
+          version: ${{ steps.version.outputs.Version }}
 
   goreleaser-check:
     runs-on: ubuntu-latest

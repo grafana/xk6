@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -160,7 +159,7 @@ nextExt:
 	// we do this last so we get the needed versions from all the replacements and extensions instead of k6 if possible
 	mainPath := filepath.Join(tempFolder, "main.go")
 	log.Printf("[INFO] Writing main module: %s", mainPath)
-	err = ioutil.WriteFile(mainPath, buf.Bytes(), 0o600)
+	err = os.WriteFile(mainPath, buf.Bytes(), 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +209,7 @@ func (env environment) writeExtensionImportFile(packagePath string) error {
 import _ %q
 `, packagePath)
 	filePath := filepath.Join(env.tempFolder, strings.ReplaceAll(packagePath, "/", "_")+".go")
-	return ioutil.WriteFile(filePath, []byte(fileContents), 0o600)
+	return os.WriteFile(filePath, []byte(fileContents), 0o600)
 }
 
 func (env environment) newCommand(command string, args ...string) *exec.Cmd {
@@ -260,7 +259,7 @@ func (env environment) runCommand(ctx context.Context, cmd *exec.Cmd, timeout ti
 		// to the child process, so wait for it to die
 		select {
 		case <-time.After(15 * time.Second):
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill()
 		case <-cmdErrChan:
 		}
 		return ctx.Err()

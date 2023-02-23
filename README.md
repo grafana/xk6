@@ -5,9 +5,6 @@ This command line tool and associated Go package makes it easy to make custom bu
 
 It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).
 
-⚠️ Still in development.
-
-Stay updated, be aware of changes, and please submit feedback! Thanks!
 
 ## Requirements
 

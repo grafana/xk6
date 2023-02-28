@@ -6,11 +6,72 @@ This command line tool and associated Go package makes it easy to make custom bu
 It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).
 
 
-## Requirements
+## Docker
+
+The easiest way to use xk6 is via our [Docker image](https://hub.docker.com/r/grafana/xk6/). This avoids having to setup a local Go environment, and install xk6 manually.
+
+For example, to build a k6 v0.43.0 binary on Linux with the [xk6-kafka](https://github.com/mostafa/xk6-kafka) and [xk6-output-influxdb](https://github.com/grafana/xk6-output-influxdb) extensions, you would run:
+
+```bash
+docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.43.1 \
+  --with github.com/mostafa/xk6-kafka@v0.17.0 \
+  --with github.com/grafana/xk6-output-influxdb@v0.3.0
+```
+
+This would create a `k6` binary in the current working directory.
+
+Note the use of the `-u` (user) option to specify the user and group IDs of the account on the host machine. This is important for the `k6` file to have the same file permissions as the host user.
+
+The `-v` (volume) option is also required to mount the current working directory inside the container, so that the `k6` binary can be written to it.
+
+Note that if you're using SELinux, you might need to add `:z` to the `--volume` option to avoid permission errors. E.g. `-v "${PWD}:/xk6:z"`.
+
+If you prefer to setup Go and use xk6 without Docker, see the "Local Installation" section below.
+
+
+### macOS
+
+On macOS you will need to set the `GOOS=darwin` environment variable to build a macOS binary.
+
+You can do this with the `--env` or `-e` argument to `docker run`:
+```bash
+docker run --rm -it -e GOOS=darwin -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" \
+  grafana/xk6 build v0.43.1 \
+  --with github.com/mostafa/xk6-kafka@v0.17.0 \
+  --with github.com/grafana/xk6-output-influxdb@v0.3.0
+```
+
+
+### Windows
+
+On Windows you can either build a native Windows binary, or, if you're using WSL2, a Linux binary you can use in WSL2.
+
+For the native Windows binary if you're using PowerShell:
+```powershell
+docker run --rm -it -e GOOS=windows -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" `
+  grafana/xk6 build v0.43.1 --output k6.exe `
+  --with github.com/mostafa/xk6-kafka@v0.17.0 `
+  --with github.com/grafana/xk6-output-influxdb@v0.3.0
+```
+
+For the native Windows binary if you're using cmd.exe:
+```batch
+docker run --rm -it -e GOOS=windows -v "%cd%:/xk6" ^
+  grafana/xk6 build v0.43.1 --output k6.exe ^
+  --with github.com/mostafa/xk6-kafka@v0.17.0 ^
+  --with github.com/grafana/xk6-output-influxdb@v0.3.0
+```
+
+For the Linux binary on WSL2, you can use the same command as for Linux.
+
+
+## Local Installation
+
+### Requirements
 
 - [Go installed](https://golang.org/doc/install). At least version 1.17 is needed.
 
-## Install
+### Install xk6
 
 You can [download binaries](https://github.com/grafana/xk6/releases) that are already compiled for your platform, or build `xk6` from source:
 

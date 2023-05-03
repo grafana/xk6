@@ -18,7 +18,8 @@ RUN addgroup --gid 1000 xk6 && \
 ARG FIXUID_VERSION=0.5.1
 RUN USER=xk6 && \
     GROUP=xk6 && \
-    curl -fSsL https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
+    DPKG_ARCH="$(dpkg --print-architecture | awk -F- '{ print $NF }')" && \
+    curl -fSsL https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-${DPKG_ARCH}.tar.gz | tar -C /usr/local/bin -xzf - && \
     chown root:root /usr/local/bin/fixuid && \
     chmod 4755 /usr/local/bin/fixuid && \
     mkdir -p /etc/fixuid && \

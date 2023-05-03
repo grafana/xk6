@@ -8,19 +8,16 @@ on:
       - 'v*.*.*'
 
 jobs:
-  docker:
-    name: Build and publish Docker image
+  binary:
+    name: Build and test xk6 binary
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux/amd64, linux/arm64 ]
     env:
       IMAGE_REPOSITORY: ${{ github.repository }}
       VERSION: ${{ github.ref_name }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Build image
-        run: docker build -t "$IMAGE_REPOSITORY" .
       - name: Build k6 binary
         run: |
             docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
@@ -32,54 +29,55 @@ jobs:
             ./k6 version
             ./k6 version | grep -qz 'xk6-output-influxdb.*xk6-kafka'
 
+  docker:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_REPOSITORY: ${{ github.repository }}
+      VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Log into ghcr.io
-        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login https://ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Publish master image to ghcr.io
-        if: ${{ github.ref == 'refs/heads/master' }}
-        run: |
-          echo "Publish as ghcr.io/${IMAGE_REPOSITORY}:master"
-          docker tag "$IMAGE_REPOSITORY" "ghcr.io/${IMAGE_REPOSITORY}:master"
-          docker push "ghcr.io/${IMAGE_REPOSITORY}:master"
-
-      - name: Publish tagged version image to ghcr.io
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          VERSION="${VERSION#v}"
-          echo "Publish as ghcr.io/${IMAGE_REPOSITORY}:${VERSION}"
-          docker tag "$IMAGE_REPOSITORY" "ghcr.io/${IMAGE_REPOSITORY}:${VERSION}"
-          docker push "ghcr.io/${IMAGE_REPOSITORY}:${VERSION}"
-          # We also want to tag the latest stable version as latest
-          if [[ ! "$VERSION" =~ (RC|rc) ]]; then
-            echo "Publish as ghcr.io/${IMAGE_REPOSITORY}:latest"
-            docker tag "$IMAGE_REPOSITORY" "ghcr.io/${IMAGE_REPOSITORY}:latest"
-            docker push "ghcr.io/${IMAGE_REPOSITORY}:latest"
-          fi
-
+        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Log into Docker Hub
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
-
-      - name: Publish master image to Docker Hub
-        if: ${{ github.ref == 'refs/heads/master' }}
-        run: |
-          echo "Publish as ${IMAGE_REPOSITORY}:master"
-          docker tag "$IMAGE_REPOSITORY" "${IMAGE_REPOSITORY}:master"
-          docker push "${IMAGE_REPOSITORY}:master"
-
-      - name: Publish tagged version image to Docker Hub
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          VERSION="${VERSION#v}"
-          echo "Publish as ${IMAGE_REPOSITORY}:${VERSION}"
-          docker tag "$IMAGE_REPOSITORY" "${IMAGE_REPOSITORY}:${VERSION}"
-          docker push "${IMAGE_REPOSITORY}:${VERSION}"
-          # We also want to tag the latest stable version as latest
-          if [[ ! "$VERSION" =~ (RC|rc) ]]; then
-            echo "Publish as ${IMAGE_REPOSITORY}:latest"
-            docker tag "$IMAGE_REPOSITORY" "${IMAGE_REPOSITORY}:latest"
-            docker push "${IMAGE_REPOSITORY}:latest"
-          fi
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+      - name: Set up tags
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.IMAGE_REPOSITORY }}
+            ghcr.io/${{ env.IMAGE_REPOSITORY }}
+          flavor: |
+            # don't automatically tag master as latest
+            latest=false
+          tags: |
+            # tag: master
+            type=raw,value=master,enable=${{ github.ref == 'refs/heads/master' }}
+            # tag: major.minor.patch on tag events
+            type=semver,pattern={{version}}
+            # tag latest on stable tag pushes
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'rc') && !contains(github.ref, 'RC') }}
+      - name: Build image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}

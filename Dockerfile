@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.20.3
+ARG GO_VERSION=1.20.5
 ARG VARIANT=bullseye
 FROM golang:${GO_VERSION}-${VARIANT} as builder
 

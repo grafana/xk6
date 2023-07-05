@@ -106,7 +106,8 @@ $ xk6 build [<k6_version>]
     [--replace <module=replacement>...]
 ```
 
-- `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or latest.
+- `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or whatever is the latest version needed by all extensions.
+  For example, if extension A requires k6 v0.41.0 and extension B requires k6 v0.43.0, the final k6 version used in the binary will be v0.43.0. Note that depending on the differences in these versions, this behavior might cause the build to fail. This is something enforced by the Go build system, and we have no way of fixing it.
 - `--output` changes the output file.
 - `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our [extensions page](https://k6.io/docs/extensions/).
 - `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.

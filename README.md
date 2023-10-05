@@ -197,6 +197,16 @@ Because the subcommands and flags are constrained to benefit rapid extension pro
 - `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.
 
 
+## Keeping dependencies in sync
+
+We recommend extension maintainers to keep dependencies in common with k6 core in the same version k6 core uses. This guarantees binary compatibility of the JS runtime, and ensures uses will not have to face unforeseen build-time errors when compiling several extensions together with xk6.
+
+The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for this automatically and produce a `go get` command that syncs common dependencies:
+
+```console
+/your/extension$ go-depsync --parent go.k6.io/k6
+```
+
 ---
 
 > This project originally forked from the [xcaddy](https://github.com/caddyserver/xcaddy) project. **Thank you!**

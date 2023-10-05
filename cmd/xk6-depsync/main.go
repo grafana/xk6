@@ -37,7 +37,7 @@ func main() {
 
 	k6Version := ownDeps[k6Core]
 	if k6Version == "" {
-		log.Fatalf("K6 core %q not found in %q", k6Core, gomod)
+		log.Fatalf("k6 core %q not found in %q", k6Core, gomod)
 	}
 
 	log.Printf("detected k6 core version %s", k6Version)

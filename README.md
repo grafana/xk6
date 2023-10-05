@@ -197,6 +197,40 @@ Because the subcommands and flags are constrained to benefit rapid extension pro
 - `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.
 
 
+## `xk6-depsync`
+
+In addition to `xk6`, this repository also includes the `xk6-depsync` command. `xk6-depsync` can be used to find common dependencies between a given go project, typically a k6 extension, and k6 core. For these common dependencies, `xk6-depsync` will look specifically for those that are required to be on a different version than what k6 uses, and generate a `go get` command to set it to the correct version. This is considered a good chance to minimize the chance of build-time errors and binary compatibility issues.
+
+### `xk6-depsync` usage
+
+`xk6-depsync` is included in the `grafana/xk6` container image, and can be run using docker by specifying its path as `--entrypoint`:
+
+```bash
+docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" --entrypoint /usr/local/bin/xk6-depsync grafana/xk6
+```
+
+Running the command above on the root of a k6 extension will produce an output like the following:
+
+```
+2023/10/05 14:08:30 detected k6 core version v0.45.1
+2023/10/05 14:08:30 Mismatched versions for gopkg.in/guregu/null.v3: v3.5.0 (this package) -> v3.3.0 (core)
+2023/10/05 14:08:30 Mismatched versions for github.com/spf13/afero: v1.9.5 (this package) -> v1.1.2 (core)
+2023/10/05 14:08:30 Mismatched versions for github.com/google/pprof: v0.0.0-20230426061923-93006964c1fc (this package) -> v0.0.0-20230207041349-798e818bf904 (core)
+go get github.com/google/pprof@v0.0.0-20230207041349-798e818bf904 github.com/spf13/afero@v1.1.2 gopkg.in/guregu/null.v3@v3.3.0
+```
+
+The final line includes the `go get` command that, when run, will sync the versions of the detected shared dependencies to the version that k6 is using. `xk6-depsync` outputs this line to `stdout` so it can be piped to a shell, or redirected to a script for later use.
+
+`xk6-depsync` can also be installed on the host using `go install`:
+
+```console
+$ go install go.k6.io/xk6/cmd/xk6-depsync@latest
+```
+
+### Trivia
+
+Go versions earlier than 1.21 have been observed to behave unexpectedly in some cases, sometimes ignoring some of the versions specified in the `go get` command, or unexpectedly upgrading/downgrading other dependencies. It is recommended to run the `go get` commands suggested by `xk6-depsync` with Go >= 1.21.
+
 ---
 
 > This project originally forked from the [xcaddy](https://github.com/caddyserver/xcaddy) project. **Thank you!**

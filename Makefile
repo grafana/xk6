@@ -15,11 +15,13 @@ help:
 ## clean: Removes any previously created build artifacts.
 clean:
 	rm -f ./xk6
+	rm -f ./xk6-depsync
 	rm -f ./k6
 
 ## build: Builds the 'xk6' binary.
 build:
 	go build -work ./cmd/xk6
+	go build -work ./cmd/xk6-depsync/
 
 ## format: Applies Go formatting to code.
 format:

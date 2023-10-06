@@ -3,8 +3,6 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +10,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
 const (
@@ -88,25 +88,20 @@ func main() {
 
 // dependencies reads a go.mod file from an io.Reader and returns a map of dependency name to their specified versions.
 func dependencies(reader io.Reader) (map[string]string, error) {
-	buf := bufio.NewReader(reader)
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("reading contents: %w", err)
+	}
+
+	gomod, err := modfile.Parse("go.mod", data, nil)
+	if err != nil {
+		return nil, fmt.Errorf("parsing contents: %w", err)
+	}
 
 	deps := make(map[string]string)
-	for {
-		line, err := buf.ReadString('\n')
-		if errors.Is(err, io.EOF) {
-			return deps, nil
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("reading go.mod: %w", err)
-		}
-
-		if !strings.HasPrefix(line, "\t") {
-			continue
-		}
-
-		line = strings.Trim(line, "\t\n")
-		depVer := strings.Split(line, " ")
-		deps[depVer[0]] = depVer[1]
+	for _, req := range gomod.Require {
+		deps[req.Mod.Path] = req.Mod.Version
 	}
+
+	return deps, nil
 }

@@ -43,11 +43,12 @@ func main() {
 	log.Printf("detected k6 core version %s", k6Version)
 
 	k6CoreVersionedURL := fmt.Sprintf(k6GoModURL, k6Version)
-	//nolint:bodyclose // Single-run script.
 	response, err := http.Get(k6CoreVersionedURL)
 	if err != nil {
 		log.Fatalf("error fetching k6 go.mod: %v", err)
 	}
+
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		log.Fatalf("got HTTP status %d for %s", response.StatusCode, k6CoreVersionedURL)
@@ -58,7 +59,7 @@ func main() {
 		log.Fatalf("reading k6 core dependencies: %v", err)
 	}
 
-	//nolint:prealloc // Number of mismatched deps cannot be accurately predicted.
+	//nolint:prealloc // Number of mismatched deps cannot be accurately estimated.
 	var mismatched []string
 	for dep, version := range ownDeps {
 		coreVersion, inCore := coreDeps[dep]

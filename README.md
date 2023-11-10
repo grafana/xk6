@@ -203,10 +203,16 @@ In addition to `xk6`, this repository also includes the `xk6-depsync` command. `
 
 ### `xk6-depsync` usage
 
-`xk6-depsync` is included in the `grafana/xk6` container image, and can be run using docker by specifying its path as `--entrypoint`:
+`xk6-depsync` can be installed using `go install`:
+
+```console
+$ go install go.k6.io/xk6/cmd/xk6-depsync@latest
+```
+
+After that, it is ready to be used:
 
 ```bash
-docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" --entrypoint /usr/local/bin/xk6-depsync grafana/xk6
+xk6-depsync
 ```
 
 Running the command above on the root of a k6 extension will produce an output like the following:
@@ -220,12 +226,6 @@ go get github.com/google/pprof@v0.0.0-20230207041349-798e818bf904 github.com/spf
 ```
 
 The final line includes the `go get` command that, when run, will sync the versions of the detected shared dependencies to the version that k6 is using. `xk6-depsync` outputs this line to `stdout` so it can be piped to a shell, or redirected to a script for later use.
-
-`xk6-depsync` can also be installed on the host using `go install`:
-
-```console
-$ go install go.k6.io/xk6/cmd/xk6-depsync@latest
-```
 
 ### Trivia
 

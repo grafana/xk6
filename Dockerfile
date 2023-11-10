@@ -7,8 +7,7 @@ WORKDIR /build
 COPY . .
 
 ARG GOFLAGS="-ldflags=-w -ldflags=-s"
-RUN CGO_ENABLED=0 go build -o xk6 -trimpath ./cmd/xk6/main.go && \
-    CGO_ENABLED=0 go build -o xk6-depsync -trimpath ./cmd/xk6-depsync/main.go
+RUN CGO_ENABLED=0 go build -o xk6 -trimpath ./cmd/xk6/main.go
 
 
 FROM golang:${GO_VERSION}-${VARIANT}
@@ -25,7 +24,7 @@ RUN USER=xk6 && \
     mkdir -p /etc/fixuid && \
     printf "user: $USER\ngroup: $GROUP\n" > /etc/fixuid/config.yml
 
-COPY --from=builder /build/xk6 /build/xk6-depsync /usr/local/bin/
+COPY --from=builder /build/xk6 /usr/local/bin/
 
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 

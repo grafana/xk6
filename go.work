@@ -1,0 +1,6 @@
+go 1.16
+
+use (
+	.
+	./cmd/xk6-depsync
+)

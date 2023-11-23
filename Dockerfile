@@ -15,7 +15,7 @@ FROM golang:${GO_VERSION}-${VARIANT}
 RUN addgroup --gid 1000 xk6 && \
     adduser --uid 1000 --ingroup xk6 --home /home/xk6 --shell /bin/sh --disabled-password --gecos "" xk6
 
-ARG FIXUID_VERSION=0.5.1
+ARG FIXUID_VERSION=0.6.0
 RUN USER=xk6 && \
     GROUP=xk6 && \
     curl -fSsL https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \

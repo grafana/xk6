@@ -25,12 +25,12 @@ jobs:
         run: |
             docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
               "$IMAGE_REPOSITORY" build master \
-              --with github.com/mostafa/xk6-kafka \
+              --with github.com/grafana/xk6-sql \
               --with github.com/grafana/xk6-output-influxdb
       - name: Check k6 binary
         run: |
             ./k6 version
-            ./k6 version | grep -qz 'xk6-output-influxdb.*xk6-kafka'
+            ./k6 version | grep -qz 'xk6-output-influxdb.*xk6-sql'
 
       - name: Log into ghcr.io
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}

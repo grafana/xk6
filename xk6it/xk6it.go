@@ -13,15 +13,18 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-// Run builds k6 in temporary location and run scripts matching the given pattern.
+// Run builds k6 in a temporary location and runs scripts matching the given pattern.
+//
 // For the given integration script, it searches for the containing go module
 // and based on that, builds k6 binary for execution.
-// For a given go module, the k6 build is done only once.
-// The k6 binary is placed in a temporary directory belonging to the call,
-// which is automatically deleted by the go test runner at the end of the run.
+//
+// The k6 build is done only once for a given go module.
+//
+// The k6 binary is placed in a temporary directory belonging to the
+// call, which is automatically deleted by the go test runner at the end of the run.
+//
 // In practice, the execution corresponds to the "xk6 run script.js" command,
-// but the xk6 binary is not necessary, because it uses xk6 as a library.
-// In case of any error, t.Error() is called.
+// but the xk6 binary is not necessary, because it uses xk6 as a library. In case of any error, t.Error() is called.
 func Run(t *testing.T, pattern string) {
 	t.Helper()
 

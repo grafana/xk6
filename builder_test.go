@@ -100,31 +100,31 @@ func TestBuildCommandArgs(t *testing.T) {
 		{
 			buildFlags: "",
 			want: []string{
-				"build", "-o", "binfile", "-trimpath",
+				"build", "-o", "binfile",
 			},
 		},
 		{
 			buildFlags: "-ldflags='-w -s'",
 			want: []string{
-				"build", "-o", "binfile", "-ldflags=-w -s", "-trimpath",
+				"build", "-o", "binfile", "-ldflags=-w -s",
 			},
 		},
 		{
 			buildFlags: "-race -buildvcs=false",
 			want: []string{
-				"build", "-o", "binfile", "-race", "-buildvcs=false", "-trimpath",
+				"build", "-o", "binfile", "-race", "-buildvcs=false",
 			},
 		},
 		{
 			buildFlags: `-buildvcs=false -ldflags="-s -w" -race`,
 			want: []string{
-				"build", "-o", "binfile", "-buildvcs=false", "-ldflags=-s -w", "-race", "-trimpath",
+				"build", "-o", "binfile", "-buildvcs=false", "-ldflags=-s -w", "-race",
 			},
 		},
 		{
 			buildFlags: `-ldflags="-s -w" -race -buildvcs=false`,
 			want: []string{
-				"build", "-o", "binfile", "-ldflags=-s -w", "-race", "-buildvcs=false", "-trimpath",
+				"build", "-o", "binfile", "-ldflags=-s -w", "-race", "-buildvcs=false",
 			},
 		},
 	}

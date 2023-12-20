@@ -88,7 +88,7 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	raceArg := "-race"
 
 	// trim debug symbols by default
-	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s'")
+	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s' -trimpath")
 
 	buildFlagsSlice := buildCommandArgs(buildFlags, absOutputFile)
 
@@ -297,7 +297,6 @@ func buildCommandArgs(buildFlags, absOutputFile string) []string {
 	}
 
 	buildFlagsSlice = append(buildFlagsSlice, tmp...)
-	buildFlagsSlice = append(buildFlagsSlice, "-trimpath")
 
 	return buildFlagsSlice
 }

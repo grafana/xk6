@@ -42,6 +42,7 @@ type Builder struct {
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 	RaceDetector bool          `json:"race_detector,omitempty"`
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
+	Plugin       string        `jsonb:"plugin,omitempty"`
 }
 
 // Build builds k6 at the configured version with the
@@ -88,14 +89,18 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	raceArg := "-race"
 
 	// trim debug symbols by default
-	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s' -trimpath")
+	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s'")
 
 	buildFlagsSlice := buildCommandArgs(buildFlags, absOutputFile)
+	if b.Plugin != "" {
+		buildFlagsSlice = append(buildFlagsSlice, "--buildmode=plugin")
+	}
 
 	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
 		b.Compile.Cgo = true
 	}
+
 	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%s", b.Compile.CgoEnabled()))
 
 	log.Println("[INFO] Building k6")

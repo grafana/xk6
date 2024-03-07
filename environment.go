@@ -81,7 +81,11 @@ func (b Builder) newEnvironment(ctx context.Context) (*environment, error) {
 
 	// initialize the go module
 	log.Println("[INFO] Initializing Go module")
-	cmd := env.newCommand("go", "mod", "init", "k6")
+	name := "k6"
+	if b.Plugin != "" {
+		name = "k6-" + b.Plugin
+	}
+	cmd := env.newCommand("go", "mod", "init", name)
 	err = env.runCommand(ctx, cmd, 10*time.Second)
 	if err != nil {
 		return nil, err

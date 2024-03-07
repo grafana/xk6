@@ -59,6 +59,7 @@ func runBuild(ctx context.Context, args []string) error {
 	var outputOverride bool
 	var extensions []xk6.Dependency
 	var replacements []xk6.Replace
+	var plugin string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--with":
@@ -110,10 +111,15 @@ func runBuild(ctx context.Context, args []string) error {
 			i++
 			output = args[i]
 			outputOverride = true
-
+		case "--plugin":
+			if i == len(args)-1 {
+				return fmt.Errorf("expected value after --plugin flag")
+			}
+			i++
+			plugin = args[i]
 		default:
 			if argK6Version != "" {
-				return fmt.Errorf("missing flag; k6 version already set at %s", argK6Version)
+				return fmt.Errorf("unknown flag %s; k6 version already set at %s", args[i], argK6Version)
 			}
 			argK6Version = args[i]
 		}
@@ -140,6 +146,7 @@ func runBuild(ctx context.Context, args []string) error {
 		Replacements: replacements,
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
+		Plugin:       plugin,
 	}
 	err := builder.Build(ctx, output)
 	if err != nil {

@@ -1,5 +1,5 @@
-ARG GO_VERSION=1.21.6
-ARG VARIANT=alpine3.18
+ARG GO_VERSION=1.20.11
+ARG VARIANT=bookworm
 FROM golang:${GO_VERSION}-${VARIANT} as builder
 
 WORKDIR /build
@@ -18,7 +18,7 @@ RUN addgroup --gid 1000 xk6 && \
 ARG FIXUID_VERSION=0.6.0
 RUN USER=xk6 && \
     GROUP=xk6 && \
-    wget -q -O - https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
+    curl -fSsL https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
     chown root:root /usr/local/bin/fixuid && \
     chmod 4755 /usr/local/bin/fixuid && \
     mkdir -p /etc/fixuid && \

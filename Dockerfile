@@ -1,5 +1,6 @@
-ARG GO_VERSION=1.21.6
-ARG VARIANT=alpine3.18
+
+ARG GO_VERSION=1.22.4
+ARG VARIANT=alpine3.20
 FROM golang:${GO_VERSION}-${VARIANT} as builder
 
 WORKDIR /build

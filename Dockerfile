@@ -1,5 +1,6 @@
-ARG GO_VERSION=1.21.6
-ARG VARIANT=alpine3.18
+
+ARG GO_VERSION=1.22.4
+ARG VARIANT=alpine3.20
 FROM golang:${GO_VERSION}-${VARIANT} as builder
 
 WORKDIR /build
@@ -7,20 +8,20 @@ WORKDIR /build
 COPY . .
 
 ARG GOFLAGS="-ldflags=-w -ldflags=-s"
+ARG FIXUID_VERSION=v0.6.0
 RUN CGO_ENABLED=0 go build -o xk6 -trimpath ./cmd/xk6/main.go
 
+RUN CGO_ENABLED=0 GOBIN=/build go install github.com/boxboat/fixuid@${FIXUID_VERSION}
 
 FROM golang:${GO_VERSION}-${VARIANT}
+
+COPY --from=builder /build/fixuid /usr/local/bin/
 
 RUN addgroup --gid 1000 xk6 && \
     adduser --uid 1000 --ingroup xk6 --home /home/xk6 --shell /bin/sh --disabled-password --gecos "" xk6
 
-ARG FIXUID_VERSION=0.6.0
 RUN USER=xk6 && \
     GROUP=xk6 && \
-    wget -q -O - https://github.com/boxboat/fixuid/releases/download/v${FIXUID_VERSION}/fixuid-${FIXUID_VERSION}-linux-amd64.tar.gz | tar -C /usr/local/bin -xzf - && \
-    chown root:root /usr/local/bin/fixuid && \
-    chmod 4755 /usr/local/bin/fixuid && \
     mkdir -p /etc/fixuid && \
     printf "user: $USER\ngroup: $GROUP\n" > /etc/fixuid/config.yml
 

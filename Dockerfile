@@ -17,6 +17,9 @@ FROM golang:${GO_VERSION}-${VARIANT}
 
 COPY --from=builder /build/fixuid /usr/local/bin/
 
+RUN chown root:root /usr/local/bin/fixuid && \
+    chmod 4755 /usr/local/bin/fixuid
+
 RUN addgroup --gid 1000 xk6 && \
     adduser --uid 1000 --ingroup xk6 --home /home/xk6 --shell /bin/sh --disabled-password --gecos "" xk6
 

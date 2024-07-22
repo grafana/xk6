@@ -15,6 +15,8 @@ RUN CGO_ENABLED=0 GOBIN=/build go install github.com/boxboat/fixuid@${FIXUID_VER
 
 FROM golang:${GO_VERSION}-${VARIANT}
 
+RUN apk update && apk add git
+
 COPY --from=builder /build/fixuid /usr/local/bin/
 
 RUN chown root:root /usr/local/bin/fixuid && \

@@ -74,7 +74,7 @@ For the Linux binary on WSL2, you can use the same command as for Linux.
 ### Install xk6
 
 ```bash
-$ go install go.k6.io/xk6/cmd/xk6@latest
+go install go.k6.io/xk6/cmd/xk6@latest
 ```
 
 This will install the `xk6` binary in your `$GOPATH/bin` directory.
@@ -100,7 +100,7 @@ As usual with `go` command, the `xk6` command will pass the `GOOS`, `GOARCH`, an
 Syntax:
 
 ```
-$ xk6 build [<k6_version>]
+xk6 build [<k6_version>]
     [--output <file>]
     [--with <module[@version][=replacement]>...]
     [--replace <module=replacement>...]
@@ -115,29 +115,29 @@ $ xk6 build [<k6_version>]
 Examples:
 
 ```bash
-$ xk6 build \
+xk6 build \
     --with github.com/grafana/xk6-browser
 
-$ xk6 build v0.35.0 \
+xk6 build v0.35.0 \
     --with github.com/grafana/xk6-browser@v0.1.1
 
-$ xk6 build \
+xk6 build \
     --with github.com/grafana/xk6-browser=../../my-fork
 
-$ xk6 build \
+xk6 build \
     --with github.com/grafana/xk6-browser=.
 
-$ xk6 build \
+xk6 build \
     --with github.com/grafana/xk6-browser@v0.1.1=../../my-fork
 
 # Build using a k6 fork repository. Note that a version is required if
 # XK6_K6_REPO is a URI.
-$ XK6_K6_REPO=github.com/example/k6 xk6 build master \
+XK6_K6_REPO=github.com/example/k6 xk6 build master \
     --with github.com/grafana/xk6-browser
 
 # Build using a k6 fork repository from a local path. The version must be omitted
 # and the path must be absolute.
-$ XK6_K6_REPO="$PWD/../../k6" xk6 build \
+XK6_K6_REPO="$PWD/../../k6" xk6 build \
     --with github.com/grafana/xk6-browser
 ```
 
@@ -154,15 +154,15 @@ Also note that because of the way xk6 works, vendored dependencies (the vendor d
 Syntax:
 
 ```
-$ xk6 <args...>
+xk6 <args...>
 ```
 - `<args...>` are passed through to the `k6` command.
 
 For example:
 
 ```bash
-$ xk6 version
-$ xk6 run -u 10 -d 10s test.js
+xk6 version
+xk6 run -u 10 -d 10s test.js
 ```
 
 The race detector can be enabled by setting the env variable `XK6_RACE_DETECTOR=1` or through the `XK6_BUILD_FLAGS` env variable.

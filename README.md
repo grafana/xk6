@@ -10,10 +10,10 @@ It is used heavily by k6 extension developers as well as anyone who wishes to ma
 
 The easiest way to use xk6 is via our [Docker image](https://hub.docker.com/r/grafana/xk6/). This avoids having to setup a local Go environment, and install xk6 manually.
 
-For example, to build a k6 v0.43.1 binary on Linux with the [xk6-kafka](https://github.com/mostafa/xk6-kafka) and [xk6-output-influxdb](https://github.com/grafana/xk6-output-influxdb) extensions, you would run:
+For example, to build a k6 v0.45.1 binary on Linux with the [xk6-kafka](https://github.com/mostafa/xk6-kafka) and [xk6-output-influxdb](https://github.com/grafana/xk6-output-influxdb) extensions, you would run:
 
 ```bash
-docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.43.1 \
+docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.45.1 \
   --with github.com/mostafa/xk6-kafka@v0.17.0 \
   --with github.com/grafana/xk6-output-influxdb@v0.3.0
 ```
@@ -36,7 +36,7 @@ On macOS you will need to set the `GOOS=darwin` environment variable to build a 
 You can do this with the `--env` or `-e` argument to `docker run`:
 ```bash
 docker run --rm -it -e GOOS=darwin -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" \
-  grafana/xk6 build v0.43.1 \
+  grafana/xk6 build v0.45.1 \
   --with github.com/mostafa/xk6-kafka@v0.17.0 \
   --with github.com/grafana/xk6-output-influxdb@v0.3.0
 ```
@@ -49,7 +49,7 @@ On Windows you can either build a native Windows binary, or, if you're using WSL
 For the native Windows binary if you're using PowerShell:
 ```powershell
 docker run --rm -it -e GOOS=windows -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" `
-  grafana/xk6 build v0.43.1 --output k6.exe `
+  grafana/xk6 build v0.45.1 --output k6.exe `
   --with github.com/mostafa/xk6-kafka@v0.17.0 `
   --with github.com/grafana/xk6-output-influxdb@v0.3.0
 ```
@@ -57,7 +57,7 @@ docker run --rm -it -e GOOS=windows -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" `
 For the native Windows binary if you're using cmd.exe:
 ```batch
 docker run --rm -it -e GOOS=windows -v "%cd%:/xk6" ^
-  grafana/xk6 build v0.43.1 --output k6.exe ^
+  grafana/xk6 build v0.45.1 --output k6.exe ^
   --with github.com/mostafa/xk6-kafka@v0.17.0 ^
   --with github.com/grafana/xk6-output-influxdb@v0.3.0
 ```

@@ -1,33 +1,16 @@
-// Copyright 2020 Matthew Holt
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package xk6
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
-	"path"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
+	"github.com/grafana/k6foundry"
 )
 
 // Builder can produce a custom k6 build with the
@@ -46,10 +29,55 @@ type Builder struct {
 
 // Build builds k6 at the configured version with the
 // configured extensions and writes a binary at outputFile.
-func (b Builder) Build(ctx context.Context, outputFile string) error {
+func (b Builder) Build(ctx context.Context, log *slog.Logger, outputFile string) error {
 	if outputFile == "" {
 		return fmt.Errorf("output file path is required")
 	}
+
+	// set some defaults from the environment, if applicable
+	if b.OS == "" {
+		b.OS = runtime.GOOS
+	}
+	if b.Arch == "" {
+		b.Arch = runtime.GOARCH
+	}
+
+	// We are not passing all the current environment anymore! ONLY the GO environment
+	// env := os.Environ()
+	env := map[string]string{
+		"GOARM":  b.ARM,
+	}
+
+	raceArg := "-race"
+
+	// trim debug symbols by default
+	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s' -trimpath")
+	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
+		log.Warn("Enabling cgo because it is required by the race detector")
+		b.Compile.Cgo = true
+	}
+	env["CGO_ENABLED"]= b.Compile.CgoEnabled()
+
+	log.Info("Building k6")
+
+	opts := k6foundry.NativeBuilderOpts {
+		GoOpts: k6foundry.GoOpts{
+			GoGetTimeout: b.TimeoutGet,
+			GOBuildTimeout: b.TimeoutBuild,
+			CopyGoEnv: true,
+			Env:       env,
+		},
+		SkipCleanup: b.SkipCleanup,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		Logger: log,
+	}
+
+	k6b, err := k6foundry.NewNativeBuilder(ctx, opts)
+	if err != nil {
+		return err
+	}
+
 	// the user's specified output file might be relative, and
 	// because the `go build` command is executed in a different,
 	// temporary folder, we convert the user's input to an
@@ -58,87 +86,40 @@ func (b Builder) Build(ctx context.Context, outputFile string) error {
 	if err != nil {
 		return err
 	}
-
-	// set some defaults from the environment, if applicable
-	if b.OS == "" {
-		b.OS = os.Getenv("GOOS")
-	}
-	if b.Arch == "" {
-		b.Arch = os.Getenv("GOARCH")
-	}
-	if b.ARM == "" {
-		b.ARM = os.Getenv("GOARM")
-	}
-
-	// prepare the build environment
-	buildEnv, err := b.newEnvironment(ctx)
+	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, 0o777) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	defer buildEnv.Close()
+	defer outFile.Close() //nolint:errcheck
 
-	// prepare the environment for the go command; for
-	// the most part we want it to inherit our current
-	// environment, with a few customizations
-	env := os.Environ()
-	env = setEnv(env, "GOOS="+b.OS)
-	env = setEnv(env, "GOARCH="+b.Arch)
-	env = setEnv(env, "GOARM="+b.ARM)
-
-	raceArg := "-race"
-
-	// trim debug symbols by default
-	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s' -trimpath")
-
-	buildFlagsSlice := buildCommandArgs(buildFlags, absOutputFile)
-
-	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
-		log.Println("[WARNING] Enabling cgo because it is required by the race detector")
-		b.Compile.Cgo = true
-	}
-	env = setEnv(env, fmt.Sprintf("CGO_ENABLED=%s", b.Compile.CgoEnabled()))
-
-	log.Println("[INFO] Building k6")
-
-	if err := buildEnv.execGoModTidy(ctx); err != nil {
-		return err
-	}
-
-	// compile
-	cmd := buildEnv.newCommand("go",
-		buildFlagsSlice...,
-	)
-	// dont add raceArg again if it already in place
-	if b.RaceDetector && !strings.Contains(buildFlags, raceArg) {
-		cmd.Args = append(cmd.Args, raceArg)
-	}
-	cmd.Env = env
-	err = buildEnv.runCommand(ctx, cmd, b.TimeoutBuild)
+	platform, err := k6foundry.ParsePlatform(b.OS + "/" + b.Arch)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[INFO] Build complete: %s", outputFile)
-
-	return nil
-}
-
-// setEnv sets an environment variable-value pair in
-// env, overriding an existing variable if it already
-// exists. The env slice is one such as is returned
-// by os.Environ(), and set must also have the form
-// of key=value.
-func setEnv(env []string, set string) []string {
-	parts := strings.SplitN(set, "=", 2)
-	key := parts[0]
-	for i := 0; i < len(env); i++ {
-		if strings.HasPrefix(env[i], key+"=") {
-			env[i] = set
-			return env
+	mods := []k6foundry.Module{}
+	for _, e := range b.Extensions {
+		mod := k6foundry.Module{Path: e.PackagePath, Version: e.Version}
+		if mod.Version == "" {
+			mod.Version = "latest"
 		}
+		mods = append(mods, mod)
 	}
-	return append(env, set)
+	for _, r := range b.Replacements {
+		// parse again the replacement, ignore the error because it was already parsed
+		mod, _ := k6foundry.ParseModule(fmt.Sprintf("%s=%s", r.Old.String(), r.New.String()))
+		mods = append(mods, mod)
+	}
+
+	k6Version := b.K6Version
+	if k6Version == "" {
+		k6Version = "latest"
+	}
+	_, err = k6b.Build(ctx, platform, k6Version, mods, buildCommandArgs(buildFlags), outFile)
+	return err
 }
+
+
 
 // Dependency pairs a Go module path with a version.
 type Dependency struct {
@@ -181,88 +162,6 @@ func NewReplace(old, new string) Replace {
 	}
 }
 
-// newTempFolder creates a new folder in a temporary location.
-// It is the caller's responsibility to remove the folder when finished.
-func newTempFolder() (string, error) {
-	var parentDir string
-	if runtime.GOOS == "darwin" {
-		// After upgrading to macOS High Sierra, Caddy builds mysteriously
-		// started missing the embedded version information that -ldflags
-		// was supposed to produce. But it only happened on macOS after
-		// upgrading to High Sierra, and it didn't happen with the usual
-		// `go run build.go` -- only when using a buildenv. Bug in git?
-		// Nope. Not a bug in Go 1.10 either. Turns out it's a breaking
-		// change in macOS High Sierra. When the GOPATH of the buildenv
-		// was set to some other folder, like in the $HOME dir, it worked
-		// fine. Only within $TMPDIR it broke. The $TMPDIR folder is inside
-		// /var, which is symlinked to /private/var, which is mounted
-		// with noexec. I don't understand why, but evidently that
-		// makes -ldflags of `go build` not work. Bizarre.
-		// The solution, I guess, is to just use our own "temp" dir
-		// outside of /var. Sigh... as long as it still gets cleaned up,
-		// I guess it doesn't matter too much.
-		// See: https://github.com/caddyserver/caddy/issues/2036
-		// and https://twitter.com/mholt6/status/978345803365273600 (thread)
-		// (using an absolute path prevents problems later when removing this
-		// folder if the CWD changes)
-		var err error
-		parentDir, err = filepath.Abs(".")
-		if err != nil {
-			return "", err
-		}
-	}
-	ts := time.Now().Format(yearMonthDayHourMin)
-	return os.MkdirTemp(parentDir, fmt.Sprintf("buildenv_%s.", ts))
-}
-
-// versionedModulePath helps enforce Go Module's Semantic Import Versioning (SIV) by
-// returning the form of modulePath with the major component of moduleVersion added,
-// if > 1. For example, inputs of "foo" and "v1.0.0" will return "foo", but inputs
-// of "foo" and "v2.0.0" will return "foo/v2", for use in Go imports and go commands.
-// Inputs that conflict, like "foo/v2" and "v3.1.0" are an error. This function
-// returns the input if the moduleVersion is not a valid semantic version string.
-// If moduleVersion is empty string, the input modulePath is returned without error.
-func versionedModulePath(modulePath, moduleVersion string) (string, error) {
-	if moduleVersion == "" {
-		return modulePath, nil
-	}
-	ver, err := semver.StrictNewVersion(strings.TrimPrefix(moduleVersion, "v"))
-	if err != nil {
-		// only return the error if we know they were trying to use a semantic version
-		// (could have been a commit SHA or something)
-		if strings.HasPrefix(moduleVersion, "v") {
-			return "", fmt.Errorf("%s: %v", moduleVersion, err)
-		}
-		return modulePath, nil
-	}
-	major := ver.Major()
-
-	// see if the module path has a major version at the end (SIV)
-	matches := moduleVersionRegexp.FindStringSubmatch(modulePath)
-	if len(matches) == 2 {
-		modPathVer, err := strconv.Atoi(matches[1])
-		if err != nil {
-			return "", fmt.Errorf("this error should be impossible, but module path %s has bad version: %v", modulePath, err)
-		}
-		if modPathVer != int(major) {
-			return "", fmt.Errorf("versioned module path (%s) and requested module major version (%d) diverge", modulePath, major)
-		}
-	} else if major > 1 {
-		modulePath += fmt.Sprintf("/v%d", major)
-	}
-
-	return path.Clean(modulePath), nil
-}
-
-var moduleVersionRegexp = regexp.MustCompile(`.+/v(\d+)$`)
-
-const (
-	// yearMonthDayHourMin is the date format
-	// used for temporary folder paths.
-	yearMonthDayHourMin = "2006-01-02-1504"
-
-	defaultK6ModulePath = "go.k6.io/k6"
-)
 
 func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
 	s, ok := os.LookupEnv(name)
@@ -275,9 +174,8 @@ func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
 // buildCommandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
 // or the default values when no value for it is given
 // so we may pass args separately to newCommand()
-func buildCommandArgs(buildFlags, absOutputFile string) []string {
+func buildCommandArgs(buildFlags string) []string {
 	buildFlagsSlice := make([]string, 0, 10)
-	buildFlagsSlice = append(buildFlagsSlice, "build", "-o", absOutputFile)
 
 	tmp := []string{}
 	sb := &strings.Builder{}

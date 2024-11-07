@@ -1,23 +1,9 @@
-// Copyright 2020 Matthew Holt
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -37,23 +23,32 @@ var (
 )
 
 func main() {
+	log := slog.New(
+		slog.NewTextHandler(
+			os.Stderr,
+			&slog.HandlerOptions{
+				Level: slog.LevelDebug,
+			},
+		),
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go trapSignals(ctx, cancel)
+	go trapSignals(ctx, log, cancel)
 
 	if len(os.Args) > 1 && os.Args[1] == "build" {
-		if err := runBuild(ctx, os.Args[2:]); err != nil {
-			log.Fatalf("[ERROR] %v", err)
+		if err := runBuild(ctx, log, os.Args[2:]); err != nil {
+			log.Error(fmt.Sprintf("build error %v", err))
 		}
 		return
 	}
 
-	if err := runDev(ctx, os.Args[1:]); err != nil {
-		log.Fatalf("[ERROR] %v", err)
+	if err := runDev(ctx, log, os.Args[1:]); err != nil {
+		log.Error(fmt.Sprintf("run error %v", err))
 	}
 }
 
-func runBuild(ctx context.Context, args []string) error {
+func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 	// parse the command line args... rather primitively
 	var argK6Version, output string
 	var outputOverride bool
@@ -133,6 +128,11 @@ func runBuild(ctx context.Context, args []string) error {
 	builder := xk6.Builder{
 		Compile: xk6.Compile{
 			Cgo: os.Getenv("CGO_ENABLED") == "1",
+			Platform: xk6.Platform{
+				OS:   os.Getenv("GOOS"),
+				Arch: os.Getenv("GOARCH"),
+				ARM:  os.Getenv("GOARM"),
+			},
 		},
 		K6Repo:       k6Repo,
 		K6Version:    k6Version,
@@ -141,9 +141,9 @@ func runBuild(ctx context.Context, args []string) error {
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
 	}
-	err := builder.Build(ctx, output)
+	err := builder.Build(ctx, log, output)
 	if err != nil {
-		log.Fatalf("[FATAL] %v", err)
+		return err
 	}
 
 	// prove the build is working by printing the version
@@ -158,7 +158,7 @@ func runBuild(ctx context.Context, args []string) error {
 		cmd.Stderr = os.Stderr
 		err = cmd.Run()
 		if err != nil {
-			log.Fatalf("[FATAL] %v", err)
+			return fmt.Errorf("executing k6 %v", err)
 		}
 	}
 
@@ -179,7 +179,7 @@ func getK6OutputFile() string {
 	return "./k6"
 }
 
-func runDev(ctx context.Context, args []string) error {
+func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	binOutput := getK6OutputFile()
 
 	// get current/main module name
@@ -250,12 +250,12 @@ func runDev(ctx context.Context, args []string) error {
 		RaceDetector: raceDetector,
 		SkipCleanup:  skipCleanup,
 	}
-	err = builder.Build(ctx, binOutput)
+	err = builder.Build(ctx, log, binOutput)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[INFO] Running %v\n\n", append([]string{binOutput}, args...))
+	log.Info(fmt.Sprintf("Running %v\n\n", append([]string{binOutput}, args...)))
 
 	cmd = exec.Command(binOutput, args...)
 	cmd.Stdin = os.Stdin
@@ -267,12 +267,12 @@ func runDev(ctx context.Context, args []string) error {
 	}
 	defer func() {
 		if skipCleanup {
-			log.Printf("[INFO] Skipping cleanup as requested; leaving artifact: %s", binOutput)
+			log.Info(fmt.Sprintf("Skipping cleanup as requested; leaving artifact: %s", binOutput))
 			return
 		}
 		err = os.Remove(binOutput)
 		if err != nil && !os.IsNotExist(err) {
-			log.Printf("[ERROR] Deleting temporary binary %s: %v", binOutput, err)
+			log.Error(fmt.Sprintf("Deleting temporary binary %s: %v", binOutput, err))
 		}
 	}()
 
@@ -283,13 +283,13 @@ func normalizeImportPath(currentModule, cwd, moduleDir string) string {
 	return path.Join(currentModule, filepath.ToSlash(strings.TrimPrefix(cwd, moduleDir)))
 }
 
-func trapSignals(ctx context.Context, cancel context.CancelFunc) {
+func trapSignals(ctx context.Context, log *slog.Logger, cancel context.CancelFunc) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 
 	select {
 	case <-sig:
-		log.Printf("[INFO] SIGINT: Shutting down")
+		log.Info("SIGINT: Shutting down")
 		cancel()
 	case <-ctx.Done():
 		return

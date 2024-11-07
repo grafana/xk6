@@ -1,2 +1,4 @@
-github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
-github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
+github.com/grafana/k6foundry v0.4.0 h1:Gh8oMaW02VHWxrGBHKLq3fvGa5LKMI0Z2feK2Ukkzw0=
+github.com/grafana/k6foundry v0.4.0/go.mod h1:4Hw0ll6ZsKN8f3cgp7I4N6EkhXafZ6CBC6fDJWkW7/Q=
+golang.org/x/mod v0.22.0 h1:D4nJWe9zXqHOmWqj4VMOJhvzj7bEZg4wEYa759z1pH4=
+golang.org/x/mod v0.22.0/go.mod h1:6SkKJ3Xj0I0BrPOZoBy3bdMptDDU9oJrpohJ3eWZ1fY=

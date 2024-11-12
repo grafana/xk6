@@ -13,6 +13,10 @@ import (
 	"github.com/grafana/k6foundry"
 )
 
+const (
+	defaultBuildFlags = "-ldflags='-w -s' -trimpath"
+)
+
 // Builder can produce a custom k6 build with the
 // configuration it represents.
 type Builder struct {
@@ -25,12 +29,46 @@ type Builder struct {
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 	RaceDetector bool          `json:"race_detector,omitempty"`
 	SkipCleanup  bool          `json:"skip_cleanup,omitempty"`
+	BuildFlags   string        `json:"build_flags,omitempty"`
+}
+
+// FromOSEnv creates a Builder from environment variables:
+// GOARCH, GOOS, GOARM defines builder's target platform
+// K6_VERSION sets the version of k6 to build.
+// XK6_BUILD_FLAGS sets any go build flags if needed. Defaults to '-ldflags=-w -s -trim'.
+// XK6_RACE_DETECTOR enables the Go race detector in the build. Forces CGO_ENABLED=1
+// XK6_SKIP_CLEANUP causes xk6 to leave build artifacts on disk after exiting.
+// XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks
+func FromOSEnv() Builder {
+	env := map[string]string{}
+	for _, arg := range os.Environ() {
+		parts := strings.SplitN(arg, "=", 2)
+		env[parts[0]] = parts[1]
+	}
+	return parseEnv(env)
+}
+
+func parseEnv(env map[string]string) Builder {
+	return Builder{
+		Compile: Compile{
+			Platform: Platform{
+				OS:   env["GOOS"],
+				Arch: env["GOARCH"],
+				ARM:  env["GOARM"],
+			},
+		},
+		K6Version:    env["K6_VERSION"],
+		K6Repo:       env["XK6_K6_REPO"],
+		RaceDetector: env["XK6_RACE_DETECTOR"] == "1",
+		SkipCleanup:  env["XK6_SKIP_CLEANUP"] == "1",
+		BuildFlags:   envOrDefaultValue(env, "XK6_BUILD_FLAGS", defaultBuildFlags),
+	}
 }
 
 // Build builds k6 at the configured version with the
 // configured extensions and writes a binary at outputFile.
-func (b Builder) Build(ctx context.Context, log *slog.Logger, outputFile string) error {
-	if outputFile == "" {
+func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
+	if outfile == "" {
 		return fmt.Errorf("output file path is required")
 	}
 
@@ -45,32 +83,31 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outputFile string)
 	// We are not passing all the current environment anymore! ONLY the GO environment
 	// env := os.Environ()
 	env := map[string]string{
-		"GOARM":  b.ARM,
+		"GOARM": b.ARM,
 	}
 
 	raceArg := "-race"
 
 	// trim debug symbols by default
-	buildFlags := b.osEnvOrDefaultValue("XK6_BUILD_FLAGS", "-ldflags='-w -s' -trimpath")
-	if (b.RaceDetector || strings.Contains(buildFlags, raceArg)) && !b.Compile.Cgo {
+	if (b.RaceDetector || strings.Contains(b.BuildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Warn("Enabling cgo because it is required by the race detector")
 		b.Compile.Cgo = true
 	}
-	env["CGO_ENABLED"]= b.Compile.CgoEnabled()
+	env["CGO_ENABLED"] = b.Compile.CgoEnabled()
 
 	log.Info("Building k6")
 
-	opts := k6foundry.NativeBuilderOpts {
+	opts := k6foundry.NativeBuilderOpts{
 		GoOpts: k6foundry.GoOpts{
-			GoGetTimeout: b.TimeoutGet,
+			GoGetTimeout:   b.TimeoutGet,
 			GOBuildTimeout: b.TimeoutBuild,
-			CopyGoEnv: true,
-			Env:       env,
+			CopyGoEnv:      true,
+			Env:            env,
 		},
 		SkipCleanup: b.SkipCleanup,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Logger: log,
+		Stdout:      os.Stdout,
+		Stderr:      os.Stderr,
+		Logger:      log,
 	}
 
 	k6b, err := k6foundry.NewNativeBuilder(ctx, opts)
@@ -82,7 +119,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outputFile string)
 	// because the `go build` command is executed in a different,
 	// temporary folder, we convert the user's input to an
 	// absolute path so it goes the expected place
-	absOutputFile, err := filepath.Abs(outputFile)
+	absOutputFile, err := filepath.Abs(outfile)
 	if err != nil {
 		return err
 	}
@@ -115,11 +152,9 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outputFile string)
 	if k6Version == "" {
 		k6Version = "latest"
 	}
-	_, err = k6b.Build(ctx, platform, k6Version, mods, buildCommandArgs(buildFlags), outFile)
+	_, err = k6b.Build(ctx, platform, k6Version, mods, buildCommandArgs(b.BuildFlags), outFile)
 	return err
 }
-
-
 
 // Dependency pairs a Go module path with a version.
 type Dependency struct {
@@ -162,9 +197,8 @@ func NewReplace(old, new string) Replace {
 	}
 }
 
-
-func (b Builder) osEnvOrDefaultValue(name, defaultValue string) string {
-	s, ok := os.LookupEnv(name)
+func envOrDefaultValue(env map[string]string, name, defaultValue string) string {
+	s, ok := env[name]
 	if !ok {
 		return defaultValue
 	}

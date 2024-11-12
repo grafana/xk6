@@ -15,12 +15,13 @@ import (
 	"go.k6.io/xk6"
 )
 
-var (
-	k6Version    = os.Getenv("K6_VERSION")
-	k6Repo       = os.Getenv("XK6_K6_REPO")
-	raceDetector = os.Getenv("XK6_RACE_DETECTOR") == "1"
-	skipCleanup  = os.Getenv("XK6_SKIP_CLEANUP") == "1"
-)
+type BuildOps struct {
+	K6Version      string
+	Extensions     []xk6.Dependency
+	Replacements   []xk6.Replace
+	OutFile        string
+	OutputOverride bool
+}
 
 func main() {
 	log := slog.New(
@@ -49,104 +50,25 @@ func main() {
 }
 
 func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
-	// parse the command line args... rather primitively
-	var argK6Version, output string
-	var outputOverride bool
-	var extensions []xk6.Dependency
-	var replacements []xk6.Replace
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--with":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --with flag")
-			}
-			i++
-			mod, ver, repl, err := splitWith(args[i])
-			if err != nil {
-				return err
-			}
-			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			extensions = append(extensions, xk6.Dependency{
-				PackagePath: mod,
-				Version:     ver,
-			})
-			if repl != "" {
-				repl, err = expandPath(repl)
-				if err != nil {
-					return err
-				}
-				replacements = append(replacements, xk6.NewReplace(mod, repl))
-			}
-
-		case "--replace":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --replace flag")
-			}
-			i++
-			mod, _, repl, err := splitWith(args[i])
-			if err != nil {
-				return err
-			}
-			if repl == "" {
-				return fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
-			}
-			// easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
-			mod = strings.TrimSuffix(mod, "/")
-			repl, err = expandPath(repl)
-			if err != nil {
-				return err
-			}
-			replacements = append(replacements, xk6.NewReplace(mod, repl))
-
-		case "--output":
-			if i == len(args)-1 {
-				return fmt.Errorf("expected value after --output flag")
-			}
-			i++
-			output = args[i]
-			outputOverride = true
-
-		default:
-			if argK6Version != "" {
-				return fmt.Errorf("missing flag; k6 version already set at %s", argK6Version)
-			}
-			argK6Version = args[i]
-		}
+	opts, err := parseBuildOpts(args)
+	if err != nil {
+		return fmt.Errorf("parsing options %v", err)
 	}
 
-	// prefer k6 version from command line argument over env var
-	if argK6Version != "" {
-		k6Version = argK6Version
+	builder := xk6.FromOSEnv()
+	if opts.K6Version != "" {
+		builder.K6Version = opts.K6Version
 	}
-
-	// ensure an output file is always specified
-	if output == "" {
-		output = getK6OutputFile()
-	}
+	builder.Extensions = opts.Extensions
+	builder.Replacements = opts.Replacements
 
 	// perform the build
-	builder := xk6.Builder{
-		Compile: xk6.Compile{
-			Cgo: os.Getenv("CGO_ENABLED") == "1",
-			Platform: xk6.Platform{
-				OS:   os.Getenv("GOOS"),
-				Arch: os.Getenv("GOARCH"),
-				ARM:  os.Getenv("GOARM"),
-			},
-		},
-		K6Repo:       k6Repo,
-		K6Version:    k6Version,
-		Extensions:   extensions,
-		Replacements: replacements,
-		RaceDetector: raceDetector,
-		SkipCleanup:  skipCleanup,
-	}
-	err := builder.Build(ctx, log, output)
-	if err != nil {
+	if err := builder.Build(ctx, log, opts.OutFile); err != nil {
 		return err
 	}
 
 	// prove the build is working by printing the version
+	output := opts.OutFile
 	if runtime.GOOS == os.Getenv("GOOS") && runtime.GOARCH == os.Getenv("GOARCH") {
 		if !filepath.IsAbs(output) {
 			output = "." + string(filepath.Separator) + output
@@ -156,13 +78,12 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		cmd := exec.Command(output, "version")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-		if err != nil {
+		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("executing k6 %v", err)
 		}
 	}
 
-	if !outputOverride {
+	if !opts.OutputOverride {
 		path, _ := os.Getwd()
 		fmt.Println()
 		fmt.Println("xk6 has now produced a new k6 binary which may be different than the command on your system path!")
@@ -172,16 +93,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 	return nil
 }
 
-func getK6OutputFile() string {
-	if runtime.GOOS == "windows" {
-		return ".\\k6.exe"
-	}
-	return "./k6"
-}
-
 func runDev(ctx context.Context, log *slog.Logger, args []string) error {
-	binOutput := getK6OutputFile()
-
 	// get current/main module name
 	cmd := exec.Command("go", "list", "-m")
 	cmd.Stderr = os.Stderr
@@ -236,28 +148,24 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	}
 	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 
-	// build k6 with this module plugged in
-	builder := xk6.Builder{
-		Compile: xk6.Compile{
-			Cgo: os.Getenv("CGO_ENABLED") == "1",
-		},
-		K6Repo:    k6Repo,
-		K6Version: k6Version,
-		Extensions: []xk6.Dependency{
-			{PackagePath: importPath},
-		},
-		Replacements: replacements,
-		RaceDetector: raceDetector,
-		SkipCleanup:  skipCleanup,
+	// create a builder with options from environment variables
+	builder := xk6.FromOSEnv()
+
+	// set the current module as dependency
+	builder.Extensions = []xk6.Dependency{
+		{PackagePath: importPath},
 	}
-	err = builder.Build(ctx, log, binOutput)
+	// update replacements
+	builder.Replacements = replacements
+
+	outfile := defaultK6OutputFile()
+	err = builder.Build(ctx, log, outfile)
 	if err != nil {
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Running %v\n\n", append([]string{binOutput}, args...)))
-
-	cmd = exec.Command(binOutput, args...)
+	log.Info(fmt.Sprintf("Running %v\n\n", append([]string{outfile}, args...)))
+	cmd = exec.Command(outfile, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -265,18 +173,83 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if skipCleanup {
-			log.Info(fmt.Sprintf("Skipping cleanup as requested; leaving artifact: %s", binOutput))
-			return
-		}
-		err = os.Remove(binOutput)
-		if err != nil && !os.IsNotExist(err) {
-			log.Error(fmt.Sprintf("Deleting temporary binary %s: %v", binOutput, err))
-		}
-	}()
 
 	return cmd.Wait()
+}
+
+func parseBuildOpts(args []string) (BuildOps, error) {
+	opts := BuildOps{
+		OutFile: defaultK6OutputFile(),
+	}
+
+	var argK6Version string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--with":
+			if i == len(args)-1 {
+				return BuildOps{}, fmt.Errorf("expected value after --with flag")
+			}
+			i++
+			mod, ver, repl, err := splitWith(args[i])
+			if err != nil {
+				return BuildOps{}, err
+			}
+			mod = strings.TrimSuffix(mod, "/") // easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			opts.Extensions = append(opts.Extensions, xk6.Dependency{
+				PackagePath: mod,
+				Version:     ver,
+			})
+			if repl != "" {
+				repl, err = expandPath(repl)
+				if err != nil {
+					return BuildOps{}, err
+				}
+				opts.Replacements = append(opts.Replacements, xk6.NewReplace(mod, repl))
+			}
+
+		case "--replace":
+			if i == len(args)-1 {
+				return BuildOps{}, fmt.Errorf("expected value after --replace flag")
+			}
+			i++
+			mod, _, repl, err := splitWith(args[i])
+			if err != nil {
+				return BuildOps{}, err
+			}
+			if repl == "" {
+				return BuildOps{}, fmt.Errorf("replace value must be of format 'module=replace' or 'module=replace@version'")
+			}
+			// easy to accidentally leave a trailing slash if pasting from a URL, but is invalid for Go modules
+			mod = strings.TrimSuffix(mod, "/")
+			repl, err = expandPath(repl)
+			if err != nil {
+				return BuildOps{}, err
+			}
+			opts.Replacements = append(opts.Replacements, xk6.NewReplace(mod, repl))
+
+		case "--output":
+			if i == len(args)-1 {
+				return BuildOps{}, fmt.Errorf("expected value after --output flag")
+			}
+			i++
+			opts.OutFile = args[i]
+			opts.OutputOverride = true
+
+		default:
+			if argK6Version != "" {
+				return BuildOps{}, fmt.Errorf("missing flag; k6 version already set at %s", argK6Version)
+			}
+			argK6Version = args[i]
+		}
+	}
+
+	// prefer k6 version from command line argument over env var
+	if argK6Version != "" {
+		opts.K6Version = argK6Version
+	}
+
+	return opts, nil
 }
 
 func normalizeImportPath(currentModule, cwd, moduleDir string) string {
@@ -294,6 +267,26 @@ func trapSignals(ctx context.Context, log *slog.Logger, cancel context.CancelFun
 	case <-ctx.Done():
 		return
 	}
+}
+
+func expandPath(path string) (string, error) {
+	// expand local directory
+	if path == "." {
+		if cwd, err := os.Getwd(); err != nil {
+			return "", err
+		} else {
+			return cwd, nil
+		}
+	}
+	// expand ~ as shortcut for home directory
+	if strings.HasPrefix(path, "~") {
+		if home, err := os.UserHomeDir(); err != nil {
+			return "", err
+		} else {
+			return strings.Replace(path, "~", home, 1), nil
+		}
+	}
+	return path, nil
 }
 
 func splitWith(arg string) (module, version, replace string, err error) {
@@ -321,22 +314,9 @@ func splitWith(arg string) (module, version, replace string, err error) {
 	return
 }
 
-func expandPath(path string) (string, error) {
-	// expand local directory
-	if path == "." {
-		if cwd, err := os.Getwd(); err != nil {
-			return "", err
-		} else {
-			return cwd, nil
-		}
+func defaultK6OutputFile() string {
+	if runtime.GOOS == "windows" {
+		return ".\\k6.exe"
 	}
-	// expand ~ as shortcut for home directory
-	if strings.HasPrefix(path, "~") {
-		if home, err := os.UserHomeDir(); err != nil {
-			return "", err
-		} else {
-			return strings.Replace(path, "~", home, 1), nil
-		}
-	}
-	return path, nil
+	return "./k6"
 }

@@ -158,7 +158,10 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	}
 	for _, r := range b.Replacements {
 		// parse again the replacement, ignore the error because it was already parsed
-		mod, _ := k6foundry.ParseModule(fmt.Sprintf("%s=%s", r.Old.String(), r.New.String()))
+		mod, err := k6foundry.ParseModule(fmt.Sprintf("%s=%s", r.Old.String(), r.New.String()))
+		if err != nil {
+			return err
+		}
 		mods = append(mods, mod)
 	}
 

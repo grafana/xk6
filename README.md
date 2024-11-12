@@ -112,6 +112,8 @@ xk6 build [<k6_version>]
 - `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our [extensions page](https://k6.io/docs/extensions/).
 - `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.
 
+Versions can be anything compatible with `go get`.
+
 Examples:
 
 ```bash
@@ -167,35 +169,15 @@ xk6 run -u 10 -d 10s test.js
 
 The race detector can be enabled by setting the env variable `XK6_RACE_DETECTOR=1` or through the `XK6_BUILD_FLAGS` env variable.
 
-
-## Library usage
-
-```go
-builder := xk6.Builder{
-	K6Version: "v0.35.0",
-	Extensions: []xk6.Dependency{
-		{
-			PackagePath: "github.com/grafana/xk6-browser",
-			Version:     "v0.1.1",
-		},
-	},
-}
-err := builder.Build(context.Background(), "./k6")
-```
-
-Versions can be anything compatible with `go get`.
-
-
 ## Environment variables
 
 Because the subcommands and flags are constrained to benefit rapid extension prototyping, xk6 does read some environment variables to take cues for its behavior and/or configuration when there is no room for flags.
 
 - `K6_VERSION` sets the version of k6 to build.
-- `XK6_BUILD_FLAGS` sets any go build flags if needed. Defaults to '-ldflags=-w -s'.
-- `XK6_RACE_DETECTOR=1` enables the Go race detector in the build.
+- `XK6_BUILD_FLAGS` sets any go build flags if needed. Defaults to '-ldflags=-w -s -trim'.
+- `XK6_RACE_DETECTOR=1` enables the Go race detector in the build. Forces `GCO_ENABLED=1`.
 - `XK6_SKIP_CLEANUP=1` causes xk6 to leave build artifacts on disk after exiting.
 - `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.
-
 
 ## Keeping dependencies in sync
 
@@ -205,6 +187,26 @@ The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for th
 
 ```console
 /your/extension$ go-depsync --parent go.k6.io/k6
+```
+
+## Library usage
+
+> !Breaking change: since v0.14.0 `xk6.Builder.Build` function no longer reads environment variables to complete missing attributes. Use `xk6.FromOSEnv()` to create a builder from environment variables and then complete or override attributes as needed.
+
+```go
+// create builder with defaults from environment variables
+builder := xk6.FromOSEnv()
+
+// complete/override attributes
+builder.K6Version = "v0.35.0",
+builder.Extensions = []xk6.Dependency{
+        {
+                PackagePath: "github.com/grafana/xk6-browser",
+                Version:     "v0.1.1",
+        },
+}
+
+err := builder.Build(context.Background(), log. "./k6")
 ```
 
 ---

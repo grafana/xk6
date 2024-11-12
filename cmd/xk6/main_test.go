@@ -183,14 +183,12 @@ func TestParseBuildOpts(t *testing.T) {
 	testCases := []struct {
 		title     string
 		args      []string
-		env       map[string]string
 		expect    BuildOps
 		expectErr string
 	}{
 		{
 			title: "parse defaults",
 			args:  []string{},
-			env:   map[string]string{},
 			expect: BuildOps{
 				K6Version:     "",
 				Extensions:     nil,
@@ -200,25 +198,10 @@ func TestParseBuildOpts(t *testing.T) {
 			},
 		},
 		{
-			title: "parse build opts",
-			args:  []string{},
-			env:   map[string]string{
-				"XK6_BUILD_OPTS": "",
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     nil,
-				Replacements:   nil,
-			},
-		},
-		{
 			title: "override k6 path",
 			args: []string{
 				"--output", filepath.Join("path", "to", "k6"),
 			},
-			env: map[string]string{},
 			expect: BuildOps{
 				K6Version:      "",
 				OutFile:        filepath.Join("path", "to", "k6"),
@@ -232,7 +215,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"v0.0.0",
 			},
-			env: map[string]string{},
 			expect: BuildOps{
 				K6Version:      "v0.0.0",
 				OutFile:        defaultK6OutputFile(),
@@ -247,7 +229,6 @@ func TestParseBuildOpts(t *testing.T) {
 				"v0.0.0",
 				"another-arg",
 			},
-			env: map[string]string{},
 			expect: BuildOps{},
 			expectErr: "missing flag",
 		},
@@ -256,7 +237,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"--with", "github.com/repo/extension@v0.0.0",
 			},
-			env: map[string]string{},
 			expect: BuildOps{
 				K6Version:      "",
 				OutFile:        defaultK6OutputFile(),
@@ -275,7 +255,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"--with",
 			},
-			env:       map[string]string{},
 			expect: BuildOps{},
 				expectErr: "expected value after --with flag",
 		},
@@ -284,7 +263,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"--with", "github.com/repo/extension@=github.com/another-repo/extension@v0.0.0",
 			},
-			env: map[string]string{},
 			expect: BuildOps{
 				K6Version:      "",
 				OutFile:        defaultK6OutputFile(),
@@ -307,7 +285,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"--replace", "github.com/repo/extension=github.com/another-repo/extension",
 			},
-			env: map[string]string{},
 			expect: BuildOps{
 				K6Version:      "",
 				OutFile:        defaultK6OutputFile(),
@@ -326,7 +303,6 @@ func TestParseBuildOpts(t *testing.T) {
 			args: []string{
 				"--replace", "github.com/repo/extension",
 			},
-			env:       map[string]string{},
 			expect: BuildOps{},
 				expectErr: "replace value must be of format",
 		},

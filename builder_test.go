@@ -91,50 +91,136 @@ func TestNewReplace(t *testing.T) {
 	}
 }
 
-func TestBuildCommandArgs(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		buildFlags string
-		want       []string
+
+func TestParseEnv(t *testing.T) {
+	testCases := []struct {
+		title     string
+		env       map[string]string
+		expect    Builder
+		expectErr string
 	}{
 		{
-			buildFlags: "",
-			want: []string{
-				"build", "-o", "binfile",
+			title: "parse defaults",
+			env:   map[string]string{},
+			expect: Builder{
+				Compile: Compile{
+					Cgo: false,
+					Platform: Platform{
+						Arch: "",
+						OS:   "",
+						ARM:  "",
+					},
+				},
+				K6Repo:         "",
+				K6Version:      "",
+				BuildFlags:     defaultBuildFlags,
+				RaceDetector:   false,
+				SkipCleanup:    false,
+				Extensions:     nil,
+				Replacements:   nil,
 			},
 		},
 		{
-			buildFlags: "-ldflags='-w -s'",
-			want: []string{
-				"build", "-o", "binfile", "-ldflags=-w -s",
+			title: "parse k6 version",
+			env:   map[string]string{
+				"K6_VERSION": "v0.0.0",
+			},
+			expect: Builder{
+				Compile: Compile{
+					Cgo: false,
+					Platform: Platform{
+						Arch: "",
+						OS:   "",
+						ARM:  "",
+					},
+				},
+				K6Repo:         "",
+				K6Version:      "v0.0.0",
+				BuildFlags:     defaultBuildFlags,
+				RaceDetector:   false,
+				SkipCleanup:    false,
+				Extensions:     nil,
+				Replacements:   nil,
 			},
 		},
 		{
-			buildFlags: "-race -buildvcs=false",
-			want: []string{
-				"build", "-o", "binfile", "-race", "-buildvcs=false",
+			title: "parse k6 repo",
+			env:   map[string]string{
+				"XK6_K6_REPO": "github.com/another/repo",
+			},
+			expect: Builder{
+				Compile: Compile{
+					Cgo: false,
+					Platform: Platform{
+						Arch: "",
+						OS:   "",
+						ARM:  "",
+					},
+				},
+				K6Repo:         "github.com/another/repo",
+				K6Version:      "",
+				BuildFlags:     defaultBuildFlags,
+				RaceDetector:   false,
+				SkipCleanup:    false,
+				Extensions:     nil,
+				Replacements:   nil,
 			},
 		},
 		{
-			buildFlags: `-buildvcs=false -ldflags="-s -w" -race`,
-			want: []string{
-				"build", "-o", "binfile", "-buildvcs=false", "-ldflags=-s -w", "-race",
+			title: "parse GO environment variables",
+			env: map[string]string{
+				"GOARCH": "amd64",
+				"GOOS":   "linux",
+			},
+			expect: Builder{
+				Compile: Compile{
+					Cgo: false,
+					Platform: Platform{
+						Arch: "amd64",
+						OS:   "linux",
+						ARM:  "",
+					},
+				},
+				K6Repo:         "",
+				K6Version:      "",
+				BuildFlags:     defaultBuildFlags,
+				RaceDetector:   false,
+				SkipCleanup:    false,
+				Extensions:     nil,
+				Replacements:   nil,
 			},
 		},
 		{
-			buildFlags: `-ldflags="-s -w" -race -buildvcs=false`,
-			want: []string{
-				"build", "-o", "binfile", "-ldflags=-s -w", "-race", "-buildvcs=false",
+			title: "parse build opts",
+			env:   map[string]string{
+				"XK6_BUILD_FLAGS": "-buildvcs",
+			},
+			expect: Builder{
+				Compile: Compile{
+					Cgo: false,
+					Platform: Platform{
+						Arch: "",
+						OS:   "",
+						ARM:  "",
+					},
+				},
+				K6Repo:         "",
+				K6Version:      "",
+				BuildFlags:     "-buildvcs",
+				RaceDetector:   false,
+				SkipCleanup:    false,
+				Extensions:     nil,
+				Replacements:   nil,
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.buildFlags, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
-			if got := buildCommandArgs(tt.buildFlags, "binfile"); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildCommandArgs() = %v, want %v", got, tt.want)
+			got := parseEnv(tc.env)
+			if !reflect.DeepEqual(got, tc.expect) {
+				t.Errorf("expected %v, got %v", tc.expect, got)
 			}
 		})
 	}

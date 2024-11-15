@@ -1,8 +1,3 @@
-# github.com/grafana/k6foundry v0.3.0
-## explicit; go 1.22.2
-github.com/grafana/k6foundry
-# golang.org/x/mod v0.21.0
-## explicit; go 1.22.0
-golang.org/x/mod/internal/lazyregexp
-golang.org/x/mod/module
-golang.org/x/mod/semver
+# github.com/Masterminds/semver/v3 v3.1.1
+## explicit
+github.com/Masterminds/semver/v3

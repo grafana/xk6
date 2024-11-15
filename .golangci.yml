@@ -1,4 +1,4 @@
-# v1.59.1
+# v1.50.1
 # Please don't remove the first line. It uses in CI to determine the golangci version
 linters-settings:
   errcheck:

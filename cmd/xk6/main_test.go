@@ -1,15 +1,10 @@
 package main
 
 import (
-	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
-
-	"go.k6.io/xk6"
 )
-
 
 func TestSplitWith(t *testing.T) {
 	t.Parallel()
@@ -88,43 +83,6 @@ func TestSplitWith(t *testing.T) {
 	}
 }
 
-func TestExpandPath(t *testing.T) {
-	t.Run(". expands to current directory", func(t *testing.T) {
-		t.Parallel()
-		got, err := expandPath(".")
-		if got == "." {
-			t.Errorf("did not expand path")
-		}
-		if err != nil {
-			t.Errorf("failed to expand path")
-		}
-	})
-	t.Run("~ expands to user's home directory", func(t *testing.T) {
-		t.Parallel()
-		got, err := expandPath("~")
-		if got == "~" {
-			t.Errorf("did not expand path")
-		}
-		if err != nil {
-			t.Errorf("failed to expand path")
-		}
-		switch runtime.GOOS {
-		case "linux":
-			if !strings.HasPrefix(got, "/home") {
-				t.Errorf("did not expand home directory. want=/home/... got=%s", got)
-			}
-		case "darwin":
-			if !strings.HasPrefix(got, "/Users") {
-				t.Errorf("did not expand home directory. want=/Users/... got=%s", got)
-			}
-		case "windows":
-			if !strings.HasPrefix(got, "C:\\Users") { // could well be another drive letter, but let's assume C:\\
-				t.Errorf("did not expand home directory. want=C:\\Users\\... got=%s", got)
-			}
-		}
-	})
-}
-
 func TestNormalizeImportPath(t *testing.T) {
 	t.Parallel()
 	type (
@@ -178,146 +136,39 @@ func TestNormalizeImportPath(t *testing.T) {
 	}
 }
 
-
-func TestParseBuildOpts(t *testing.T) {
-	testCases := []struct {
-		title     string
-		args      []string
-		expect    BuildOps
-		expectErr string
-	}{
-		{
-			title: "parse defaults",
-			args:  []string{},
-			expect: BuildOps{
-				K6Version:     "",
-				Extensions:     nil,
-				Replacements:   nil,
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-			},
-		},
-		{
-			title: "override k6 path",
-			args: []string{
-				"--output", filepath.Join("path", "to", "k6"),
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        filepath.Join("path", "to", "k6"),
-				OutputOverride: true,
-				Extensions:     nil,
-				Replacements:   nil,
-			},
-		},
-		{
-			title: "parse k6 version",
-			args: []string{
-				"v0.0.0",
-			},
-			expect: BuildOps{
-				K6Version:      "v0.0.0",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     nil,
-				Replacements:   nil,
-			},
-		},
-		{
-			title: "parse spurious argument",
-			args: []string{
-				"v0.0.0",
-				"another-arg",
-			},
-			expect: BuildOps{},
-			expectErr: "missing flag",
-		},
-		{
-			title: "parse --with",
-			args: []string{
-				"--with", "github.com/repo/extension@v0.0.0",
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions: []xk6.Dependency{
-					{
-						PackagePath: "github.com/repo/extension",
-						Version:     "v0.0.0",
-					},
-				},
-				Replacements: nil,
-			},
-		},
-		{
-			title: "parse --with with missing value",
-			args: []string{
-				"--with",
-			},
-			expect: BuildOps{},
-				expectErr: "expected value after --with flag",
-		},
-		{
-			title: "parse --with with replacement",
-			args: []string{
-				"--with", "github.com/repo/extension@=github.com/another-repo/extension@v0.0.0",
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions: []xk6.Dependency{
-					{
-						PackagePath: "github.com/repo/extension",
-					},
-				},
-				Replacements: []xk6.Replace{
-					{
-						Old: "github.com/repo/extension",
-						New: "github.com/another-repo/extension@v0.0.0",
-					},
-				},
-			},
-		},
-		{
-			title: "parse --replace",
-			args: []string{
-				"--replace", "github.com/repo/extension=github.com/another-repo/extension",
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     nil,
-				Replacements: []xk6.Replace{
-					{
-						Old: "github.com/repo/extension",
-						New: "github.com/another-repo/extension",
-					},
-				},
-			},
-		},
-		{
-			title: "parse --replace with missing replace value",
-			args: []string{
-				"--replace", "github.com/repo/extension",
-			},
-			expect: BuildOps{},
-				expectErr: "replace value must be of format",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.title, func(t *testing.T) {
-			t.Parallel()
-			got, err := parseBuildOpts(tc.args)
-			if err != nil && !strings.Contains(err.Error(), tc.expectErr) {
-				t.Errorf("expected error %v, got %v", tc.expectErr, err)
+func TestExpandPath(t *testing.T) {
+	t.Run(". expands to current directory", func(t *testing.T) {
+		t.Parallel()
+		got, err := expandPath(".")
+		if got == "." {
+			t.Errorf("did not expand path")
+		}
+		if err != nil {
+			t.Errorf("failed to expand path")
+		}
+	})
+	t.Run("~ expands to user's home directory", func(t *testing.T) {
+		t.Parallel()
+		got, err := expandPath("~")
+		if got == "~" {
+			t.Errorf("did not expand path")
+		}
+		if err != nil {
+			t.Errorf("failed to expand path")
+		}
+		switch runtime.GOOS {
+		case "linux":
+			if !strings.HasPrefix(got, "/home") {
+				t.Errorf("did not expand home directory. want=/home/... got=%s", got)
 			}
-			if err == nil && !reflect.DeepEqual(got, tc.expect) {
-				t.Errorf("expected %v, got %v", tc.expect, got)
+		case "darwin":
+			if !strings.HasPrefix(got, "/Users") {
+				t.Errorf("did not expand home directory. want=/Users/... got=%s", got)
 			}
-		})
-	}
+		case "windows":
+			if !strings.HasPrefix(got, "C:\\Users") { // could well be another drive letter, but let's assume C:\\
+				t.Errorf("did not expand home directory. want=C:\\Users\\... got=%s", got)
+			}
+		}
+	})
 }

@@ -1,7 +1,7 @@
 
 ARG GO_VERSION=1.22.7
 ARG VARIANT=alpine3.20
-FROM golang:${GO_VERSION}-${VARIANT} as builder
+FROM golang:${GO_VERSION}-${VARIANT} AS builder
 
 WORKDIR /build
 

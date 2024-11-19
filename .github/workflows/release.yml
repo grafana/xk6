@@ -6,6 +6,7 @@ on:
       - master
     tags:
       - 'v*.*.*'
+  pull_request:
 
 jobs:
   docker:
@@ -16,11 +17,20 @@ jobs:
       VERSION: ${{ github.ref_name }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Build image
-        run: docker build -t "$IMAGE_REPOSITORY" .
+        run: |
+          docker buildx create \
+            --name multibuilder \
+            --platform linux/amd64,linux/arm64 \
+            --bootstrap --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t "$IMAGE_REPOSITORY" .
+
       - name: Build k6 binary
         run: |
             docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
@@ -41,8 +51,10 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           echo "Publish as ghcr.io/${IMAGE_REPOSITORY}:master"
-          docker tag "$IMAGE_REPOSITORY" "ghcr.io/${IMAGE_REPOSITORY}:master"
-          docker push "ghcr.io/${IMAGE_REPOSITORY}:master"
+          docker buildx build --push \
+            --platform linux/amd64,linux/arm64 \
+            -t ${IMAGE_REPOSITORY}:master \
+            -t "ghcr.io/${IMAGE_REPOSITORY}:master" .
 
       - name: Publish tagged version image to ghcr.io
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -54,8 +66,10 @@ jobs:
           # We also want to tag the latest stable version as latest
           if [[ ! "$VERSION" =~ (RC|rc) ]]; then
             echo "Publish as ghcr.io/${IMAGE_REPOSITORY}:latest"
-            docker tag "$IMAGE_REPOSITORY" "ghcr.io/${IMAGE_REPOSITORY}:latest"
-            docker push "ghcr.io/${IMAGE_REPOSITORY}:latest"
+            docker buildx build --push \
+              --platform linux/amd64,linux/arm64 \
+              -t ${IMAGE_REPOSITORY}:latest \
+              -t "ghcr.io/${IMAGE_REPOSITORY}:latest" .
           fi
 
       - name: Log into Docker Hub
@@ -67,8 +81,10 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           echo "Publish as ${IMAGE_REPOSITORY}:master"
-          docker tag "$IMAGE_REPOSITORY" "${IMAGE_REPOSITORY}:master"
-          docker push "${IMAGE_REPOSITORY}:master"
+          docker buildx build --push \
+            --platform linux/amd64,linux/arm64 \
+            -t ${IMAGE_REPOSITORY}:master \
+            -t "ghcr.io/${IMAGE_REPOSITORY}:master" .
 
       - name: Publish tagged version image to Docker Hub
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -80,6 +96,8 @@ jobs:
           # We also want to tag the latest stable version as latest
           if [[ ! "$VERSION" =~ (RC|rc) ]]; then
             echo "Publish as ${IMAGE_REPOSITORY}:latest"
-            docker tag "$IMAGE_REPOSITORY" "${IMAGE_REPOSITORY}:latest"
-            docker push "${IMAGE_REPOSITORY}:latest"
+            docker buildx build --push \
+              --platform linux/amd64,linux/arm64 \
+              -t ${IMAGE_REPOSITORY}:latest \
+              -t "ghcr.io/${IMAGE_REPOSITORY}:latest" .
           fi

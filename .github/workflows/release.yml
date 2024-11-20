@@ -79,3 +79,25 @@ jobs:
               -t "ghcr.io/${IMAGE_REPOSITORY}:latest" .
           fi
 
+  binary:
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    name: Build and attach binary artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "2.4.7"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -21,6 +21,10 @@ clean:
 build:
 	go build -work ./cmd/xk6
 
+## snapshot: Create snapshot build using goreleaser.
+snapshot:
+	goreleaser build --clean --snapshot --single-target -o xk6
+
 ## format: Applies Go formatting to code.
 format:
 	go fmt ./...

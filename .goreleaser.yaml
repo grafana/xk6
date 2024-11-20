@@ -1,0 +1,27 @@
+project_name: xk6
+version: 2
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: ["darwin", "linux", "windows"]
+    goarch: ["amd64", "arm64"]
+    ldflags: ["-s -w"]
+    dir: cmd/xk6
+    binary: xk6
+
+source:
+  enabled: true
+  name_template: "{{ .ProjectName }}_{{ .Version }}_source"
+
+archives:
+  - id: bundle
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next+{{.ShortCommit}}{{if .IsGitDirty}}.dirty{{else}}{{end}}"

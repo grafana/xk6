@@ -79,12 +79,6 @@ jobs:
       run: |
         go build -trimpath -ldflags="-w -s" -v
 
-    - name: Publish Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: xk6_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
-        path: ${{ matrix.XK6_BIN_PATH }}
-
     - name: Run tests
       run: |
         go test -v -coverprofile="cover-profile.out" -short -race ./...

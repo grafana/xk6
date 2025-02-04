@@ -24,7 +24,7 @@ type Builder struct {
 	K6Repo       string        `json:"k6_repo,omitempty"`
 	K6Version    string        `json:"k6_version,omitempty"`
 	Extensions   []string      `json:"extensions,omitempty"`
-	Replacements []string     `json:"replacements,omitempty"`
+	Replacements []string      `json:"replacements,omitempty"`
 	TimeoutGet   time.Duration `json:"timeout_get,omitempty"`
 	TimeoutBuild time.Duration `json:"timeout_build,omitempty"`
 	RaceDetector bool          `json:"race_detector,omitempty"`
@@ -136,7 +136,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 
 	mods := []k6foundry.Module{}
 	for _, e := range b.Extensions {
-		mod, err  := k6foundry.ParseModule(e)
+		mod, err := k6foundry.ParseModule(e)
 		if err != nil {
 			return err
 		}
@@ -159,7 +159,6 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
 	return err
 }
-
 
 func envOrDefaultValue(env map[string]string, name, defaultValue string) string {
 	s, ok := env[name]

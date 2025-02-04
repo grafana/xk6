@@ -65,12 +65,24 @@ func parseEnv(env map[string]string) Builder {
 	}
 }
 
+func osEnv() map[string]string {
+	env := make(map[string]string)
+	for _, entry := range os.Environ() {
+		key, val, _ := strings.Cut(entry, "=")
+		env[key] = val
+	}
+
+	return env
+}
+
 // Build builds k6 at the configured version with the
 // configured extensions and writes a binary at outputFile.
 func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
 	if outfile == "" {
 		return fmt.Errorf("output file path is required")
 	}
+
+	env := osEnv()
 
 	// set some defaults from the environment, if applicable
 	if b.OS == "" {
@@ -80,11 +92,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 		b.Arch = runtime.GOARCH
 	}
 
-	// We are not passing all the current environment anymore! ONLY the GO environment
-	// env := os.Environ()
-	env := map[string]string{
-		"GOARM": b.ARM,
-	}
+	env["GOARM"] = b.ARM
 
 	raceArg := "-race"
 

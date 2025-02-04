@@ -199,12 +199,7 @@ builder := xk6.FromOSEnv()
 
 // complete/override attributes
 builder.K6Version = "v0.35.0",
-builder.Extensions = []xk6.Dependency{
-        {
-                PackagePath: "github.com/grafana/xk6-browser",
-                Version:     "v0.1.1",
-        },
-}
+builder.Extensions = []string{"github.com/grafana/xk6-browser@v0.1.1"},
 
 err := builder.Build(context.Background(), log. "./k6")
 ```

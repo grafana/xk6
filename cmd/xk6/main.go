@@ -44,14 +44,7 @@ type BuildOps struct {
 }
 
 func main() {
-	log := slog.New(
-		slog.NewTextHandler(
-			os.Stderr,
-			&slog.HandlerOptions{
-				Level: slog.LevelDebug,
-			},
-		),
-	)
+	log := slog.Default()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -60,12 +53,14 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "build" {
 		if err := runBuild(ctx, log, os.Args[2:]); err != nil {
 			log.Error(fmt.Sprintf("build error %v", err))
+			os.Exit(1)
 		}
 		return
 	}
 
 	if err := runDev(ctx, log, os.Args[1:]); err != nil {
 		log.Error(fmt.Sprintf("run error %v", err))
+		os.Exit(1)
 	}
 }
 

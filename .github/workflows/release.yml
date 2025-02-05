@@ -33,7 +33,7 @@ jobs:
       - name: Build k6 binary
         run: |
             docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
-              "$IMAGE_REPOSITORY" build master \
+              "$IMAGE_REPOSITORY" build latest \
               --with github.com/grafana/xk6-sql \
               --with github.com/grafana/xk6-output-influxdb
       - name: Check k6 binary

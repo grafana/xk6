@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
-        go-version: [ 1.18.x, 1.19.x ]
+        go-version: [ 1.22.x ]
 
         # Set some variables per OS, usable via ${{ matrix.VAR }}
         # XK6_BIN_PATH: the path to the compiled k6 binary, for artifact publishing
@@ -79,12 +79,6 @@ jobs:
       run: |
         go build -trimpath -ldflags="-w -s" -v
 
-    - name: Publish Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: xk6_${{ runner.os }}_${{ steps.vars.outputs.short_sha }}
-        path: ${{ matrix.XK6_BIN_PATH }}
-
     - name: Run tests
       run: |
         go test -v -coverprofile="cover-profile.out" -short -race ./...
@@ -100,7 +94,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.x
+          go-version: 1.22.x
           check-latest: true
       - name: Retrieve golangci-lint version
         run: |

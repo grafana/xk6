@@ -1,87 +1,12 @@
 package main
 
 import (
+	"errors"
+	"path/filepath"
+	"reflect"
 	"runtime"
-	"strings"
 	"testing"
 )
-
-func TestSplitWith(t *testing.T) {
-	t.Parallel()
-	for i, tc := range []struct {
-		input         string
-		expectModule  string
-		expectVersion string
-		expectReplace string
-		expectErr     bool
-	}{
-		{
-			input:        "module",
-			expectModule: "module",
-		},
-		{
-			input:         "module@version",
-			expectModule:  "module",
-			expectVersion: "version",
-		},
-		{
-			input:         "module@version=replace",
-			expectModule:  "module",
-			expectVersion: "version",
-			expectReplace: "replace",
-		},
-		{
-			input:         "module=replace",
-			expectModule:  "module",
-			expectReplace: "replace",
-		},
-		{
-			input:         "module@module_version=replace@replace_version",
-			expectModule:  "module",
-			expectReplace: "replace@replace_version",
-			expectVersion: "module_version",
-		},
-		{
-			input:     "=replace",
-			expectErr: true,
-		},
-		{
-			input:     "@version",
-			expectErr: true,
-		},
-		{
-			input:     "@version=replace",
-			expectErr: true,
-		},
-		{
-			input:     "",
-			expectErr: true,
-		},
-	} {
-		actualModule, actualVersion, actualReplace, actualErr := splitWith(tc.input)
-		if actualModule != tc.expectModule {
-			t.Errorf("Test %d: Expected module '%s' but got '%s' (input=%s)",
-				i, tc.expectModule, actualModule, tc.input)
-		}
-		if tc.expectErr {
-			if actualErr == nil {
-				t.Errorf("Test %d: Expected error but did not get one (input='%s')", i, tc.input)
-			}
-			continue
-		}
-		if !tc.expectErr && actualErr != nil {
-			t.Errorf("Test %d: Expected no error but got: %s (input='%s')", i, actualErr, tc.input)
-		}
-		if actualVersion != tc.expectVersion {
-			t.Errorf("Test %d: Expected version '%s' but got '%s' (input='%s')",
-				i, tc.expectVersion, actualVersion, tc.input)
-		}
-		if actualReplace != tc.expectReplace {
-			t.Errorf("Test %d: Expected module '%s' but got '%s' (input='%s')",
-				i, tc.expectReplace, actualReplace, tc.input)
-		}
-	}
-}
 
 func TestNormalizeImportPath(t *testing.T) {
 	t.Parallel()
@@ -136,39 +61,126 @@ func TestNormalizeImportPath(t *testing.T) {
 	}
 }
 
-func TestExpandPath(t *testing.T) {
-	t.Run(". expands to current directory", func(t *testing.T) {
-		t.Parallel()
-		got, err := expandPath(".")
-		if got == "." {
-			t.Errorf("did not expand path")
-		}
-		if err != nil {
-			t.Errorf("failed to expand path")
-		}
-	})
-	t.Run("~ expands to user's home directory", func(t *testing.T) {
-		t.Parallel()
-		got, err := expandPath("~")
-		if got == "~" {
-			t.Errorf("did not expand path")
-		}
-		if err != nil {
-			t.Errorf("failed to expand path")
-		}
-		switch runtime.GOOS {
-		case "linux":
-			if !strings.HasPrefix(got, "/home") {
-				t.Errorf("did not expand home directory. want=/home/... got=%s", got)
+func TestParseBuildOpts(t *testing.T) {
+	testCases := []struct {
+		title     string
+		args      []string
+		expect    BuildOps
+		expectErr error
+	}{
+		{
+			title: "parse defaults",
+			args:  []string{},
+			expect: BuildOps{
+				K6Version:      "",
+				Extensions:     nil,
+				Replacements:   nil,
+				OutFile:        defaultK6OutputFile(),
+				OutputOverride: false,
+			},
+		},
+		{
+			title: "override k6 path",
+			args: []string{
+				"--output", filepath.Join("path", "to", "k6"),
+			},
+			expect: BuildOps{
+				K6Version:      "",
+				OutFile:        filepath.Join("path", "to", "k6"),
+				OutputOverride: true,
+				Extensions:     nil,
+				Replacements:   nil,
+			},
+		},
+		{
+			title: "parse k6 version",
+			args: []string{
+				"v0.0.0",
+			},
+			expect: BuildOps{
+				K6Version:      "v0.0.0",
+				OutFile:        defaultK6OutputFile(),
+				OutputOverride: false,
+				Extensions:     nil,
+				Replacements:   nil,
+			},
+		},
+		{
+			title: "parse spurious argument",
+			args: []string{
+				"v0.0.0",
+				"another-arg",
+			},
+			expect:    BuildOps{},
+			expectErr: errMissingFlag,
+		},
+		{
+			title: "parse --with",
+			args: []string{
+				"--with", "github.com/repo/extension@v0.0.0",
+			},
+			expect: BuildOps{
+				K6Version:      "",
+				OutFile:        defaultK6OutputFile(),
+				OutputOverride: false,
+				Extensions:     []string{"github.com/repo/extension@v0.0.0"},
+				Replacements:   nil,
+			},
+		},
+		{
+			title: "parse --with with missing value",
+			args: []string{
+				"--with",
+			},
+			expect:    BuildOps{},
+			expectErr: errExpectedValue,
+		},
+		{
+			title: "parse --with with replacement",
+			args: []string{
+				"--with", "github.com/repo/extension=github.com/another-repo/extension@v0.0.0",
+			},
+			expect: BuildOps{
+				K6Version:      "",
+				OutFile:        defaultK6OutputFile(),
+				OutputOverride: false,
+				Extensions:     []string{"github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
+				Replacements:   nil,
+			},
+		},
+		{
+			title: "parse --replace",
+			args: []string{
+				"--replace", "github.com/repo/extension=github.com/another-repo/extension",
+			},
+			expect: BuildOps{
+				K6Version:      "",
+				OutFile:        defaultK6OutputFile(),
+				OutputOverride: false,
+				Extensions:     nil,
+				Replacements:   []string{"github.com/repo/extension=github.com/another-repo/extension"},
+			},
+		},
+		{
+			title: "parse --replace with missing replace value",
+			args: []string{
+				"--replace", "github.com/repo/extension",
+			},
+			expect:    BuildOps{},
+			expectErr: errMissingReplace,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+			got, err := parseBuildOpts(tc.args)
+			if !errors.Is(err, tc.expectErr) {
+				t.Errorf("expected error %v, got %v", tc.expectErr, err)
 			}
-		case "darwin":
-			if !strings.HasPrefix(got, "/Users") {
-				t.Errorf("did not expand home directory. want=/Users/... got=%s", got)
+			if err == nil && !reflect.DeepEqual(got, tc.expect) {
+				t.Errorf("expected %v, got %v", tc.expect, got)
 			}
-		case "windows":
-			if !strings.HasPrefix(got, "C:\\Users") { // could well be another drive letter, but let's assume C:\\
-				t.Errorf("did not expand home directory. want=C:\\Users\\... got=%s", got)
-			}
-		}
-	})
+		})
+	}
 }

@@ -1,5 +1,7 @@
 module go.k6.io/xk6
 
-go 1.16
+go 1.22.2
 
-require github.com/Masterminds/semver/v3 v3.1.1
+require github.com/grafana/k6foundry v0.4.0
+
+require golang.org/x/mod v0.22.0 // indirect

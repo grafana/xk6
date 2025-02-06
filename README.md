@@ -114,6 +114,8 @@ xk6 build [<k6_version>]
 
 Versions can be anything compatible with `go get`.
 
+> Breaking change: Since v0.14.0 the arguments for --with and --replace options MUST follow the go module path specification. Previously supported short form (omitting the domain name) is not longer supported.
+
 Examples:
 
 ```bash

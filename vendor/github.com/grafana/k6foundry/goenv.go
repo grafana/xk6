@@ -2,7 +2,6 @@
 package k6foundry
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,6 +10,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -28,6 +28,8 @@ var (
 	ErrResolvingDependency = errors.New("resolving dependency")
 	// Error initiailizing go build environment
 	ErrSettingGoEnv = errors.New("setting go environment")
+
+	goVersionRegex = regexp.MustCompile(`go1(\.[0-9]+){1,3}(-[a-f0-9]+)?`)
 )
 
 // GoOpts defines the options for the go build environment
@@ -318,16 +320,12 @@ func goVersion() (string, bool) {
 		return "", false
 	}
 
-	pre := []byte("go")
-
-	fields := bytes.SplitN(out, []byte{' '}, 4)
-	if len(fields) < 4 || !bytes.Equal(fields[0], pre) || !bytes.HasPrefix(fields[2], pre) {
+	ver := goVersionRegex.Find(out)
+	if ver == nil {
 		return "", false
 	}
 
-	ver := string(bytes.TrimPrefix(fields[2], pre))
-
-	return ver, true
+	return string(ver), true
 }
 
 func getGoEnv() (map[string]string, error) {

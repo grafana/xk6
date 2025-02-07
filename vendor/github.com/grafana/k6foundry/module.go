@@ -58,17 +58,17 @@ func ParseModule(modString string) (Module, error) {
 
 	path, version, err := splitPathVersion(mod)
 	if err != nil {
-		return Module{}, fmt.Errorf("%w: %q", err, mod)
+		return Module{}, err
 	}
 
-	if err = module.CheckPath(path); err != nil {
-		return Module{}, fmt.Errorf("%w: %w", ErrInvalidDependencyFormat, err)
+	if err = checkPath(path); err != nil {
+		return Module{}, err
 	}
 
 	// TODO: should we enforce the versioned path or reject if it not conformant?
 	path, err = versionedPath(path, version)
 	if err != nil {
-		return Module{}, fmt.Errorf("%w: %q", err, mod)
+		return Module{}, err
 	}
 
 	replacePath, replaceVersion, err := replace(replaceMod)
@@ -82,6 +82,20 @@ func ParseModule(modString string) (Module, error) {
 		ReplacePath:    replacePath,
 		ReplaceVersion: replaceVersion,
 	}, nil
+}
+
+// check if the path adheres to the go module path format.
+// also accepts a path with only the module name
+func checkPath(path string) error {
+	if !strings.Contains(path, "/") {
+		return nil
+	}
+
+	if err := module.CheckPath(path); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidDependencyFormat, err)
+	}
+
+	return nil
 }
 
 func replace(replaceMod string) (string, string, error) {

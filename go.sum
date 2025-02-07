@@ -1,4 +1,4 @@
-github.com/grafana/k6foundry v0.4.1 h1:ewPjB/2ELdp5m9hXNABc9sto4DSa7yxKisHbwl6tk1g=
-github.com/grafana/k6foundry v0.4.1/go.mod h1:4Hw0ll6ZsKN8f3cgp7I4N6EkhXafZ6CBC6fDJWkW7/Q=
+github.com/grafana/k6foundry v0.4.2 h1:rbkZCU7e9eWBbG4fAkCel7/ok5b4P26aTizivDWuv84=
+github.com/grafana/k6foundry v0.4.2/go.mod h1:4Hw0ll6ZsKN8f3cgp7I4N6EkhXafZ6CBC6fDJWkW7/Q=
 golang.org/x/mod v0.22.0 h1:D4nJWe9zXqHOmWqj4VMOJhvzj7bEZg4wEYa759z1pH4=
 golang.org/x/mod v0.22.0/go.mod h1:6SkKJ3Xj0I0BrPOZoBy3bdMptDDU9oJrpohJ3eWZ1fY=

@@ -194,7 +194,7 @@ The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for th
 
 >Breaking changes since v0.14.0:
 > - `xk6.Builder.Build` function no longer reads environment variables to complete missing attributes. Use `xk6.FromOSEnv()` to create a builder from environment variables and then complete or override attributes as needed.
-> - dependencies and replacements are now defined as arrays of strings following go mod path replacement format
+> - Dependencies and replacements are now defined as arrays of strings following go mod path replacement format
 
 ```go
 // create builder with defaults from environment variables

@@ -112,6 +112,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 			CopyGoEnv:      true,
 			Env:            env,
 		},
+		K6Repo:      b.K6Repo,
 		SkipCleanup: b.SkipCleanup,
 		Stdout:      os.Stdout,
 		Stderr:      os.Stderr,

@@ -168,10 +168,16 @@ func (b *native) Build(
 		return nil, err
 	}
 
+	k6ReplaceVersion := ""
+	if b.K6Repo != "" {
+		k6ReplaceVersion = k6Version
+		k6Version = ""
+	}
 	k6Mod := Module{
-		Path:        defaultK6ModulePath,
-		Version:     k6Version,
-		ReplacePath: b.K6Repo,
+		Path:           defaultK6ModulePath,
+		Version:        k6Version,
+		ReplacePath:    b.K6Repo,
+		ReplaceVersion: k6ReplaceVersion,
 	}
 
 	modVer, err := b.addMod(ctx, buildEnv, k6Mod)

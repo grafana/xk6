@@ -128,16 +128,6 @@ func splitPathVersion(mod string) (string, string, error) {
 		return "", "", fmt.Errorf("%w: %q", ErrInvalidDependencyFormat, mod)
 	}
 
-	switch version {
-	case "", "latest":
-		break
-	default:
-		if !semver.IsValid(version) {
-			return "", "", fmt.Errorf("%w: invalid semantic version %q", ErrInvalidDependencyFormat, mod)
-		}
-		version = semver.Canonical(version)
-	}
-
 	return path, version, nil
 }
 

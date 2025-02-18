@@ -263,7 +263,7 @@ func (e goEnv) modReplace(ctx context.Context, modulePath, moduleVersion, replac
 		return fmt.Errorf("%w: %s", ErrResolvingDependency, err.Error())
 	}
 
-	return nil
+	return e.modTidy(ctx)
 }
 
 func (e goEnv) compile(ctx context.Context, outPath string, buildFlags ...string) error {

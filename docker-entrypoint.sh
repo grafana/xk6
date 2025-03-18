@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
 
-eval "$(fixuid)"
+eval "$(fixids -q xk6 xk6)"
 
-exec /usr/local/bin/xk6 "$@"
+exec xk6 "$@"

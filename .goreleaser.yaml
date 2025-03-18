@@ -1,13 +1,31 @@
 project_name: xk6
 version: 2
+
+env:
+  - IMAGE=grafana/{{.ProjectName}}
+
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-  - env:
-      - CGO_ENABLED=0
-    goos: ["darwin", "linux", "windows"]
-    goarch: ["amd64", "arm64"]
-    ldflags: ["-s -w"]
-    dir: cmd/xk6
+  - id: xk6
     binary: xk6
+    main: ./cmd/xk6
+    goos: ["linux", "windows", "darwin"]
+    goarch: ["amd64", "arm64"]
+    flags: ["-trimpath"]
+    env: ["CGO_ENABLED=0"]
+    ldflags: ["-s -w"]
+
+  - id: fixids
+    binary: fixids
+    main: ./internal/fixids
+    goos: ["linux"]
+    goarch: ["amd64", "arm64"]
+    flags: ["-trimpath"]
+    env: ["CGO_ENABLED=0"]
+    ldflags: ["-s -w"]
 
 source:
   enabled: true
@@ -15,13 +33,105 @@ source:
 
 archives:
   - id: bundle
-    format: tar.gz
+    builds: ["xk6"]
+    formats: ["tar.gz"]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next+{{.ShortCommit}}{{if .IsGitDirty}}.dirty{{else}}{{end}}"
+
+dockers:
+  - id: amd64
+    ids: ["xk6", "fixids"]
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    extra_files: ["docker-entrypoint.sh"]
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
+
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:latest-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.licenses=AGPL-3.0-only"
+  - id: arm64
+    ids: ["xk6", "fixids"]
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    extra_files: ["docker-entrypoint.sh"]
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
+
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:latest-arm64"
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.licenses=AGPL-3.0-only"
+
+docker_manifests:
+  - id: tag
+    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}"
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+  - id: major
+    name_template: "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}"
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+  - id: major-minor
+    name_template: "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+  - id: latest
+    name_template: "docker.io/{{ .Env.IMAGE }}:latest"
+    image_templates:
+      - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
+
+  - id: tag-ghcr
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+  - id: major-ghcr
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}"
+    image_templates:
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+  - id: major-minor-ghcr
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+  - id: latest-ghcr
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:latest"
+    image_templates:
+      - "ghcr.io/{{ .Env.IMAGE }}:latest-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:latest-arm64"

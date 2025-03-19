@@ -68,7 +68,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	containerUIDUint32 := uint32(containerUIDInt) //nolint:gosec
+	containerUIDUint32 := uint32(containerUIDInt) // #nosec G115
 
 	containerGroup := argsWithoutProg[1]
 	containerGID, containerGIDError := findGID(containerGroup)
@@ -82,7 +82,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	containerGIDUint32 := uint32(containerGIDInt) //nolint:gosec
+	containerGIDUint32 := uint32(containerGIDInt) // #nosec G115
 
 	argsWithoutProg = argsWithoutProg[2:]
 
@@ -225,13 +225,17 @@ func main() {
 			mountpoint = findMountpoint(path, mounts)
 
 			logInfo("recursively searching path " + path)
-			filepath.Walk(path, visit) //nolint:errcheck
+			if err := filepath.Walk(path, visit); err != nil {
+				logInfo("error searching path: " + path)
+				logInfo(err)
+			}
 		}
 
 	}
 
 	// mark the script as ran
-	if err := os.WriteFile(ranFile, []byte{}, 0644); err != nil { //nolint:gosec
+	err = os.WriteFile(ranFile, []byte{}, 0644) // #nosec G306
+	if err != nil {
 		logger.Fatalln(err)
 	}
 
@@ -241,7 +245,9 @@ func main() {
 		homeDir, homeDirErr := findHomeDir(runtimeUID)
 		if homeDirErr == nil && homeDir != "" && homeDir != "/" {
 			if len(argsWithoutProg) > 0 {
-				os.Setenv("HOME", homeDir)
+				if err := os.Setenv("HOME", homeDir); err != nil {
+					logger.Fatalln(err)
+				}
 			} else {
 				fmt.Println(`export HOME="` + strings.Replace(homeDir, `"`, `\"`, -1) + `"`)
 			}
@@ -337,7 +343,8 @@ func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, 
 
 		// exec new process
 		env := os.Environ()
-		if err := syscall.Exec(binary, argsWithoutProg, env); err != nil {
+		err = syscall.Exec(binary, argsWithoutProg, env) // #nosec G204
+		if err != nil {
 			logger.Fatalln(err)
 		}
 	}
@@ -347,7 +354,7 @@ func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, 
 }
 
 func searchColonDelimitedFile(filePath string, search string, searchOffset int, returnOffset int) (string, error) {
-	file, err := os.Open(filePath)
+	file, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return "", err
 	}
@@ -422,7 +429,10 @@ func findUserSupplementaryGIDs(user string) ([]int, error) {
 		}
 		gids = append(gids, gid)
 	}
-	file.Close()
+
+	if err := file.Close(); err != nil {
+		return nil, err
+	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
@@ -453,13 +463,17 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 		}
 		newLines += strings.Join(cols, ":") + "\n"
 	}
-	file.Close()
+
+	if err := file.Close(); err != nil {
+		return err
+	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	if err := os.WriteFile("/etc/passwd", []byte(newLines), 0644); err != nil { //nolint:gosec
+	err = os.WriteFile("/etc/passwd", []byte(newLines), 0644) // #nosec G306
+	if err != nil {
 		return err
 	}
 
@@ -485,13 +499,17 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 		}
 		newLines += strings.Join(cols, ":") + "\n"
 	}
-	file.Close()
+
+	if err := file.Close(); err != nil {
+		return err
+	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	if err := os.WriteFile("/etc/group", []byte(newLines), 0644); err != nil { //nolint:gosec
+	err = os.WriteFile("/etc/group", []byte(newLines), 0644) // #nosec G306
+	if err != nil {
 		return err
 	}
 
@@ -514,7 +532,10 @@ func parseProcMounts() (map[string]bool, error) {
 			mounts[filepath.Clean(strings.Replace(cols[1], "\\040", " ", -1))] = true
 		}
 	}
-	file.Close()
+
+	if err := file.Close(); err != nil {
+		return nil, err
+	}
 
 	return mounts, nil
 }

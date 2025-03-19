@@ -29,7 +29,7 @@ jobs:
       - name: Dry Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "2.6.1"
+          version: "~> v2"
           args: release --clean --snapshot
 
       - name: Test Docker Image
@@ -56,7 +56,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "2.6.1"
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

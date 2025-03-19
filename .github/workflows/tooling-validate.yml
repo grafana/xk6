@@ -1,0 +1,244 @@
+name: Tooling Validate
+
+on:
+  workflow_call:
+    secrets:
+      codecov-token:
+        description: Token for Codecov reports
+        required: false
+    inputs:
+      go-version:
+        description: go version for building
+        required: true
+        type: string
+      go-versions:
+        description: go versions for testing
+        required: true
+        type: string
+      platforms:
+        description: platforms for testing
+        required: true
+        type: string
+      golangci-lint-version:
+        description: golangci-lint tool version
+        required: true
+        type: string
+      goreleaser-version:
+        description: goreleaser tool version
+        required: true
+        type: string
+      k6-versions:
+        description: k6 versions for testing
+        required: true
+        type: string
+      bats:
+        description: bats scripts after build
+        type: string
+        required: false
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      devcontainer: ${{steps.configure.outputs.devcontainer}}
+      codecov: ${{steps.configure.outputs.codecov}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Configure
+        id: configure
+        run: |
+          if [ -n "${{secrets.codecov-token}}" ] ; then
+            echo "codecov=true" >> $GITHUB_OUTPUT
+          fi
+          if [ -f ".devcontainer/devcontainer.json" ]; then
+            echo "devcontainer=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Configuration
+
+          Description           | Value
+          ----------------------|--------------------------------
+          go version for build  | ${{inputs.go-version}}
+          go versions for test  | ${{inputs.go-versions}}
+          platforms for test    | ${{inputs.platforms}}
+          golangci-lint version | ${{inputs.golangci-lint-version}}
+          GoReleaser version    | ${{inputs.goreleaser-version}}
+          END
+
+          if [ -n "${{inputs.k6-versions}}" ]; then
+              echo "k6 versions for test  | ${{inputs.k6-versions}}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo  >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "${{steps.configure.outputs.codecov}}" ]; then
+            echo "Upload code coverage to codecov.com" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{ inputs.go-version }}"
+
+      - name: Check module dependencies
+        shell: bash
+        run: |
+          go version
+          test -z "$(go mod tidy && git status go.* --porcelain)"
+          go mod verify
+
+      - name: Run golangci-lint ${{ inputs.golangci-lint-version }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: "${{ inputs.golangci-lint-version }}"
+          only-new-issues: true
+
+  smoke:
+    name: Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{ inputs.go-version }}"
+
+      - name: Run tests
+        run: |
+          go test -short ./...
+
+  test:
+    name: Test
+    needs:
+      - lint
+      - smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ${{ fromJSON(inputs.go-versions) }}
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run tests
+        run: |
+          go test -race -timeout 60s ./...
+
+  build:
+    name: Build
+    needs:
+      - lint
+      - smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ${{ fromJSON(inputs.go-versions) }}
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Setup Bats
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        run: sudo apt-get install -y bats
+
+      - name: GoReleaser build
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "${{ inputs.goreleaser-version }}"
+          args: build --clean --snapshot --single-target
+
+      - name: Test build
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        run: bats ${{ inputs.bats }}
+
+  report:
+    name: Report
+    needs:
+      - config
+      - test
+      - build
+    if: ${{ (github.ref_name == 'main' || github.ref_name == 'master') && (needs.config.outputs.codecov == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{inputs.go-version}}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{inputs.go-version}}"
+
+      - name: Test
+        run: go test -count 1 -coverprofile=coverage.txt ./...
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          slug: ${{github.repository}}
+
+      - name: Generate Go Report Card
+        uses: creekorful/goreportcard-action@v1.0
+
+  devcontainer:
+    name: DevContainer
+    needs: ["config"]
+    if: ${{ needs.config.outputs.devcontainer }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    env:
+      GO_VERSION: ""
+      GOLANGCI_LINT_VERSION: ""
+      GORELEASER_VERSION: ""
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Config
+        run: |
+          cat .devcontainer/devcontainer.json | jq -r '
+            {
+              GO_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["version"],
+              GOLANGCI_LINT_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"],
+              GORELEASER_VERSION: .features["ghcr.io/guiyomh/features/goreleaser:0"]["version"]
+            } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
+
+      - name: Check go version ${{inputs.go-version}}
+        run: test "${{env.GO_VERSION}}" == "$(echo ${{inputs.go-version}}|sed -e 's/\.x//g')"
+
+      - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
+        run: test "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${{inputs.golangci-lint-version}}|sed -e 's/v//g')"
+
+      - name: Check goreleaser version ${{inputs.goreleaser-version}}
+        run: test "${{env.GORELEASER_VERSION}}" == "${{inputs.goreleaser-version}}"

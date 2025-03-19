@@ -1,0 +1,23 @@
+name: Validate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  validate:
+    name: Validate
+    uses: ./.github/workflows/tooling-validate.yml
+    secrets:
+      codecov-token: ${{secrets.CODECOV_TOKEN}}
+    with:
+      go-version: ${{vars.GO_VERSION}}
+      go-versions: ${{vars.GO_VERSIONS}}
+      golangci-lint-version: ${{vars.GOLANGCI_LINT_VERSION}}
+      goreleaser-version: ${{vars.GORELEASER_VERSION}}
+      platforms: ${{vars.PLATFORMS}}
+      k6-versions: ${{vars.K6_VERSIONS}}
+      bats: .github/validate.bats

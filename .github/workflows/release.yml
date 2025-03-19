@@ -2,85 +2,12 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - 'v*.*.*'
+    branches: ["master"]
+    tags: ["v*.*.*"]
 
 jobs:
-  docker:
-    name: Build and publish Docker image
-    runs-on: ubuntu-latest
-    env:
-      IMAGE_REPOSITORY: ${{ github.repository }}
-      VERSION: ${{ github.ref_name }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build image
-        run: |
-          docker buildx create \
-            --name multibuilder \
-            --platform linux/amd64,linux/arm64 \
-            --bootstrap --use
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            -t "$IMAGE_REPOSITORY" .
-
-      - name: Build k6 binary
-        run: |
-            docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" \
-              "$IMAGE_REPOSITORY" build latest \
-              --with github.com/grafana/xk6-sql \
-              --with github.com/grafana/xk6-output-influxdb
-      - name: Check k6 binary
-        run: |
-            ./k6 version
-            ./k6 version | grep -qz 'xk6-output-influxdb.*xk6-sql'
-
-      - name: Log into ghcr.io
-        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login https://ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Log into Docker Hub
-        if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
-
-      - name: Publish master image
-        if: ${{ github.ref == 'refs/heads/master' }}
-        run: |
-          echo "Publish as master"
-          docker buildx build --push \
-            --platform linux/amd64,linux/arm64 \
-            -t ${IMAGE_REPOSITORY}:master \
-            -t "ghcr.io/${IMAGE_REPOSITORY}:master" .
-
-      - name: Publish tagged version
-        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          VERSION="${VERSION#v}"
-          echo "Publish as ${VERSION}"
-          docker buildx build --push \
-              --platform linux/amd64,linux/arm64 \
-              -t ${IMAGE_REPOSITORY}:${VERSION} \
-              -t "ghcr.io/${IMAGE_REPOSITORY}:${VERSION}" .
-          # We also want to tag the latest stable version as latest
-          if [[ ! "$VERSION" =~ (RC|rc) ]]; then
-            echo "Publish as latest"
-            docker buildx build --push \
-              --platform linux/amd64,linux/arm64 \
-              -t ${IMAGE_REPOSITORY}:latest \
-              -t "ghcr.io/${IMAGE_REPOSITORY}:latest" .
-          fi
-
-  binary:
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    name: Build and attach binary artifacts
+  release:
+    name: Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -88,15 +15,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.x"
+          go-version: "1.23.x"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: "amd64,arm64"
+
+      - name: Dry Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean --snapshot
+
+      - name: Test Docker Image
+        run: |
+          mkdir ${{ runner.temp }}/testrun
+          cd ${{ runner.temp }}/testrun
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" ${{ github.repository }}:latest-amd64 \
+            build --with github.com/grafana/xk6-faker
+          ./k6 version | grep -q xk6-faker
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Login to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser
-          version: "2.4.7"
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

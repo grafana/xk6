@@ -90,7 +90,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		}
 		fmt.Println()
 		fmt.Printf("%s version\n", output)
-		cmd := exec.Command(output, "version")
+		cmd := exec.Command(output, "version") // #nosec G204
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -176,7 +176,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	}
 
 	log.Info(fmt.Sprintf("Running %v\n\n", append([]string{outfile}, args...)))
-	cmd = exec.Command(outfile, args...)
+	cmd = exec.Command(outfile, args...) // #nosec G204
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

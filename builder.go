@@ -132,7 +132,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	if err != nil {
 		return err
 	}
-	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, 0o777) //nolint:gosec
+	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, 0o777) // #nosec G302 G304
 	if err != nil {
 		return err
 	}

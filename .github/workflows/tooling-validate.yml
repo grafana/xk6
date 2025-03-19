@@ -29,7 +29,8 @@ on:
         type: string
       k6-versions:
         description: k6 versions for testing
-        required: true
+        required: false
+        default: '["latest"]'
         type: string
       bats:
         description: bats scripts after build
@@ -64,25 +65,42 @@ jobs:
           Description           | Value
           ----------------------|--------------------------------
           go version for build  | ${{inputs.go-version}}
-          go versions for test  | ${{inputs.go-versions}}
-          platforms for test    | ${{inputs.platforms}}
+          go versions for test  | ${{join(fromJSON(inputs.go-versions),', ')}}
+          platforms for test    | ${{join(fromJSON(inputs.platforms),', ')}}
           golangci-lint version | ${{inputs.golangci-lint-version}}
           GoReleaser version    | ${{inputs.goreleaser-version}}
+          k6 versions for test  | ${{join(fromJSON(inputs.k6-versions),', ')}}
+
           END
-
-          if [ -n "${{inputs.k6-versions}}" ]; then
-              echo "k6 versions for test  | ${{inputs.k6-versions}}" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo  >> $GITHUB_STEP_SUMMARY
 
           if [ -n "${{steps.configure.outputs.codecov}}" ]; then
             echo "Upload code coverage to codecov.com" >> $GITHUB_STEP_SUMMARY
           fi
 
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+      - name: Run Vulnerability Checker
+        id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{inputs.go-version}}
+          go-package: ./...
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: ["security"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,6 +126,7 @@ jobs:
   smoke:
     name: Smoke
     runs-on: ubuntu-latest
+    needs: ["security"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -179,7 +198,9 @@ jobs:
 
       - name: Test build
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
-        run: bats ${{ inputs.bats }}
+        env:
+          K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+        run: bats --print-output-on-failure ${{ inputs.bats }}
 
   report:
     name: Report

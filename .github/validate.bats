@@ -14,7 +14,7 @@ setup() {
   fi
 }
 
-@test 'build (k6 versions: ${K6_VERSIONS[@]})' {
+@test 'build (k6 versions: ${K6_VERSIONS[@]:-latest})' {
   for K6_VERSION in "${K6_VERSIONS[@]}"; do
     [ -f ./k6 ] && rm ./k6 </dev/null
     echo "    - $K6_VERSION" >&3

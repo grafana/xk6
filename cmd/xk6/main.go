@@ -67,7 +67,7 @@ func main() {
 func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 	opts, err := parseBuildOpts(args)
 	if err != nil {
-		return fmt.Errorf("parsing options %v", err)
+		return fmt.Errorf("parsing options %w", err)
 	}
 
 	builder := xk6.FromOSEnv()
@@ -94,7 +94,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("executing k6 %v", err)
+			return fmt.Errorf("executing k6 %w", err)
 		}
 	}
 
@@ -114,7 +114,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
+		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
 	currentModule := strings.TrimSpace(string(out))
 
@@ -123,7 +123,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
+		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
 	moduleDir := strings.TrimSpace(string(out))
 
@@ -141,7 +141,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	cmd.Stderr = os.Stderr
 	out, err = cmd.Output()
 	if err != nil {
-		return fmt.Errorf("exec %v: %v: %s", cmd.Args, err, string(out))
+		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
 	for _, line := range strings.Split(string(out), "\n") {
 		parts := strings.Split(line, "=")
@@ -156,7 +156,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	// is /home/foo/a/b, then the package to import should be foo/a/b
 	cwd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("unable to determine current directory: %v", err)
+		return fmt.Errorf("unable to determine current directory: %w", err)
 	}
 	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 

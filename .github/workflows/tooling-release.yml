@@ -3,30 +3,34 @@ name: Tooling Release
 on:
   workflow_call:
     secrets:
+      # #region secrets
       docker-user:
-        description: Docker Hub user name
+        description: Username to use for pushing Docker images to Docker Hub.
         required: false
       docker-token:
-        description: Docker Hub user token
+        description: Token to use for pushing Docker images to Docker Hub.
         required: false
+      # #endregion secrets
     inputs:
+      # #region inputs
       go-version:
-        description: go version for building
+        description: The go version to use for the build.
         required: true
         type: string
       goreleaser-version:
-        description: goreleaser tool version
+        description: The version of GoReleaser to use for builds and releases.
         required: true
         type: string
       k6-versions:
-        description: k6 versions for testing
+        description: The k6 versions to be used for integration tests. JSON string array (e.g. ["v0.57.0","v0.56.0"])
         required: false
         default: '["latest"]'
         type: string
       bats:
-        description: bats scripts before release
+        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
         type: string
         required: false
+      # #endregion inputs
 
 jobs:
   config:
@@ -67,10 +71,10 @@ jobs:
           END
 
           if [ -n "${{steps.configure.outputs.ghcr-io}}" ]; then
-            echo "Push Docker image to ghcr.io " >> $GITHUB_STEP_SUMMARY
+            echo "Push Docker image to ghcr.io" >> $GITHUB_STEP_SUMMARY
           fi
           if [ -n "${{steps.configure.outputs.docker-io}}" ]; then
-            echo "Push Docker image to docker.io " >> $GITHUB_STEP_SUMMARY
+            echo "Push Docker image to docker.io" >> $GITHUB_STEP_SUMMARY
           fi
 
   security:
@@ -138,7 +142,7 @@ jobs:
 
           END
 
-          bats ${{ inputs.bats }} >> $GITHUB_STEP_SUMMARY
+          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Login to Docker Hub
         if: ${{ needs.config.outputs.docker-io == 'true' }}

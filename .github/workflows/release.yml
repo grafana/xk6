@@ -1,18 +1,24 @@
 name: Release
 
 on:
+  # #region triggers
   push:
     tags: ["v*.*.*"]
+  # #endregion triggers
 
 jobs:
   release:
     name: Release
     uses: ./.github/workflows/tooling-release.yml
     secrets:
+      # #region secrets
       docker-user: ${{secrets.DOCKER_USER}}
       docker-token: ${{secrets.DOCKER_PASS}}
+      # #endregion
     with:
+      # #region inputs
       go-version: ${{vars.GO_VERSION}}
       goreleaser-version: ${{vars.GORELEASER_VERSION}}
       k6-versions: ${{vars.K6_VERSIONS}}
       bats: ./.github/release.bats
+      # #endregion inputs

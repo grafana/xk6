@@ -18,7 +18,6 @@ setup() {
 @test 'build (k6 versions: ${K6_VERSIONS[@]:-latest})' {
   for K6_VERSION in "${K6_VERSIONS[@]}"; do
     [ -f ./k6 ] && rm ./k6 </dev/null
-    echo "    - $K6_VERSION" >&3
     run $EXE build $K6_VERSION --with "${K6_EXTENSION_MODULE}@${K6_EXTENSION_VERSION}"
     [ $status -eq 0 ]
     echo "$output" | grep -q "xk6 has now produced a new k6 binary"
@@ -29,7 +28,6 @@ setup() {
 @test 'build using docker (k6 versions: ${K6_VERSIONS[@]:-latest})' {
   for K6_VERSION in "${K6_VERSIONS[@]}"; do
     [ -f ./k6 ] && rm ./k6 </dev/null
-    echo "    - $K6_VERSION" >&3
     run docker run --rm -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" $IMAGE build $K6_VERSION --with "${K6_EXTENSION_MODULE}@${K6_EXTENSION_VERSION}"
 
     [ $status -eq 0 ]

@@ -188,7 +188,7 @@ jobs:
 
       - name: Setup Bats
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
-        run: sudo apt-get install -y bats
+        run: sudo apt-get install -y bats colorized-logs
 
       - name: GoReleaser build
         uses: goreleaser/goreleaser-action@v6
@@ -196,11 +196,18 @@ jobs:
           version: "${{ inputs.goreleaser-version }}"
           args: build --clean --snapshot --single-target
 
-      - name: Test build
+      - name: Test Build
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
-        run: bats --print-output-on-failure ${{ inputs.bats }}
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Test build
+
+          END
+
+          pipetty bats ${{ inputs.bats }} | ansi2txt >> $GITHUB_STEP_SUMMARY
 
   report:
     name: Report

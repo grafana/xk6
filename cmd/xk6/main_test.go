@@ -10,6 +10,7 @@ import (
 
 func TestNormalizeImportPath(t *testing.T) {
 	t.Parallel()
+
 	type (
 		args struct {
 			currentModule string

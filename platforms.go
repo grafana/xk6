@@ -17,6 +17,7 @@ func (c Compile) CgoEnabled() string {
 	if c.Cgo {
 		return "1"
 	}
+
 	return "0"
 }
 

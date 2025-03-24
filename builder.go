@@ -46,6 +46,7 @@ func FromOSEnv() Builder {
 		parts := strings.SplitN(arg, "=", 2)
 		env[parts[0]] = parts[1]
 	}
+
 	return parseEnv(env)
 }
 
@@ -177,6 +178,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	}
 
 	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
+
 	return err
 }
 
@@ -185,6 +187,7 @@ func envOrDefaultValue(env map[string]string, name, defaultValue string) string 
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 

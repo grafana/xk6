@@ -57,6 +57,7 @@ func main() {
 			log.Error(fmt.Sprintf("build error %v", err))
 			os.Exit(1)
 		}
+
 		return
 	}
 
@@ -290,6 +291,7 @@ func defaultK6OutputFile() string {
 	if runtime.GOOS == "windows" {
 		return ".\\k6.exe"
 	}
+
 	return "./k6"
 }
 

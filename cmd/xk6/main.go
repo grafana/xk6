@@ -298,7 +298,7 @@ func defaultK6OutputFile() string {
 }
 
 // validateModule checks if the argument is a valid go module specification
-// if the argument has a replacement, it also checks if the replacement is valid and return true
+// if the argument has a replacement, it also checks if the replacement is valid and return true.
 func validateModule(arg string) (bool, error) {
 	module, replace, replaceSep := strings.Cut(arg, "=")
 

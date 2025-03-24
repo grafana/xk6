@@ -39,7 +39,7 @@ type Builder struct {
 // XK6_BUILD_FLAGS sets any go build flags if needed. Defaults to '-ldflags=-w -s -trim'.
 // XK6_RACE_DETECTOR enables the Go race detector in the build. Forces CGO_ENABLED=1
 // XK6_SKIP_CLEANUP causes xk6 to leave build artifacts on disk after exiting.
-// XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks
+// XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks.
 func FromOSEnv() Builder {
 	env := map[string]string{}
 
@@ -198,7 +198,7 @@ func envOrDefaultValue(env map[string]string, name, defaultValue string) string 
 
 // buildCommandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
 // or the default values when no value for it is given
-// so we may pass args separately to newCommand()
+// so we may pass args separately to newCommand().
 func buildCommandArgs(buildFlags string) []string {
 	const avgNumberOfFlags = 10
 	buildFlagsSlice := make([]string, 0, avgNumberOfFlags)

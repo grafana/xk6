@@ -67,111 +67,41 @@ func TestNormalizeImportPath(t *testing.T) {
 
 func TestParseBuildOpts(t *testing.T) {
 	testCases := []struct {
-		title     string
-		args      []string
-		expect    BuildOps
-		expectErr error
+		title  string
+		args   []string
+		expect BuildOps
 	}{
 		{
-			title: "parse defaults",
-			args:  []string{},
-			expect: BuildOps{
-				K6Version:      "",
-				Extensions:     nil,
-				Replacements:   nil,
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-			},
+			title: "parse defaults", args: []string{},
+			expect: BuildOps{OutFile: defaultK6OutputFile()},
 		},
 		{
-			title: "override k6 path",
-			args: []string{
-				"--output", filepath.Join("path", "to", "k6"),
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        filepath.Join("path", "to", "k6"),
-				OutputOverride: true,
-				Extensions:     nil,
-				Replacements:   nil,
-			},
+			title: "override k6 path", args: []string{"--output", filepath.Join("path", "to", "k6")},
+			expect: BuildOps{OutFile: filepath.Join("path", "to", "k6"), OutputOverride: true},
 		},
 		{
-			title: "parse k6 version",
-			args: []string{
-				"v0.0.0",
-			},
-			expect: BuildOps{
-				K6Version:      "v0.0.0",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     nil,
-				Replacements:   nil,
-			},
+			title: "parse k6 version", args: []string{"v0.0.0"},
+			expect: BuildOps{K6Version: "v0.0.0", OutFile: defaultK6OutputFile()},
 		},
 		{
-			title: "parse spurious argument",
-			args: []string{
-				"v0.0.0",
-				"another-arg",
-			},
-			expect:    BuildOps{},
-			expectErr: errMissingFlag,
-		},
-		{
-			title: "parse --with",
-			args: []string{
-				"--with", "github.com/repo/extension@v0.0.0",
-			},
-			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     []string{"github.com/repo/extension@v0.0.0"},
-				Replacements:   nil,
-			},
-		},
-		{
-			title: "parse --with with missing value",
-			args: []string{
-				"--with",
-			},
-			expect:    BuildOps{},
-			expectErr: errExpectedValue,
+			title: "parse --with", args: []string{"--with", "github.com/repo/extension@v0.0.0"},
+			expect: BuildOps{OutFile: defaultK6OutputFile(), Extensions: []string{"github.com/repo/extension@v0.0.0"}},
 		},
 		{
 			title: "parse --with with replacement",
-			args: []string{
-				"--with", "github.com/repo/extension=github.com/another-repo/extension@v0.0.0",
-			},
+			args:  []string{"--with", "github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
 			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     []string{"github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
-				Replacements:   nil,
+				OutFile:    defaultK6OutputFile(),
+				Extensions: []string{"github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
 			},
 		},
 		{
 			title: "parse --replace",
-			args: []string{
-				"--replace", "github.com/repo/extension=github.com/another-repo/extension",
-			},
+			args:  []string{"--replace", "github.com/repo/extension=github.com/another-repo/extension"},
 			expect: BuildOps{
-				K6Version:      "",
-				OutFile:        defaultK6OutputFile(),
-				OutputOverride: false,
-				Extensions:     nil,
-				Replacements:   []string{"github.com/repo/extension=github.com/another-repo/extension"},
+				OutFile:      defaultK6OutputFile(),
+				Replacements: []string{"github.com/repo/extension=github.com/another-repo/extension"},
 			},
-		},
-		{
-			title: "parse --replace with missing replace value",
-			args: []string{
-				"--replace", "github.com/repo/extension",
-			},
-			expect:    BuildOps{},
-			expectErr: errMissingReplace,
 		},
 	}
 
@@ -180,12 +110,44 @@ func TestParseBuildOpts(t *testing.T) {
 			t.Parallel()
 
 			got, err := parseBuildOpts(tc.args)
-			if !errors.Is(err, tc.expectErr) {
-				t.Errorf("expected error %v, got %v", tc.expectErr, err)
+			if err != nil {
+				t.Errorf("unexpected error %v", err)
 			}
 
 			if err == nil && !reflect.DeepEqual(got, tc.expect) {
 				t.Errorf("expected %v, got %v", tc.expect, got)
+			}
+		})
+	}
+}
+
+func TestParseBuildOptsWithError(t *testing.T) {
+	testCases := []struct {
+		title     string
+		args      []string
+		expectErr error
+	}{
+		{
+			title: "parse spurious argument", args: []string{"v0.0.0", "another-arg"},
+			expectErr: errMissingFlag,
+		},
+		{
+			title: "parse --with with missing value", args: []string{"--with"},
+			expectErr: errExpectedValue,
+		},
+		{
+			title: "parse --replace with missing replace value", args: []string{"--replace", "github.com/repo/extension"},
+			expectErr: errMissingReplace,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := parseBuildOpts(tc.args)
+			if !errors.Is(err, tc.expectErr) {
+				t.Errorf("expected error %v, got %v", tc.expectErr, err)
 			}
 		})
 	}

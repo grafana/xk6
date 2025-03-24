@@ -92,8 +92,8 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		if !filepath.IsAbs(output) {
 			output = "." + string(filepath.Separator) + output
 		}
-		fmt.Println()
-		fmt.Printf("%s version\n", output)
+
+		fmt.Fprintf(os.Stdout, "\n%s version\n", output)
 		cmd := exec.Command(output, "version") // #nosec G204
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -105,9 +105,11 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 
 	if !opts.OutputOverride {
 		path, _ := os.Getwd()
-		fmt.Println()
-		fmt.Println("xk6 has now produced a new k6 binary which may be different than the command on your system path!")
-		fmt.Printf("Be sure to run '%v run <SCRIPT_NAME>' from the '%v' directory.\n", output, path)
+		fmt.Fprintln(
+			os.Stdout,
+			"\nxk6 has now produced a new k6 binary which may be different than the command on your system path!",
+		)
+		fmt.Fprintf(os.Stdout, "Be sure to run '%v run <SCRIPT_NAME>' from the '%v' directory.\n", output, path)
 	}
 
 	return nil

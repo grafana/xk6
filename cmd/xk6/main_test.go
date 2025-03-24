@@ -124,6 +124,8 @@ func TestParseBuildOpts(t *testing.T) {
 }
 
 func TestParseBuildOptsWithError(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		title     string
 		args      []string

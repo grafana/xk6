@@ -145,6 +145,7 @@ func TestParseEnv(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
+
 			got := parseEnv(tc.env)
 			if !reflect.DeepEqual(got, tc.expect) {
 				t.Errorf("expected %v, got %v", tc.expect, got)

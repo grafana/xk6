@@ -93,6 +93,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		cmd := exec.Command(output, "version") // #nosec G204
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("executing k6 %w", err)
 		}
@@ -112,6 +113,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	// get current/main module name
 	cmd := exec.Command("go", "list", "-m")
 	cmd.Stderr = os.Stderr
+
 	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
@@ -121,6 +123,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	// get the root directory of the main module
 	cmd = exec.Command("go", "list", "-m", "-f={{.Dir}}")
 	cmd.Stderr = os.Stderr
+
 	out, err = cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
@@ -139,6 +142,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	// to the one we're making
 	cmd = exec.Command("go", "list", "-mod=readonly", "-m", "-f={{if .Replace}}{{.Path}}={{.Replace}}{{end}}", "all")
 	cmd.Stderr = os.Stderr
+
 	out, err = cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
@@ -171,6 +175,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	builder.Replacements = replacements
 
 	outfile := defaultK6OutputFile()
+
 	err = builder.Build(ctx, log, outfile)
 	if err != nil {
 		return err
@@ -181,6 +186,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	err = cmd.Start()
 	if err != nil {
 		return err
@@ -203,6 +209,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 				return BuildOps{}, fmt.Errorf("%w after --with flag", errExpectedValue)
 			}
 			i++
+
 			_, err := validateModule(args[i])
 			if err != nil {
 				return BuildOps{}, err
@@ -214,6 +221,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 				return BuildOps{}, fmt.Errorf("%w after --replace flag", errExpectedValue)
 			}
 			i++
+
 			hasReplace, err := validateModule(args[i])
 			if err != nil {
 				return BuildOps{}, err

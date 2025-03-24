@@ -47,6 +47,7 @@ func TestNormalizeImportPath(t *testing.T) {
 			moduleDir:     "c:\\xk6",
 		}, "go.k6.io/xk6/subdir"},
 	}
+
 	if runtime.GOOS == "windows" {
 		tests = append(tests, windowsTests...)
 	}
@@ -175,6 +176,7 @@ func TestParseBuildOpts(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
+
 			got, err := parseBuildOpts(tc.args)
 			if !errors.Is(err, tc.expectErr) {
 				t.Errorf("expected error %v, got %v", tc.expectErr, err)

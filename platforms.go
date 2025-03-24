@@ -35,6 +35,7 @@ func SupportedPlatforms() ([]Compile, error) {
 		return nil, err
 	}
 	var dists []dist
+
 	err = json.Unmarshal(out, &dists)
 	if err != nil {
 		return nil, err

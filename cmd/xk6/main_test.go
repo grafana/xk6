@@ -71,28 +71,28 @@ func TestParseBuildOpts(t *testing.T) {
 	testCases := []struct {
 		title  string
 		args   []string
-		expect BuildOps
+		expect buildOps
 	}{
 		{
 			title: "parse defaults", args: []string{},
-			expect: BuildOps{OutFile: defaultK6OutputFile()},
+			expect: buildOps{OutFile: defaultK6OutputFile()},
 		},
 		{
 			title: "override k6 path", args: []string{"--output", filepath.Join("path", "to", "k6")},
-			expect: BuildOps{OutFile: filepath.Join("path", "to", "k6"), OutputOverride: true},
+			expect: buildOps{OutFile: filepath.Join("path", "to", "k6"), OutputOverride: true},
 		},
 		{
 			title: "parse k6 version", args: []string{"v0.0.0"},
-			expect: BuildOps{K6Version: "v0.0.0", OutFile: defaultK6OutputFile()},
+			expect: buildOps{K6Version: "v0.0.0", OutFile: defaultK6OutputFile()},
 		},
 		{
 			title: "parse --with", args: []string{"--with", "github.com/repo/extension@v0.0.0"},
-			expect: BuildOps{OutFile: defaultK6OutputFile(), Extensions: []string{"github.com/repo/extension@v0.0.0"}},
+			expect: buildOps{OutFile: defaultK6OutputFile(), Extensions: []string{"github.com/repo/extension@v0.0.0"}},
 		},
 		{
 			title: "parse --with with replacement",
 			args:  []string{"--with", "github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
-			expect: BuildOps{
+			expect: buildOps{
 				OutFile:    defaultK6OutputFile(),
 				Extensions: []string{"github.com/repo/extension=github.com/another-repo/extension@v0.0.0"},
 			},
@@ -100,7 +100,7 @@ func TestParseBuildOpts(t *testing.T) {
 		{
 			title: "parse --replace",
 			args:  []string{"--replace", "github.com/repo/extension=github.com/another-repo/extension"},
-			expect: BuildOps{
+			expect: buildOps{
 				OutFile:      defaultK6OutputFile(),
 				Replacements: []string{"github.com/repo/extension=github.com/another-repo/extension"},
 			},

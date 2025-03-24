@@ -36,7 +36,7 @@ var (
 	errMissingReplace = errors.New("missing replace")
 )
 
-type BuildOps struct {
+type buildOps struct {
 	K6Version      string
 	Extensions     []string
 	Replacements   []string
@@ -205,8 +205,8 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	return cmd.Wait()
 }
 
-func parseBuildOpts(args []string) (BuildOps, error) {
-	opts := BuildOps{
+func parseBuildOpts(args []string) (buildOps, error) {
+	opts := buildOps{
 		OutFile: defaultK6OutputFile(),
 	}
 
@@ -216,39 +216,39 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 		switch args[i] {
 		case "--with":
 			if i == len(args)-1 {
-				return BuildOps{}, fmt.Errorf("%w after --with flag", errExpectedValue)
+				return buildOps{}, fmt.Errorf("%w after --with flag", errExpectedValue)
 			}
 
 			i++
 
 			_, err := validateModule(args[i])
 			if err != nil {
-				return BuildOps{}, err
+				return buildOps{}, err
 			}
 
 			opts.Extensions = append(opts.Extensions, args[i])
 
 		case "--replace":
 			if i == len(args)-1 {
-				return BuildOps{}, fmt.Errorf("%w after --replace flag", errExpectedValue)
+				return buildOps{}, fmt.Errorf("%w after --replace flag", errExpectedValue)
 			}
 
 			i++
 
 			hasReplace, err := validateModule(args[i])
 			if err != nil {
-				return BuildOps{}, err
+				return buildOps{}, err
 			}
 
 			if !hasReplace {
-				return BuildOps{}, errMissingReplace
+				return buildOps{}, errMissingReplace
 			}
 
 			opts.Replacements = append(opts.Replacements, args[i])
 
 		case "--output":
 			if i == len(args)-1 {
-				return BuildOps{}, fmt.Errorf("%w after --output flag", errExpectedValue)
+				return buildOps{}, fmt.Errorf("%w after --output flag", errExpectedValue)
 			}
 
 			i++
@@ -257,7 +257,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 
 		default:
 			if argK6Version != "" {
-				return BuildOps{}, fmt.Errorf("%w k6 version already set at %s", errMissingFlag, argK6Version)
+				return buildOps{}, fmt.Errorf("%w k6 version already set at %s", errMissingFlag, argK6Version)
 			}
 
 			argK6Version = args[i]

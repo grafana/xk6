@@ -56,6 +56,7 @@ func TestNormalizeImportPath(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			if got := normalizeImportPath(tt.args.currentModule, tt.args.cwd, tt.args.moduleDir); got != tt.want {
 				t.Errorf("normalizeImportPath() = %v, want %v", got, tt.want)
 			}
@@ -181,6 +182,7 @@ func TestParseBuildOpts(t *testing.T) {
 			if !errors.Is(err, tc.expectErr) {
 				t.Errorf("expected error %v, got %v", tc.expectErr, err)
 			}
+
 			if err == nil && !reflect.DeepEqual(got, tc.expect) {
 				t.Errorf("expected %v, got %v", tc.expect, got)
 			}

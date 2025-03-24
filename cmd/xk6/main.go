@@ -234,6 +234,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if err != nil {
 				return BuildOps{}, err
 			}
+
 			if !hasReplace {
 				return BuildOps{}, errMissingReplace
 			}

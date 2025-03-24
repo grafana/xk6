@@ -88,6 +88,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	if b.OS == "" {
 		b.OS = runtime.GOOS
 	}
+
 	if b.Arch == "" {
 		b.Arch = runtime.GOARCH
 	}
@@ -203,6 +204,7 @@ func buildCommandArgs(buildFlags string) []string {
 			sb.WriteRune(r)
 		}
 	}
+
 	if sb.Len() > 0 {
 		tmp = append(tmp, sb.String())
 	}

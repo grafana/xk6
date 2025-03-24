@@ -44,6 +44,9 @@ type buildOps struct {
 	OutputOverride bool
 }
 
+// It will be refactored soon.
+//
+//nolint:gocritic
 func main() {
 	log := slog.Default()
 

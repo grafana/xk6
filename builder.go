@@ -208,12 +208,13 @@ func buildCommandArgs(buildFlags string) []string {
 	quoted := false
 
 	for _, r := range buildFlags {
-		if r == '"' || r == '\'' {
+		switch {
+		case r == '"' || r == '\'':
 			quoted = !quoted
-		} else if !quoted && r == ' ' {
+		case !quoted && r == ' ':
 			tmp = append(tmp, sb.String())
 			sb.Reset()
-		} else {
+		default:
 			sb.WriteRune(r)
 		}
 	}

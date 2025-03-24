@@ -66,6 +66,8 @@ func TestNormalizeImportPath(t *testing.T) {
 }
 
 func TestParseBuildOpts(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		title  string
 		args   []string

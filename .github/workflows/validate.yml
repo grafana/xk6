@@ -1,0 +1,29 @@
+name: Validate
+
+on:
+  # #region triggers
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  # #endregion triggers
+
+jobs:
+  validate:
+    name: Validate
+    uses: ./.github/workflows/tooling-validate.yml
+    secrets:
+      # #region secrets
+      codecov-token: ${{secrets.CODECOV_TOKEN}}
+      # #endregion secrets
+    with:
+      # #region inputs
+      go-version: ${{vars.GO_VERSION}}
+      go-versions: ${{vars.GO_VERSIONS}}
+      golangci-lint-version: ${{vars.GOLANGCI_LINT_VERSION}}
+      goreleaser-version: ${{vars.GORELEASER_VERSION}}
+      platforms: ${{vars.PLATFORMS}}
+      k6-versions: ${{vars.K6_VERSIONS}}
+      bats: .github/validate.bats
+      # #endregion inputs

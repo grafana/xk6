@@ -1,61 +1,24 @@
 name: Release
 
 on:
+  # #region triggers
   push:
     tags: ["v*.*.*"]
+  # #endregion triggers
 
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.23.x"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: "amd64,arm64"
-
-      - name: Dry Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: "~> v2"
-          args: release --clean --snapshot
-
-      - name: Test Docker Image
-        run: |
-          mkdir ${{ runner.temp }}/testrun
-          cd ${{ runner.temp }}/testrun
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/xk6" ${{ github.repository }}:latest-amd64 \
-            build --with github.com/grafana/xk6-faker
-          ./k6 version | grep -q xk6-faker
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASS }}
-
-      - name: Login to GitHub Packages
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: "~> v2"
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/tooling-release.yml
+    secrets:
+      # #region secrets
+      docker-user: ${{secrets.DOCKER_USER}}
+      docker-token: ${{secrets.DOCKER_PASS}}
+      # #endregion
+    with:
+      # #region inputs
+      go-version: ${{vars.GO_VERSION}}
+      goreleaser-version: ${{vars.GORELEASER_VERSION}}
+      k6-versions: ${{vars.K6_VERSIONS}}
+      bats: ./.github/release.bats
+      # #endregion inputs

@@ -54,8 +54,8 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **secrets**
 
 ```yaml file=../../.github/workflows/release.yml region=secrets
-      docker-user: ${{secrets.DOCKERHUB_USERNAME}}
-      docker-token: ${{secrets.DOCKERHUB_TOKEN}}
+      docker-user: ${{secrets.DOCKER_USER}}
+      docker-token: ${{secrets.DOCKER_PASS}}
 ```
 
 **inputs**

@@ -1,9 +1,10 @@
 #!/usr/bin/env bats
 
 setup() {
-  cd $BATS_TEST_DIRNAME
+  BASEDIR="$(git rev-parse --show-toplevel)"
+  cd $BASEDIR
 
-  EXE="$(ls $(git rev-parse --show-toplevel)/dist/xk6_linux_$(dpkg --print-architecture)_v*/xk6)"
+  EXE="$(ls ${BASEDIR}/dist/xk6_linux_$(dpkg --print-architecture)_v*/xk6)"
   IFS=', ' read -r -a K6_VERSIONS <<<"${K6_VERSIONS:-latest}"
   K6_EXTENSION_MODULE=github.com/grafana/xk6-faker
   K6_EXTENSION_VERSION="v0.4.3"

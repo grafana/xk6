@@ -27,118 +27,43 @@ func TestParseEnv(t *testing.T) {
 		expectErr string
 	}{
 		{
-			title: "parse defaults",
-			env:   map[string]string{},
-			expect: Builder{
-				Compile: Compile{
-					Cgo: false,
-					Platform: Platform{
-						Arch: "",
-						OS:   "",
-						ARM:  "",
-					},
-				},
-				K6Repo:       "",
-				K6Version:    "",
-				BuildFlags:   defaultBuildFlags,
-				RaceDetector: false,
-				SkipCleanup:  false,
-				Extensions:   nil,
-				Replacements: nil,
-			},
+			title:  "parse defaults",
+			env:    map[string]string{},
+			expect: Builder{BuildFlags: defaultBuildFlags},
 		},
 		{
 			title: "parse k6 version",
-			env: map[string]string{
-				"K6_VERSION": "v0.0.0",
-			},
+			env:   map[string]string{"K6_VERSION": "v0.0.0"},
 			expect: Builder{
-				Compile: Compile{
-					Cgo: false,
-					Platform: Platform{
-						Arch: "",
-						OS:   "",
-						ARM:  "",
-					},
-				},
-				K6Repo:       "",
-				K6Version:    "v0.0.0",
-				BuildFlags:   defaultBuildFlags,
-				RaceDetector: false,
-				SkipCleanup:  false,
-				Extensions:   nil,
-				Replacements: nil,
+				K6Version:  "v0.0.0",
+				BuildFlags: defaultBuildFlags,
 			},
 		},
 		{
 			title: "parse k6 repo",
-			env: map[string]string{
-				"XK6_K6_REPO": "github.com/another/repo",
-			},
+			env:   map[string]string{"XK6_K6_REPO": "github.com/another/repo"},
 			expect: Builder{
-				Compile: Compile{
-					Cgo: false,
-					Platform: Platform{
-						Arch: "",
-						OS:   "",
-						ARM:  "",
-					},
-				},
-				K6Repo:       "github.com/another/repo",
-				K6Version:    "",
-				BuildFlags:   defaultBuildFlags,
-				RaceDetector: false,
-				SkipCleanup:  false,
-				Extensions:   nil,
-				Replacements: nil,
+				K6Repo:     "github.com/another/repo",
+				BuildFlags: defaultBuildFlags,
 			},
 		},
 		{
 			title: "parse GO environment variables",
-			env: map[string]string{
-				"GOARCH": "amd64",
-				"GOOS":   "linux",
-			},
+			env:   map[string]string{"GOARCH": "amd64", "GOOS": "linux"},
 			expect: Builder{
 				Compile: Compile{
-					Cgo: false,
 					Platform: Platform{
 						Arch: "amd64",
 						OS:   "linux",
-						ARM:  "",
 					},
 				},
-				K6Repo:       "",
-				K6Version:    "",
-				BuildFlags:   defaultBuildFlags,
-				RaceDetector: false,
-				SkipCleanup:  false,
-				Extensions:   nil,
-				Replacements: nil,
+				BuildFlags: defaultBuildFlags,
 			},
 		},
 		{
-			title: "parse build opts",
-			env: map[string]string{
-				"XK6_BUILD_FLAGS": "-buildvcs",
-			},
-			expect: Builder{
-				Compile: Compile{
-					Cgo: false,
-					Platform: Platform{
-						Arch: "",
-						OS:   "",
-						ARM:  "",
-					},
-				},
-				K6Repo:       "",
-				K6Version:    "",
-				BuildFlags:   "-buildvcs",
-				RaceDetector: false,
-				SkipCleanup:  false,
-				Extensions:   nil,
-				Replacements: nil,
-			},
+			title:  "parse build opts",
+			env:    map[string]string{"XK6_BUILD_FLAGS": "-buildvcs"},
+			expect: Builder{BuildFlags: "-buildvcs"},
 		},
 	}
 

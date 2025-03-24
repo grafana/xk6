@@ -1,3 +1,4 @@
+// Package xk6 contains the xk6 builder API.
 package xk6
 
 import (

@@ -45,6 +45,7 @@ func SupportedPlatforms() ([]Compile, error) {
 	// translate from the go command's output structure
 	// to our own user-facing structure
 	var compiles []Compile
+
 	for _, d := range dists {
 		comp := d.toCompile()
 		if d.GOARCH == "arm" {

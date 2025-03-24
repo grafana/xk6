@@ -41,6 +41,7 @@ type Builder struct {
 // XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks
 func FromOSEnv() Builder {
 	env := map[string]string{}
+
 	for _, arg := range os.Environ() {
 		parts := strings.SplitN(arg, "=", 2)
 		env[parts[0]] = parts[1]
@@ -67,6 +68,7 @@ func parseEnv(env map[string]string) Builder {
 
 func osEnv() map[string]string {
 	env := make(map[string]string)
+
 	for _, entry := range os.Environ() {
 		key, val, _ := strings.Cut(entry, "=")
 		env[key] = val
@@ -148,6 +150,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	}
 
 	mods := []k6foundry.Module{}
+
 	for _, e := range b.Extensions {
 		mod, err := k6foundry.ParseModule(e)
 		if err != nil {
@@ -158,6 +161,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	}
 
 	reps := []k6foundry.Module{}
+
 	for _, r := range b.Replacements {
 		rep, err := k6foundry.ParseModule(r)
 		if err != nil {

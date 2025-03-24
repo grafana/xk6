@@ -83,13 +83,7 @@ func osEnv() map[string]string {
 	return env
 }
 
-// Build builds k6 at the configured version with the
-// configured extensions and writes a binary at outputFile.
-func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
-	if outfile == "" {
-		return errMissingOutputFile
-	}
-
+func (b Builder) newBuilderEnv(log *slog.Logger) map[string]string {
 	env := osEnv()
 
 	// set some defaults from the environment, if applicable
@@ -114,6 +108,46 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 
 	env["CGO_ENABLED"] = b.Compile.CgoEnabled()
 
+	return env
+}
+
+func (b Builder) getModules() ([]k6foundry.Module, error) {
+	mods := []k6foundry.Module{}
+
+	for _, e := range b.Extensions {
+		mod, err := k6foundry.ParseModule(e)
+		if err != nil {
+			return []k6foundry.Module{}, err
+		}
+
+		mods = append(mods, mod)
+	}
+
+	return mods, nil
+}
+
+func (b Builder) getReplacements() ([]k6foundry.Module, error) {
+	reps := []k6foundry.Module{}
+
+	for _, r := range b.Replacements {
+		rep, err := k6foundry.ParseModule(r)
+		if err != nil {
+			return []k6foundry.Module{}, err
+		}
+
+		reps = append(reps, rep)
+	}
+
+	return reps, nil
+}
+
+// Build builds k6 at the configured version with the
+// configured extensions and writes a binary at outputFile.
+func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
+	if outfile == "" {
+		return errMissingOutputFile
+	}
+
 	log.Info("Building k6")
 
 	opts := k6foundry.NativeFoundryOpts{
@@ -121,7 +155,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 			GoGetTimeout:   b.TimeoutGet,
 			GOBuildTimeout: b.TimeoutBuild,
 			CopyGoEnv:      true,
-			Env:            env,
+			Env:            b.newBuilderEnv(log),
 		},
 		K6Repo:      b.K6Repo,
 		SkipCleanup: b.SkipCleanup,
@@ -157,26 +191,14 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 		return err
 	}
 
-	mods := []k6foundry.Module{}
-
-	for _, e := range b.Extensions {
-		mod, err := k6foundry.ParseModule(e)
-		if err != nil {
-			return err
-		}
-
-		mods = append(mods, mod)
+	mods, err := b.getModules()
+	if err != nil {
+		return err
 	}
 
-	reps := []k6foundry.Module{}
-
-	for _, r := range b.Replacements {
-		rep, err := k6foundry.ParseModule(r)
-		if err != nil {
-			return err
-		}
-
-		reps = append(reps, rep)
+	reps, err := b.getReplacements()
+	if err != nil {
+		return err
 	}
 
 	k6Version := b.K6Version

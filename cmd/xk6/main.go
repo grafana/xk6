@@ -118,14 +118,13 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 	return nil
 }
 
-func runDev(ctx context.Context, log *slog.Logger, args []string) error {
-	// get current/main module name
+func getModuleInfo() (string, string, error) {
 	cmd := exec.Command("go", "list", "-m")
 	cmd.Stderr = os.Stderr
 
 	out, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
+		return "", "", fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
 
 	currentModule := strings.TrimSpace(string(out))
@@ -136,10 +135,19 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 
 	out, err = cmd.Output()
 	if err != nil {
-		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
+		return "", "", fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
 
 	moduleDir := strings.TrimSpace(string(out))
+
+	return currentModule, moduleDir, err
+}
+
+func runDev(ctx context.Context, log *slog.Logger, args []string) error {
+	currentModule, moduleDir, err := getModuleInfo()
+	if err != nil {
+		return err
+	}
 
 	// make sure the module being developed is replaced
 	// so that the local copy is used
@@ -151,10 +159,10 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	// and since this tool is a carry-through for the user's actual
 	// go.mod, we need to transfer their replace directives through
 	// to the one we're making
-	cmd = exec.Command("go", "list", "-mod=readonly", "-m", "-f={{if .Replace}}{{.Path}}={{.Replace}}{{end}}", "all")
+	cmd := exec.Command("go", "list", "-mod=readonly", "-m", "-f={{if .Replace}}{{.Path}}={{.Replace}}{{end}}", "all")
 	cmd.Stderr = os.Stderr
 
-	out, err = cmd.Output()
+	out, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}

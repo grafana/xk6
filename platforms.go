@@ -48,6 +48,7 @@ func SupportedPlatforms() ([]Compile, error) {
 
 	for _, d := range dists {
 		comp := d.toCompile()
+
 		if d.GOARCH == "arm" {
 			if d.GOOS == "linux" {
 				// only linux supports ARMv5; see https://github.com/golang/go/issues/18418

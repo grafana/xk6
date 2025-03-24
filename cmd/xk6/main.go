@@ -48,6 +48,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	go trapSignals(ctx, log, cancel)
 
 	if len(os.Args) > 1 && os.Args[1] == "build" {

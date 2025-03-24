@@ -15,6 +15,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -29,10 +30,10 @@ import (
 )
 
 var (
-	errExpectedValue  = fmt.Errorf("expected value")
-	errInvalidValue   = fmt.Errorf("invalid value")
-	errMissingFlag    = fmt.Errorf("missing flag")
-	errMissingReplace = fmt.Errorf("missing replace")
+	errExpectedValue  = errors.New("expected value")
+	errInvalidValue   = errors.New("invalid value")
+	errMissingFlag    = errors.New("missing flag")
+	errMissingReplace = errors.New("missing replace")
 )
 
 type BuildOps struct {

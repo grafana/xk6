@@ -43,8 +43,10 @@ type Builder struct {
 func FromOSEnv() Builder {
 	env := map[string]string{}
 
+	const assignParts = 2
+
 	for _, arg := range os.Environ() {
-		parts := strings.SplitN(arg, "=", 2)
+		parts := strings.SplitN(arg, "=", assignParts)
 		env[parts[0]] = parts[1]
 	}
 
@@ -140,7 +142,9 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 		return err
 	}
 
-	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, 0o777) // #nosec G302 G304
+	const outFilePerm = 0o777
+
+	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, outFilePerm) // #nosec G302 G304
 	if err != nil {
 		return err
 	}
@@ -196,7 +200,8 @@ func envOrDefaultValue(env map[string]string, name, defaultValue string) string 
 // or the default values when no value for it is given
 // so we may pass args separately to newCommand()
 func buildCommandArgs(buildFlags string) []string {
-	buildFlagsSlice := make([]string, 0, 10)
+	const avgNumberOfFlags = 10
+	buildFlagsSlice := make([]string, 0, avgNumberOfFlags)
 
 	tmp := []string{}
 	sb := &strings.Builder{}

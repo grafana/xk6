@@ -52,6 +52,7 @@ func SupportedPlatforms() ([]Compile, error) {
 				comp.ARM = "5"
 				compiles = append(compiles, comp)
 			}
+
 			comp.ARM = "6"
 			compiles = append(compiles, comp)
 			comp.ARM = "7"

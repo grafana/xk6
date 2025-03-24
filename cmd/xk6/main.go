@@ -74,6 +74,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 	if opts.K6Version != "" {
 		builder.K6Version = opts.K6Version
 	}
+
 	builder.Extensions = opts.Extensions
 	builder.Replacements = opts.Replacements
 
@@ -118,6 +119,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
+
 	currentModule := strings.TrimSpace(string(out))
 
 	// get the root directory of the main module
@@ -128,6 +130,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
+
 	moduleDir := strings.TrimSpace(string(out))
 
 	// make sure the module being developed is replaced
@@ -163,6 +166,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to determine current directory: %w", err)
 	}
+
 	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 
 	// create a builder with options from environment variables
@@ -208,6 +212,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if i == len(args)-1 {
 				return BuildOps{}, fmt.Errorf("%w after --with flag", errExpectedValue)
 			}
+
 			i++
 
 			_, err := validateModule(args[i])
@@ -220,6 +225,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if i == len(args)-1 {
 				return BuildOps{}, fmt.Errorf("%w after --replace flag", errExpectedValue)
 			}
+
 			i++
 
 			hasReplace, err := validateModule(args[i])
@@ -235,6 +241,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if i == len(args)-1 {
 				return BuildOps{}, fmt.Errorf("%w after --output flag", errExpectedValue)
 			}
+
 			i++
 			opts.OutFile = args[i]
 			opts.OutputOverride = true
@@ -243,6 +250,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if argK6Version != "" {
 				return BuildOps{}, fmt.Errorf("%w k6 version already set at %s", errMissingFlag, argK6Version)
 			}
+
 			argK6Version = args[i]
 		}
 	}

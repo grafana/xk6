@@ -99,8 +99,10 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	// trim debug symbols by default
 	if (b.RaceDetector || strings.Contains(b.BuildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Warn("Enabling cgo because it is required by the race detector")
+
 		b.Compile.Cgo = true
 	}
+
 	env["CGO_ENABLED"] = b.Compile.CgoEnabled()
 
 	log.Info("Building k6")
@@ -166,6 +168,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	if k6Version == "" {
 		k6Version = "latest"
 	}
+
 	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
 	return err
 }

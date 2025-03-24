@@ -3,7 +3,7 @@ package xk6
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -17,6 +17,8 @@ import (
 const (
 	defaultBuildFlags = "-ldflags='-w -s' -trimpath"
 )
+
+var errMissingOutputFile = errors.New("output file path is required")
 
 // Builder can produce a custom k6 build with the
 // configuration it represents.
@@ -85,7 +87,7 @@ func osEnv() map[string]string {
 // configured extensions and writes a binary at outputFile.
 func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
 	if outfile == "" {
-		return fmt.Errorf("output file path is required")
+		return errMissingOutputFile
 	}
 
 	env := osEnv()

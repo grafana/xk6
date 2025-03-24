@@ -20,6 +20,8 @@ import (
 )
 
 func TestParseEnv(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		title     string
 		env       map[string]string

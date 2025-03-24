@@ -152,6 +152,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 		if err != nil {
 			return err
 		}
+
 		mods = append(mods, mod)
 	}
 
@@ -161,6 +162,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 		if err != nil {
 			return err
 		}
+
 		reps = append(reps, rep)
 	}
 

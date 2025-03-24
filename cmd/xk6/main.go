@@ -156,6 +156,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			continue
 		}
+
 		replacements = append(replacements, fmt.Sprintf("%s=%s", parts[0], parts[1]))
 	}
 
@@ -219,6 +220,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if err != nil {
 				return BuildOps{}, err
 			}
+
 			opts.Extensions = append(opts.Extensions, args[i])
 
 		case "--replace":
@@ -235,6 +237,7 @@ func parseBuildOpts(args []string) (BuildOps, error) {
 			if !hasReplace {
 				return BuildOps{}, errMissingReplace
 			}
+
 			opts.Replacements = append(opts.Replacements, args[i])
 
 		case "--output":

@@ -143,6 +143,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	if err != nil {
 		return fmt.Errorf("exec %v: %w: %s", cmd.Args, err, string(out))
 	}
+
 	for _, line := range strings.Split(string(out), "\n") {
 		parts := strings.Split(line, "=")
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {

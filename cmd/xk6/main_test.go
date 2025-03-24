@@ -50,6 +50,7 @@ func TestNormalizeImportPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		tests = append(tests, windowsTests...)
 	}
+
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

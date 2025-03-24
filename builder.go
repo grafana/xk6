@@ -186,6 +186,7 @@ func buildCommandArgs(buildFlags string) []string {
 	tmp := []string{}
 	sb := &strings.Builder{}
 	quoted := false
+
 	for _, r := range buildFlags {
 		if r == '"' || r == '\'' {
 			quoted = !quoted

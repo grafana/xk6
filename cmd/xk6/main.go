@@ -205,7 +205,8 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	return cmd.Wait()
 }
 
-func parseBuildOpts(args []string) (buildOps, error) {
+// It will be refactored soon.
+func parseBuildOpts(args []string) (buildOps, error) { //nolint:cyclop,funlen
 	opts := buildOps{
 		OutFile: defaultK6OutputFile(),
 	}

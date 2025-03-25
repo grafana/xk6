@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"strings"
 
-	"go.k6.io/xk6"
+	"go.k6.io/xk6/internal/legacy"
 )
 
 var (
@@ -76,7 +76,7 @@ func runBuild(ctx context.Context, log *slog.Logger, args []string) error {
 		return fmt.Errorf("parsing options %w", err)
 	}
 
-	builder := xk6.FromOSEnv()
+	builder := legacy.FromOSEnv()
 	if opts.K6Version != "" {
 		builder.K6Version = opts.K6Version
 	}
@@ -187,7 +187,7 @@ func runDev(ctx context.Context, log *slog.Logger, args []string) error {
 	importPath := normalizeImportPath(currentModule, cwd, moduleDir)
 
 	// create a builder with options from environment variables
-	builder := xk6.FromOSEnv()
+	builder := legacy.FromOSEnv()
 
 	// set the current module as dependency
 	builder.Extensions = []string{importPath}

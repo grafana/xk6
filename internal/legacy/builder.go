@@ -1,5 +1,5 @@
-// Package xk6 contains the xk6 builder API.
-package xk6
+// Package legacy contains the legacy xk6 builder API.
+package legacy
 
 import (
 	"context"

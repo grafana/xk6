@@ -86,15 +86,6 @@ func osEnv() map[string]string {
 func (b Builder) newBuilderEnv(log *slog.Logger) map[string]string {
 	env := osEnv()
 
-	// set some defaults from the environment, if applicable
-	if b.OS == "" {
-		b.OS = runtime.GOOS
-	}
-
-	if b.Arch == "" {
-		b.Arch = runtime.GOARCH
-	}
-
 	env["GOARM"] = b.ARM
 
 	raceArg := "-race"
@@ -139,6 +130,20 @@ func (b Builder) getReplacements() ([]k6foundry.Module, error) {
 	}
 
 	return reps, nil
+}
+
+func (b Builder) parsePlatform() (k6foundry.Platform, error) {
+	os := b.OS
+	if os == "" {
+		os = runtime.GOOS
+	}
+
+	arch := b.Arch
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
+
+	return k6foundry.ParsePlatform(os + "/" + arch)
 }
 
 // Build builds k6 at the configured version with the
@@ -186,7 +191,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	}
 	defer outFile.Close() //nolint:errcheck
 
-	platform, err := k6foundry.ParsePlatform(b.OS + "/" + b.Arch)
+	platform, err := b.parsePlatform()
 	if err != nil {
 		return err
 	}

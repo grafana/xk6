@@ -1,39 +1,39 @@
-# v1.63.4
-# Please don't remove the first line. It uses in CI to determine the golangci version
-linters-settings:
-  misspell:
-    locale: US
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
+  exclude-dirs:
+    # adopted from fixuid source: https://github.com/boxboat/fixuid
+    - internal/fixids
 
 linters:
-  enable:
-    - bodyclose
-    - prealloc
-    - unconvert
-    - errcheck
-    - gofmt
-    - goimports
-    - gosec
-    - ineffassign
-    - misspell
+  enable-all: true
+  disable:
+    # Except for general-purpose public APIs,
+    # wrapping errors is more inconvenient and error prone than useful.
+    - wrapcheck
 
-run:
-  # default concurrency is a available CPU number.
-  # concurrency: 4 # explicitly omit this value to fully utilize available resources.
-  issues-exit-code: 1
-  tests: false
+    # Many go standard library API functions have typical parameter names shorter than 3 characters.
+    # It is better to use the usual parameter names than to create one that conforms to the rule.
+    - varnamelen
 
-# output configuration options
-output:
-  print-issued-lines: true
-  print-linter-name: true
+    # In many cases (e.g. options) it is normal usage not to specify all structure fields.
+    - exhaustruct
 
-issues:
-  exclude-rules:
-    # we aren't calling unknown URL
-    - text: "G107" # G107: Url provided to HTTP request as taint input
-      linters:
-        - gosec
-    # we're shelling out to known commands, not relying on user-defined input.
-    - text: "G204" # G204: Audit use of command execution
-      linters:
-        - gosec
+    # The linter 'exportloopref' is deprecated (since v1.60.2) due to:
+    # Since Go1.22 (loopvar) this linter is no longer relevant.
+    # Replaced by copyloopvar.
+    - exportloopref
+
+    # TODO Temporary: Builder struct json field names do not comply with this rule,
+    # but this struct will be refactored soon.
+    - tagliatelle
+
+linters-settings:
+  depguard:
+    rules:
+      prevent_accidental_imports:
+        allow:
+          - $gostd
+          - github.com/stretchr/testify/require
+          - github.com/grafana/k6foundry

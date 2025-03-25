@@ -1,8 +1,9 @@
+// Package xk6 contains the xk6 builder API.
 package xk6
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 const (
 	defaultBuildFlags = "-ldflags='-w -s' -trimpath"
 )
+
+var errMissingOutputFile = errors.New("output file path is required")
 
 // Builder can produce a custom k6 build with the
 // configuration it represents.
@@ -38,13 +41,17 @@ type Builder struct {
 // XK6_BUILD_FLAGS sets any go build flags if needed. Defaults to '-ldflags=-w -s -trim'.
 // XK6_RACE_DETECTOR enables the Go race detector in the build. Forces CGO_ENABLED=1
 // XK6_SKIP_CLEANUP causes xk6 to leave build artifacts on disk after exiting.
-// XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks
+// XK6_K6_REPO sets the path to the main k6 repository. This is useful when building with k6 forks.
 func FromOSEnv() Builder {
 	env := map[string]string{}
+
+	const assignParts = 2
+
 	for _, arg := range os.Environ() {
-		parts := strings.SplitN(arg, "=", 2)
+		parts := strings.SplitN(arg, "=", assignParts)
 		env[parts[0]] = parts[1]
 	}
+
 	return parseEnv(env)
 }
 
@@ -67,6 +74,7 @@ func parseEnv(env map[string]string) Builder {
 
 func osEnv() map[string]string {
 	env := make(map[string]string)
+
 	for _, entry := range os.Environ() {
 		key, val, _ := strings.Cut(entry, "=")
 		env[key] = val
@@ -75,22 +83,8 @@ func osEnv() map[string]string {
 	return env
 }
 
-// Build builds k6 at the configured version with the
-// configured extensions and writes a binary at outputFile.
-func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
-	if outfile == "" {
-		return fmt.Errorf("output file path is required")
-	}
-
+func (b Builder) newBuilderEnv(log *slog.Logger) map[string]string {
 	env := osEnv()
-
-	// set some defaults from the environment, if applicable
-	if b.OS == "" {
-		b.OS = runtime.GOOS
-	}
-	if b.Arch == "" {
-		b.Arch = runtime.GOARCH
-	}
 
 	env["GOARM"] = b.ARM
 
@@ -99,9 +93,65 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	// trim debug symbols by default
 	if (b.RaceDetector || strings.Contains(b.BuildFlags, raceArg)) && !b.Compile.Cgo {
 		log.Warn("Enabling cgo because it is required by the race detector")
+
 		b.Compile.Cgo = true
 	}
+
 	env["CGO_ENABLED"] = b.Compile.CgoEnabled()
+
+	return env
+}
+
+func (b Builder) getModules() ([]k6foundry.Module, error) {
+	mods := []k6foundry.Module{}
+
+	for _, e := range b.Extensions {
+		mod, err := k6foundry.ParseModule(e)
+		if err != nil {
+			return []k6foundry.Module{}, err
+		}
+
+		mods = append(mods, mod)
+	}
+
+	return mods, nil
+}
+
+func (b Builder) getReplacements() ([]k6foundry.Module, error) {
+	reps := []k6foundry.Module{}
+
+	for _, r := range b.Replacements {
+		rep, err := k6foundry.ParseModule(r)
+		if err != nil {
+			return []k6foundry.Module{}, err
+		}
+
+		reps = append(reps, rep)
+	}
+
+	return reps, nil
+}
+
+func (b Builder) parsePlatform() (k6foundry.Platform, error) {
+	os := b.OS
+	if os == "" {
+		os = runtime.GOOS
+	}
+
+	arch := b.Arch
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
+
+	return k6foundry.ParsePlatform(os + "/" + arch)
+}
+
+// Build builds k6 at the configured version with the
+// configured extensions and writes a binary at outputFile.
+func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
+	if outfile == "" {
+		return errMissingOutputFile
+	}
 
 	log.Info("Building k6")
 
@@ -110,7 +160,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 			GoGetTimeout:   b.TimeoutGet,
 			GOBuildTimeout: b.TimeoutBuild,
 			CopyGoEnv:      true,
-			Env:            env,
+			Env:            b.newBuilderEnv(log),
 		},
 		K6Repo:      b.K6Repo,
 		SkipCleanup: b.SkipCleanup,
@@ -132,40 +182,37 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 	if err != nil {
 		return err
 	}
-	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, 0o777) // #nosec G302 G304
+
+	const outFilePerm = 0o777
+
+	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, outFilePerm) // #nosec G302 G304
 	if err != nil {
 		return err
 	}
 	defer outFile.Close() //nolint:errcheck
 
-	platform, err := k6foundry.ParsePlatform(b.OS + "/" + b.Arch)
+	platform, err := b.parsePlatform()
 	if err != nil {
 		return err
 	}
 
-	mods := []k6foundry.Module{}
-	for _, e := range b.Extensions {
-		mod, err := k6foundry.ParseModule(e)
-		if err != nil {
-			return err
-		}
-		mods = append(mods, mod)
+	mods, err := b.getModules()
+	if err != nil {
+		return err
 	}
 
-	reps := []k6foundry.Module{}
-	for _, r := range b.Replacements {
-		rep, err := k6foundry.ParseModule(r)
-		if err != nil {
-			return err
-		}
-		reps = append(reps, rep)
+	reps, err := b.getReplacements()
+	if err != nil {
+		return err
 	}
 
 	k6Version := b.K6Version
 	if k6Version == "" {
 		k6Version = "latest"
 	}
+
 	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
+
 	return err
 }
 
@@ -174,28 +221,33 @@ func envOrDefaultValue(env map[string]string, name, defaultValue string) string 
 	if !ok {
 		return defaultValue
 	}
+
 	return s
 }
 
 // buildCommandArgs parses the build flags passed by environment variable XK6_BUILD_FLAGS
 // or the default values when no value for it is given
-// so we may pass args separately to newCommand()
+// so we may pass args separately to newCommand().
 func buildCommandArgs(buildFlags string) []string {
-	buildFlagsSlice := make([]string, 0, 10)
+	const avgNumberOfFlags = 10
+	buildFlagsSlice := make([]string, 0, avgNumberOfFlags)
 
 	tmp := []string{}
 	sb := &strings.Builder{}
 	quoted := false
+
 	for _, r := range buildFlags {
-		if r == '"' || r == '\'' {
+		switch {
+		case r == '"' || r == '\'':
 			quoted = !quoted
-		} else if !quoted && r == ' ' {
+		case !quoted && r == ' ':
 			tmp = append(tmp, sb.String())
 			sb.Reset()
-		} else {
+		default:
 			sb.WriteRune(r)
 		}
 	}
+
 	if sb.Len() > 0 {
 		tmp = append(tmp, sb.String())
 	}

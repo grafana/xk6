@@ -17,6 +17,7 @@ func (c Compile) CgoEnabled() string {
 	if c.Cgo {
 		return "1"
 	}
+
 	return "0"
 }
 
@@ -34,7 +35,9 @@ func SupportedPlatforms() ([]Compile, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var dists []dist
+
 	err = json.Unmarshal(out, &dists)
 	if err != nil {
 		return nil, err
@@ -43,14 +46,17 @@ func SupportedPlatforms() ([]Compile, error) {
 	// translate from the go command's output structure
 	// to our own user-facing structure
 	var compiles []Compile
+
 	for _, d := range dists {
 		comp := d.toCompile()
+
 		if d.GOARCH == "arm" {
 			if d.GOOS == "linux" {
 				// only linux supports ARMv5; see https://github.com/golang/go/issues/18418
 				comp.ARM = "5"
 				compiles = append(compiles, comp)
 			}
+
 			comp.ARM = "6"
 			compiles = append(compiles, comp)
 			comp.ARM = "7"

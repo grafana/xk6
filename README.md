@@ -213,21 +213,10 @@ The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for th
 
 ## Library usage
 
-
->Breaking changes since v0.14.0:
-> - `xk6.Builder.Build` function no longer reads environment variables to complete missing attributes. Use `xk6.FromOSEnv()` to create a builder from environment variables and then complete or override attributes as needed.
-> - Dependencies and replacements are now defined as arrays of strings following go mod path replacement format
-
-```go
-// create builder with defaults from environment variables
-builder := xk6.FromOSEnv()
-
-// complete/override attributes
-builder.K6Version = "v0.35.0",
-builder.Extensions = []string{"github.com/grafana/xk6-browser@v0.1.1"},
-
-err := builder.Build(context.Background(), log. "./k6")
-```
+>[!IMPORTANT]
+> **Breaking change**
+>
+> As of `v0.16.0`, xk6 library usage is not supported!
 
 ---
 

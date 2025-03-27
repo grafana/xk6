@@ -215,7 +215,8 @@ The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for th
 
 >[!IMPORTANT]
 > **Breaking change**
-> As of `v0.16.0`, library usage is not supported!
+>
+> As of `v0.16.0`, xk6 library usage is not supported!
 
 ---
 

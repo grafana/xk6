@@ -24,7 +24,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/go:1": {
       "version": "1.23",
-      "golangciLintVersion": "1.63.4"
+      "golangciLintVersion": "2.0.2"
     },
     "ghcr.io/guiyomh/features/goreleaser:0": { "version": "2.6.1" },
     "ghcr.io/guiyomh/features/gotestsum:0": { "version": "1.12.1" },

@@ -91,13 +91,13 @@ func (b Builder) newBuilderEnv(log *slog.Logger) map[string]string {
 	raceArg := "-race"
 
 	// trim debug symbols by default
-	if (b.RaceDetector || strings.Contains(b.BuildFlags, raceArg)) && !b.Compile.Cgo {
+	if (b.RaceDetector || strings.Contains(b.BuildFlags, raceArg)) && !b.Cgo {
 		log.Warn("Enabling cgo because it is required by the race detector")
 
-		b.Compile.Cgo = true
+		b.Cgo = true
 	}
 
-	env["CGO_ENABLED"] = b.Compile.CgoEnabled()
+	env["CGO_ENABLED"] = b.CgoEnabled()
 
 	return env
 }

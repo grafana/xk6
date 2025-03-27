@@ -1,4 +1,4 @@
-package xk6
+package legacy
 
 import (
 	"encoding/json"

@@ -1,39 +1,40 @@
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  exclude-use-default: false
-  exclude-dirs:
-    # adopted from fixuid source: https://github.com/boxboat/fixuid
-    - internal/fixids
-
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-    # Except for general-purpose public APIs,
-    # wrapping errors is more inconvenient and error prone than useful.
-    - wrapcheck
-
-    # Many go standard library API functions have typical parameter names shorter than 3 characters.
-    # It is better to use the usual parameter names than to create one that conforms to the rule.
-    - varnamelen
-
     # In many cases (e.g. options) it is normal usage not to specify all structure fields.
     - exhaustruct
-
-    # The linter 'exportloopref' is deprecated (since v1.60.2) due to:
-    # Since Go1.22 (loopvar) this linter is no longer relevant.
-    # Replaced by copyloopvar.
-    - exportloopref
 
     # TODO Temporary: Builder struct json field names do not comply with this rule,
     # but this struct will be refactored soon.
     - tagliatelle
 
-linters-settings:
-  depguard:
-    rules:
-      prevent_accidental_imports:
-        allow:
-          - $gostd
-          - github.com/stretchr/testify/require
-          - github.com/grafana/k6foundry
+    # Many go standard library API functions have typical parameter names shorter than 3 characters.
+    # It is better to use the usual parameter names than to create one that conforms to the rule.
+    - varnamelen
+
+    # Except for general-purpose public APIs,
+    # wrapping errors is more inconvenient and error prone than useful.
+    - wrapcheck
+  settings:
+    depguard:
+      rules:
+        prevent_accidental_imports:
+          allow:
+            - $gostd
+            - github.com/stretchr/testify/require
+            - github.com/grafana/k6foundry
+            - go.k6.io/xk6
+  exclusions:
+    paths:
+      # adopted from fixuid source: https://github.com/boxboat/fixuid
+      - internal/fixids
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports

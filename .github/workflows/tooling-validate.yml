@@ -123,14 +123,14 @@ jobs:
 
       - name: Run minimal golangci-lint ${{ inputs.golangci-lint-version }}
         if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') == ''}}
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: "${{ inputs.golangci-lint-version }}"
           args: --timeout=30m --no-config --presets bugs --enable gofmt
 
       - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
         if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: "${{ inputs.golangci-lint-version }}"
           only-new-issues: true

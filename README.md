@@ -31,21 +31,21 @@ If you prefer to setup Go and use xk6 without Docker, see the "Local Installatio
 Docker images can be used with major version, minor version, and specific version tags.
 
 For example, let's say `1.2.3` is the latest xk6 Docker image version.
-- the latest release of major version `1` is available using the `v1` tag:
+- the latest release of major version `1` is available using the `1` tag:
   ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6@v1
+  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1
   ```
-- the latest release of minor version `1.2` is available using the `v1.2` tag:
+- the latest release of minor version `1.2` is available using the `1.2` tag:
   ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6@v1.2
+  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2
   ```
 - of course version `1.2.3` is still available using the `v1.2.3` tag:
   ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6@v1.2.3
+  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2.3
   ```
 - the latest release is still available using the `latest` tag:
   ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6@latest
+  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:latest
   ```
 
 > [!IMPORTANT]

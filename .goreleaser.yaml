@@ -52,14 +52,14 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
       - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
 
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
       - "ghcr.io/{{ .Env.IMAGE }}:latest-amd64"
     build_flag_templates:
       - "--platform=linux/amd64"
@@ -75,14 +75,14 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
       - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
 
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
       - "ghcr.io/{{ .Env.IMAGE }}:latest-arm64"
     build_flag_templates:
       - "--platform=linux/arm64"
@@ -95,20 +95,20 @@ dockers:
 
 docker_manifests:
   - id: tag
-    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}"
+    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Version }}"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
   - id: major
-    name_template: "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}"
+    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Major }}"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
   - id: major-minor
-    name_template: "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}"
+    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
+      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
   - id: latest
     name_template: "docker.io/{{ .Env.IMAGE }}:latest"
     image_templates:
@@ -116,20 +116,20 @@ docker_manifests:
       - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
 
   - id: tag-ghcr
-    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}"
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}"
     image_templates:
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Tag }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
   - id: major-ghcr
-    name_template: "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}"
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}"
     image_templates:
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
   - id: major-minor-ghcr
-    name_template: "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}"
+    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}"
     image_templates:
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
   - id: latest-ghcr
     name_template: "ghcr.io/{{ .Env.IMAGE }}:latest"
     image_templates:

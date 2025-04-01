@@ -52,12 +52,12 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
       - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
       - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
       - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
 
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
+      - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
       - "ghcr.io/{{ .Env.IMAGE }}:latest-amd64"
@@ -75,12 +75,12 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
       - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
       - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
       - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
 
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
       - "ghcr.io/{{ .Env.IMAGE }}:latest-arm64"
@@ -95,10 +95,10 @@ dockers:
 
 docker_manifests:
   - id: tag
-    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Version }}"
+    name_template: 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}'
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
+      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
   - id: major
     name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Major }}"
     image_templates:
@@ -116,10 +116,10 @@ docker_manifests:
       - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
 
   - id: tag-ghcr
-    name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}"
+    name_template: 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}'
     image_templates:
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-amd64"
-      - "ghcr.io/{{ .Env.IMAGE }}:{{ .Version }}-arm64"
+      - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
+      - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
   - id: major-ghcr
     name_template: "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}"
     image_templates:

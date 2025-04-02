@@ -119,7 +119,21 @@ The [golangci-lint] tool is used for static analysis of the source code. It is a
 golangci-lint run
 ```
 
+[lint]: <#lint---run-the-linter>
 [golangci-lint]: https://github.com/golangci/golangci-lint
+
+### security - Run security and vulnerability checks
+
+The [gosec] tool is used for security checks. The [govulncheck] tool is used to check the vulnerability of dependencies.
+
+```bash
+gosec ./...
+govulncheck ./...
+```
+
+[gosec]: https://github.com/securego/gosec
+[govulncheck]: https://github.com/golang/vuln
+[security]: <#security---run-security-and-vulnerability-checks>
 
 ### test - Run the tests
 
@@ -190,7 +204,7 @@ rm -rf ./xk6 ./xk6.exe ./k6 ./k6.exe ./coverage.txt ./build ./dist
 Performs the most important tasks. It can be used to check whether the CI workflow will run successfully.
 
 Requires
-: [clean], [format], [test], [build], [it], [doc], [makefile]
+: [clean], [format], [security], [lint], [test], [build], [it], [doc], [makefile]
 
 ### format - Format the go source codes
 

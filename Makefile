@@ -17,11 +17,12 @@ __help__:
 	@echo '  it       Run the integration tests'
 	@echo '  lint     Run the linter'
 	@echo '  makefile Generate the Makefile'
+	@echo '  security Run security and vulnerability checks'
 	@echo '  test     Run the tests'
 
 # Clean build
 .PHONY: all
-all: clean format test build it doc makefile
+all: clean format security lint test build it doc makefile
 
 # Build custom k6 with extension
 .PHONY: build
@@ -78,6 +79,14 @@ lint:
 makefile: 
 	@(\
 		cdo --makefile Makefile;\
+	)
+
+# Run security and vulnerability checks
+.PHONY: security
+security: 
+	@(\
+		gosec ./...;\
+		govulncheck ./...;\
 	)
 
 # Run the tests

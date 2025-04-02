@@ -76,7 +76,7 @@ func runRunE(ctx context.Context, opts *buildOptions, args []string) error {
 
 	copy(k6args[1:], args)
 
-	cmd := exec.CommandContext(ctx, opts.output, k6args...) //nolint:gosec
+	cmd := exec.CommandContext(ctx, opts.output, k6args...) // #nosec G204
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

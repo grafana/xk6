@@ -21,7 +21,7 @@ __help__:
 
 # Clean build
 .PHONY: all
-all: clean format test build it doc
+all: clean format test build it doc makefile
 
 # Build custom k6 with extension
 .PHONY: build
@@ -49,6 +49,7 @@ coverage: test
 doc: 
 	@(\
 		mdcode update docs/workflows/README.md;\
+		go run ./tools/docsme --heading 1 -o READMEea.md;\
 	)
 
 # Format the go source codes

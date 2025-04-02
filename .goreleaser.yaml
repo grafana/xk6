@@ -16,7 +16,22 @@ builds:
     goarch: ["amd64", "arm64"]
     flags: ["-trimpath"]
     env: ["CGO_ENABLED=0"]
-    ldflags: ["-s -w"]
+    ldflags:
+      - "-s -w"
+      - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
+      - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
+
+  - id: xk6ea
+    binary: xk6ea
+    main: .
+    goos: ["linux", "windows", "darwin"]
+    goarch: ["amd64", "arm64"]
+    flags: ["-trimpath"]
+    env: ["CGO_ENABLED=0"]
+    ldflags:
+      - "-s -w"
+      - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
+      - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
 
   - id: fixids
     binary: fixids
@@ -33,11 +48,13 @@ source:
 
 archives:
   - id: bundle
-    builds: ["xk6"]
+    builds: ["xk6", "xk6ea"]
     formats: ["tar.gz"]
     format_overrides:
       - goos: windows
         formats: ["zip"]
+    files:
+      - READMEea.md
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"

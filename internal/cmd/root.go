@@ -1,0 +1,145 @@
+// Package cmd contains the Cobra Command that implements the xk6 CLI.
+package cmd
+
+import (
+	_ "embed"
+	"log/slog"
+	"os"
+	"runtime/debug"
+	"time"
+
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
+	"github.com/spf13/cobra"
+	"github.com/szkiba/docsme"
+)
+
+// Execute executes root command.
+func Execute() {
+	cobra.EnableCommandSorting = false
+
+	err := New(initLogging()).Execute()
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+}
+
+//nolint:gochecknoglobals
+var (
+	version = ""
+	appname = "xk6"
+)
+
+//go:embed help/root.md
+var rootHelp string
+
+// New creates a new instance of Cobra Command, which implements the xk6 CLI.
+func New(levelVar *slog.LevelVar) *cobra.Command {
+	root := &cobra.Command{
+		Use:               appname,
+		Version:           getVersion(),
+		Short:             shortHelp(rootHelp),
+		Long:              rootHelp,
+		Args:              cobra.NoArgs,
+		SilenceUsage:      true,
+		SilenceErrors:     true,
+		DisableAutoGenTag: true,
+	}
+
+	flags := root.Flags()
+
+	flags.BoolP("version", "V", false, "Version for "+appname)
+
+	gflags := root.PersistentFlags()
+
+	gflags.BoolP("help", "h", false, "Help about any command ")
+
+	quiet := gflags.BoolP("quiet", "q", false, "Suppress output")
+	verbose := gflags.BoolP("verbose", "v", false, "Verbose output")
+
+	root.MarkFlagsMutuallyExclusive("quiet", "verbose")
+
+	root.AddCommand(versionCmd(), buildCmd(), runCmd())
+	root.AddCommand(helpTopics()...)
+
+	if levelVar != nil {
+		root.PersistentPreRun = func(_ *cobra.Command, _ []string) {
+			levelVar.Set(toLogLevel(*quiet, *verbose))
+		}
+	}
+
+	docsme.SetUsageTemplate(root)
+
+	return root
+}
+
+func getVersion() string {
+	if len(version) != 0 {
+		return version
+	}
+
+	var (
+		commit string
+		dirty  string
+		suffix string
+	)
+
+	buildInfo, ok := debug.ReadBuildInfo()
+	if ok {
+		for _, s := range buildInfo.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				const shortCommitLen = 7
+				commit = s.Value[:min(len(s.Value), shortCommitLen)]
+			case "vcs.modified":
+				if s.Value == "true" {
+					dirty = ".dirty"
+				}
+			default:
+			}
+		}
+	}
+
+	if len(commit) != 0 {
+		suffix = "+" + commit + dirty
+	}
+
+	return "0.0.1-next" + suffix
+}
+
+func initLogging() *slog.LevelVar {
+	levelVar := new(slog.LevelVar)
+
+	w := os.Stderr
+
+	term := isatty.IsTerminal(w.Fd())
+
+	topts := &tint.Options{
+		NoColor:    !term || os.Getenv("NO_COLOR") == "true",
+		TimeFormat: time.RFC3339,
+		Level:      levelVar,
+	}
+
+	if term {
+		topts.TimeFormat = time.Kitchen
+	}
+
+	logger := slog.New(tint.NewHandler(colorable.NewColorable(w), topts))
+
+	slog.SetDefault(logger)
+
+	return levelVar
+}
+
+func toLogLevel(quiet, verbose bool) slog.Level {
+	switch {
+	case quiet:
+		return slog.LevelWarn
+	case verbose:
+		return slog.LevelDebug
+	default:
+		return slog.LevelInfo
+	}
+}

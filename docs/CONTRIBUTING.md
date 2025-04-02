@@ -169,6 +169,7 @@ Update the documentation files.
 
 ```bash
 mdcode update docs/workflows/README.md
+go run ./tools/docsme --heading 1 -o READMEea.md
 ```
 
 [doc]: <#doc---update-documentation>
@@ -189,7 +190,7 @@ rm -rf ./xk6 ./xk6.exe ./k6 ./k6.exe ./coverage.txt ./build ./dist
 Performs the most important tasks. It can be used to check whether the CI workflow will run successfully.
 
 Requires
-: [clean], [format], [test], [build], [it], [doc]
+: [clean], [format], [test], [build], [it], [doc], [makefile]
 
 ### format - Format the go source codes
 

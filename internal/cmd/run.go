@@ -119,7 +119,7 @@ func findModfile() (string, error) {
 		return "", err
 	}
 
-	for ; len(dir) != 1 || dir[0] != filepath.Separator; dir = filepath.Base(dir) {
+	for ; len(dir) != 1 || dir[0] != filepath.Separator; dir = filepath.Dir(dir) {
 		filename := filepath.Join(dir, "go.mod")
 		if info, err := os.Stat(filename); err == nil && !info.IsDir() {
 			return filename, nil

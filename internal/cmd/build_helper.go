@@ -76,7 +76,7 @@ func buildCommonFlags(flags *pflag.FlagSet, opts *buildOptions) error {
 
 	env := efa.New(flags, appname, nil)
 
-	err := env.Bind("build-flags", "race-detector", "skip-cleanup")
+	err := env.Bind("k6-repo", "build-flags", "race-detector", "skip-cleanup")
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func buildCommonFlags(flags *pflag.FlagSet, opts *buildOptions) error {
 
 	env = efa.New(flags, "", nil)
 
-	err = env.Bind("k6-repo", "k6-version", "cgo")
+	err = env.Bind("k6-version", "cgo")
 	if err != nil {
 		return err
 	}

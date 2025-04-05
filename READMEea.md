@@ -199,7 +199,7 @@ xk6 build [flags] [k6-version]
 
 ```
   K6_VERSION             The k6 version to use for build
-  K6_REPO                The k6 repository to use for the build
+  XK6_K6_REPO            The k6 repository to use for the build
   GOOS                   The target operating system
   GOARCH                 The target architecture
   GOARM                  The target ARM version
@@ -261,7 +261,7 @@ xk6 run [flags] [--] [k6-flags] script
 
 ```
   K6_VERSION             The k6 version to use for build
-  K6_REPO                The k6 repository to use for the build
+  XK6_K6_REPO            The k6 repository to use for the build
   GOOS                   The target operating system
   GOARCH                 The target architecture
   GOARM                  The target ARM version

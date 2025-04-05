@@ -1,8 +1,37 @@
 # github.com/grafana/k6foundry v0.4.5
 ## explicit; go 1.22.2
 github.com/grafana/k6foundry
+# github.com/inconshreveable/mousetrap v1.1.0
+## explicit; go 1.18
+github.com/inconshreveable/mousetrap
+# github.com/lmittmann/tint v1.0.7
+## explicit; go 1.21
+github.com/lmittmann/tint
+# github.com/mattn/go-colorable v0.1.14
+## explicit; go 1.18
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.20
+## explicit; go 1.15
+github.com/mattn/go-isatty
+# github.com/spf13/cobra v1.9.1
+## explicit; go 1.15
+github.com/spf13/cobra
+# github.com/spf13/pflag v1.0.6
+## explicit; go 1.12
+github.com/spf13/pflag
+# github.com/szkiba/docsme v0.2.0
+## explicit; go 1.23.0
+github.com/szkiba/docsme
+# github.com/szkiba/efa v0.1.0
+## explicit; go 1.23.0
+github.com/szkiba/efa
 # golang.org/x/mod v0.23.0
 ## explicit; go 1.22.0
 golang.org/x/mod/internal/lazyregexp
+golang.org/x/mod/modfile
 golang.org/x/mod/module
 golang.org/x/mod/semver
+# golang.org/x/sys v0.29.0
+## explicit; go 1.18
+golang.org/x/sys/unix
+golang.org/x/sys/windows

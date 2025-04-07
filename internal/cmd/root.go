@@ -2,9 +2,11 @@
 package cmd
 
 import (
+	"context"
 	_ "embed"
 	"log/slog"
 	"os"
+	"os/signal"
 	"runtime/debug"
 	"time"
 
@@ -19,10 +21,33 @@ import (
 func Execute() {
 	cobra.EnableCommandSorting = false
 
-	err := New(initLogging()).Execute()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go trapSignals(ctx, cancel)
+
+	cmd := New(initLogging())
+
+	cmd.SetContext(ctx)
+
+	err := cmd.Execute()
 	if err != nil {
 		slog.Error(err.Error())
-		os.Exit(1)
+		cancel()
+		os.Exit(1) //nolint:gocritic
+	}
+}
+
+func trapSignals(ctx context.Context, cancel context.CancelFunc) {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+
+	select {
+	case <-sig:
+		slog.Info("SIGINT: Shutting down")
+		cancel()
+	case <-ctx.Done():
+		return
 	}
 }
 

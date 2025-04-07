@@ -6,3 +6,5 @@ k6.exe
 /coverage.txt
 
 /dist/
+
+/xk6-it

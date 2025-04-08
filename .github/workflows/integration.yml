@@ -1,0 +1,42 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Go ${{ vars.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+
+      - name: GoReleaser build
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "${{ vars.GORELEASER_VERSION }}"
+          args: build --clean --snapshot --single-target --id xk6
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@3.0.0
+        with:
+          bats-version: "1.11.1"
+
+      - name: Run tests
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          bats it/test | tee -a $GITHUB_STEP_SUMMARY

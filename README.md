@@ -1,6 +1,11 @@
 `xk6` - Custom k6 Builder
 ===============================
 
+>[!IMPORTANT]
+> **Upcoming changes**
+>
+> The xk6 tool is currently under refactoring. As of `v0.17.0`, an early access executable (`xk6ea`) is available in the downloadable release archives alongside `xk6`. Check [READMEea.md](READMEea.md) for usage.
+
 This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/grafana/k6).
 
 It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).

@@ -70,7 +70,7 @@ snapshot:
 
 dockers:
   - id: amd64
-    ids: ["xk6", "fixids"]
+    ids: ["xk6legacy", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
@@ -93,7 +93,7 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--label=org.opencontainers.image.licenses=AGPL-3.0-only"
   - id: arm64
-    ids: ["xk6", "fixids"]
+    ids: ["xk6legacy", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files: ["docker-entrypoint.sh"]

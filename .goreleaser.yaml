@@ -9,7 +9,7 @@ before:
     - go mod tidy
 
 builds:
-  - id: xk6
+  - id: xk6legacy
     binary: xk6
     main: ./cmd/xk6
     goos: ["linux", "windows", "darwin"]
@@ -20,8 +20,11 @@ builds:
       - "-s -w"
       - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
       - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
+    hooks:
+      post:
+        - cp "{{ .Path }}" it/xk6
 
-  - id: xk6ea
+  - id: xk6
     binary: xk6ea
     main: .
     goos: ["linux", "windows", "darwin"]
@@ -32,6 +35,9 @@ builds:
       - "-s -w"
       - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
       - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
+    hooks:
+      post:
+        - cp "{{ .Path }}" it/xk6
 
   - id: fixids
     binary: fixids
@@ -48,7 +54,7 @@ source:
 
 archives:
   - id: bundle
-    builds: ["xk6", "xk6ea"]
+    builds: ["xk6", "xk6legacy"]
     formats: ["tar.gz"]
     format_overrides:
       - goos: windows

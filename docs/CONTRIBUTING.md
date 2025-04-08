@@ -161,7 +161,7 @@ go tool cover -html=coverage.txt
 The `bats` tool is used to run the integration tests.
 
 ```bash
-bats .github/validate.bats .github/release.bats
+bats -r .
 ```
 
 [it]: <#test---run-the-integration-tests>
@@ -171,7 +171,7 @@ bats .github/validate.bats .github/release.bats
 The [xk6] tool is used to build the k6.
 
 ```bash
-goreleaser build --clean --snapshot --single-target
+goreleaser build --clean --snapshot --single-target --id xk6
 ```
 
 [xk6]: https://github.com/grafana/xk6

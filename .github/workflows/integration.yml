@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Setup Go ${{ vars.GO_VERSION }}
         uses: actions/setup-go@v5
@@ -22,14 +24,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "${{ vars.GORELEASER_VERSION }}"
-          args: build --clean --snapshot --single-target --id xk6ea -o dist/xk6
-
-      - name: Checkout tests
-        uses: actions/checkout@v4
-        with:
-          repository: grafana/xk6-it
-          path: xk6-it
-          ref: v0.1.3
+          args: build --clean --snapshot --single-target --id xk6ea
 
       - name: Setup Bats
         uses: bats-core/bats-action@3.0.0
@@ -44,6 +39,4 @@ jobs:
 
           END
 
-          export XK6="$PWD/dist/xk6"
-          cd xk6-it
-          bats test | tee -a $GITHUB_STEP_SUMMARY
+          bats it/test | tee -a $GITHUB_STEP_SUMMARY

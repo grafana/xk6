@@ -1,20 +1,19 @@
 _common_setup() {
     BASEDIR=$(dirname $BATS_TEST_DIRNAME)
 
-    EXT_MOD=github.com/grafana/xk6-it/ext
-    EXT_VER=v0.1.2
-
     IT_MOD=github.com/grafana/xk6-it
-    IT_VER=v0.1.2
+    IT_VER=$(_latest_it_version)
+
+    EXT_MOD=github.com/grafana/xk6-it/ext
+    EXT_VER=${IT_VER}
 
     local arch=$(_get_arch)
 
-    XK6=${XK6:-$(echo ${BASEDIR}/dist/xk6ea_linux_${arch}*/xk6ea)}
+    XK6=${XK6:-$(echo ${BASEDIR}/it/xk6)}
     if [ ! -x "$XK6" ]; then
         echo "    - building snapshot" >&3
         cd $BASEDIR
-        goreleaser build --clean --snapshot --single-target --id xk6ea
-        XK6=${BASEDIR}/dist/xk6ea_linux_${arch}*/xk6ea
+        goreleaser build --clean --snapshot --single-target --id xk6
     fi
 
     XK6_IMAGE=grafana/xk6:latest-${arch}
@@ -27,7 +26,15 @@ _common_setup() {
 }
 
 _latest_k6_version() {
-    local url=$(curl -s -I https://github.com/grafana/k6/releases/latest | grep -i location)
+    _get_latest_version "grafana/k6"
+}
+
+_latest_it_version() {
+    _get_latest_version "grafana/xk6-it"
+}
+
+_get_latest_version() {
+    local url=$(curl -s -I "https://github.com/$1/releases/latest" | grep -i location)
     local version="${url##*v}"
     version=${version//[[:space:]]/}
     echo -n "v${version}"

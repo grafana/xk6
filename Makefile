@@ -28,7 +28,7 @@ all: clean format security lint test build it doc makefile
 .PHONY: build
 build: 
 	@(\
-		goreleaser build --clean --snapshot --single-target;\
+		goreleaser build --clean --snapshot --single-target --id xk6;\
 	)
 
 # Clean the working directory
@@ -64,7 +64,7 @@ format:
 .PHONY: it
 it: 
 	@(\
-		bats .github/validate.bats .github/release.bats;\
+		bats -r .;\
 	)
 
 # Run the linter

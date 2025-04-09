@@ -1,0 +1,85 @@
+$id: https://grafana.github.io/xk6/compliance.schema.json
+$ref: "#/$defs/compliance"
+$defs:
+  compliance:
+    description: |
+      The result of the extension's k6 compliance checks.
+    type: object
+    required:
+      - grade
+      - level
+      - timestamp
+    properties:
+      grade:
+        $ref: "#/$defs/grade"
+        description: |
+          The results of the checks are in the form of a grade.
+      level:
+        description: |
+          Compliance expressed as a percentage.
+        type: integer
+      timestamp:
+        description: |
+          Compliance check timestamp.
+
+          The timestamp property contains the start timestamp of the check in Unix time format (the number of non-leap seconds that have elapsed since 00:00:00 UTC on 1st January 1970).
+        type: number
+        default: 0
+      checks:
+        description: |
+          Results of individual checks.
+        type: array
+        items:
+          $ref: "#/$defs/check"
+    additionalProperties: false
+  grade:
+    description: |
+      The results of the checks are in the form of a grade.
+    type: string
+    enum: ["A", "B", "C", "D", "E", "F", "G", "Z"]
+  check:
+    description: |
+      The result of a particular inspection.
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - passed
+    properties:
+      id:
+        description: |
+          The ID of the checker.
+
+          It identifies the method of check, not the execution of the check.
+        $ref: "#/$defs/checker"
+      passed:
+        description: |
+          The result of the check.
+
+          A true value of the passed property indicates a successful check, while a false value indicates a failure.
+        type: boolean
+      details:
+        description: |
+          Textual explanation of the check result.
+        type: string
+        default: ""
+  checker:
+    description: |
+      The ID of the check.
+
+      It identifies the method of check, not the execution of the check.
+    type: string
+    enum:
+      - module
+      - security
+      - vulnerability
+      - replace
+      - readme
+      - examples
+      - license
+      - git
+      - versions
+      - build
+      - smoke
+      - codeowners
+      - types

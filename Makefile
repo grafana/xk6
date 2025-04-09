@@ -17,6 +17,7 @@ __help__:
 	@echo '  it       Run the integration tests'
 	@echo '  lint     Run the linter'
 	@echo '  makefile Generate the Makefile'
+	@echo '  schema   Contribute to the JSON schema'
 	@echo '  security Run security and vulnerability checks'
 	@echo '  test     Run the tests'
 
@@ -71,7 +72,7 @@ it:
 .PHONY: lint
 lint: 
 	@(\
-		golangci-lint run;\
+		golangci-lint run ./...;\
 	)
 
 # Generate the Makefile
@@ -81,11 +82,19 @@ makefile:
 		cdo --makefile Makefile;\
 	)
 
+# Contribute to the JSON schema
+.PHONY: schema
+schema: 
+	@(\
+		yq -o=json -P docs/compliance.schema.yaml > docs/compliance.schema.json;\
+		go-jsonschema --capitalization ID -p lint --only-models -o internal/lint/compliance_gen.go docs/compliance.schema.yaml;\
+	)
+
 # Run security and vulnerability checks
 .PHONY: security
 security: 
 	@(\
-		gosec ./...;\
+		gosec -quiet ./...;\
 		govulncheck ./...;\
 	)
 

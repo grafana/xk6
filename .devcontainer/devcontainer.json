@@ -32,11 +32,19 @@
     "ghcr.io/szkiba/devcontainer-features/govulncheck:1": { "version": "1.1.4" },
     "ghcr.io/szkiba/devcontainer-features/bats:1": { "version": "1.11.1" },
     "ghcr.io/szkiba/devcontainer-features/cdo:1": { "version": "0.1.2" },
-    "ghcr.io/szkiba/devcontainer-features/mdcode:1": { "version": "0.2.0" }
+    "ghcr.io/szkiba/devcontainer-features/mdcode:1": { "version": "0.2.0" },
+    "ghcr.io/devcontainers-extra/features/eget:1": { "version": "1.3.4" }
   },
 
   "remoteEnv": {
     "GH_TOKEN": "${localEnv:GH_TOKEN}",
     "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+  },
+
+  "postCreateCommand": {
+    "yq": "eget -t v4.45.1 -a ^.tar.gz --to=/go/bin/ mikefarah/yq",
+    "jq": "eget -t 1.7.1 -a linux64 --to=/go/bin/ jqlang/jq",
+    "jd": "eget -t v2.2.2 --to=/go/bin/ josephburnett/jd",
+    "go-jsonschema": "eget -t v0.18.0 --to=/go/bin/ omissis/go-jsonschema"
   }
 }

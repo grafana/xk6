@@ -116,7 +116,7 @@ make makefile
 The [golangci-lint] tool is used for static analysis of the source code. It is advisable to run it before committing the changes.
 
 ```bash
-golangci-lint run
+golangci-lint run ./...
 ```
 
 [lint]: <#lint---run-the-linter>
@@ -127,7 +127,7 @@ golangci-lint run
 The [gosec] tool is used for security checks. The [govulncheck] tool is used to check the vulnerability of dependencies.
 
 ```bash
-gosec ./...
+gosec -quiet ./...
 govulncheck ./...
 ```
 
@@ -188,6 +188,18 @@ go run ./tools/docsme --heading 1 -o READMEea.md
 
 [doc]: <#doc---update-documentation>
 [mdcode]: <https://github.com/szkiba/mdcode>
+
+## schema - Contribute to the JSON schema
+
+The JSON schema of the compliance test can be found in the [compliance.schema.yaml] file, after modification of which the schema in JSON format ([compliance.schema.json]) and the golang data model ([compliance_gen.go]) must be regenerated.
+
+```bash
+yq -o=json -P docs/compliance.schema.yaml > docs/compliance.schema.json
+go-jsonschema --capitalization ID -p lint --only-models -o internal/lint/compliance_gen.go docs/compliance.schema.yaml
+```
+
+[compliance.schema.json]: compliance.schema.json
+[compliance_gen.go]: ../internal/lint/compliance_gen.go
 
 ### clean - Clean the working directory
 

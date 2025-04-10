@@ -29,7 +29,15 @@ jobs:
       - name: Setup Bats
         uses: bats-core/bats-action@3.0.0
         with:
-          bats-version: "1.11.1"
+          bats-version: "${{ vars.BATS_VERSION }}"
+
+      - name: Setup govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@${{ vars.GOVULNCHECK_VERSION }}
+
+      - name: Setup gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@${{ vars.GOSEC_VERSION }}
 
       - name: Run tests
         run: |
@@ -39,4 +47,5 @@ jobs:
 
           END
 
+          set -e
           bats it/test | tee -a $GITHUB_STEP_SUMMARY

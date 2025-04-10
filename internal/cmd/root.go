@@ -71,6 +71,7 @@ func New(levelVar *slog.LevelVar) *cobra.Command {
 		SilenceUsage:      true,
 		SilenceErrors:     true,
 		DisableAutoGenTag: true,
+		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 
 	flags := root.Flags()
@@ -86,7 +87,7 @@ func New(levelVar *slog.LevelVar) *cobra.Command {
 
 	root.MarkFlagsMutuallyExclusive("quiet", "verbose")
 
-	root.AddCommand(versionCmd(), buildCmd(), runCmd())
+	root.AddCommand(versionCmd(), buildCmd(), runCmd(), lintCmd())
 	root.AddCommand(helpTopics()...)
 
 	if levelVar != nil {

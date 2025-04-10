@@ -10,7 +10,7 @@
 - [ ] Create new extension skeleton (project scaffolding)
 - [x] Build k6 with extensions
 - [x] Run k6 with extensions
-- [ ] Check the extension for compliance (lint)
+- [x] Check the extension for compliance (lint)
 - [ ] Provide reusable GitHub workflows
 - [x] Distribute xk6 as a Dev Container Feature
 
@@ -103,6 +103,7 @@ This will install the `xk6` binary in `$GOPATH/bin` directory.
 * [xk6 version](#xk6-version)	 - Display version information
 * [xk6 build](#xk6-build)	 - Build a custom k6 executable
 * [xk6 run](#xk6-run)	 - Execute the run command with the custom k6
+* [xk6 lint](#xk6-lint)	 - Static analyzer for k6 extensions
 
 ---
 
@@ -269,6 +270,73 @@ xk6 run [flags] [--] [k6-flags] script
   XK6_RACE_DETECTOR      Enable/disable race detector
   CGO                    Enable/disable cgo
   XK6_BUILD_FLAGS        Specify Go build flags
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 lint
+
+Static analyzer for k6 extensions
+
+## Synopsis
+
+**Linter for k6 extensions**
+
+xk6 lint analyzes the source of the k6 extension and try to build k6 with the extension.
+
+The contents of the source directory are used for analysis. If the directory is a git workdir, it also analyzes the git metadata. The analysis is completely local and does not use external APIs (e.g. repository manager API) or services.
+
+The result of the analysis is compliance expressed as a percentage (`0`-`100`). This value is created as a weighted, normalized value of the scores of each checker. A compliance grade is created from the percentage value (`A`-`F`).
+
+By default, text output is generated. The `--json` flag can be used to generate the result in JSON format.
+
+If the grade is `C` or higher, the command is successful, otherwise it returns an exit code larger than `0`.
+This passing grade can be modified using the `--passing` flag.
+
+## Usage
+
+```bash
+xk6 lint [flags] [directory]
+```
+
+### Checkers
+
+Compliance with the requirements expected of k6 extensions is checked by various compliance checkers. The result of the checks is compliance as a percentage value (`0-100`). This value is created as a weighted, normalized value of the scores of each checker. A compliance grade is created from the percentage value (`A`-`F`, `A` is the best).
+
+- `security` - check for security issues (using the `gosec` tool)
+- `vulnerability` - check for vulnerability issues (using the `govulncheck` tool)
+- `module` - checks if there is a valid `go.mod`
+- `replace` - checks if there is no `replace` directive in `go.mod`
+- `readme` - checks if there is a readme file
+- `examples` - checks if there are files in the `examples` directory
+- `license` - checks whether there is a suitable OSS license
+- `git` - checks if the directory is git workdir
+- `versions` - checks for semantic versioning git tags
+- `build` - checks if the latest k6 version can be built with the extension
+- `smoke` - checks if the smoke test script exists and runs successfully (`smoke.js`, `smoke.ts`, `smoke.test.js` or `smoke.test.ts` in the `test`,`tests`, `examples`, `scripts` or in the base directory)
+- `types` - checks if the TypeScript API declaration file exists (`index.d.ts` in the `docs`, `api-docs` or the base directory)
+- `codeowners` - checks if there is a `CODEOWNERS` file (for official extensions) (in the `.github` or `docs` or in the base directory)
+
+## Flags
+
+```
+      --passing A|B|C|D|E|F|G|Z   Set lowest passing grade (default C)
+      --official                  Enable extra checks for official extensions
+  -o, --out string                Write output to file instead of stdout
+      --json                      Generate JSON output
+  -c, --compact                   Compact instead of pretty-printed JSON output
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
 ```
 
 ## SEE ALSO

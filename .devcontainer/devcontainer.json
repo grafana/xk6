@@ -44,7 +44,6 @@
   "postCreateCommand": {
     "yq": "eget -t v4.45.1 -a ^.tar.gz --to=/go/bin/ mikefarah/yq",
     "jq": "eget -t 1.7.1 -a linux64 --to=/go/bin/ jqlang/jq",
-    "jd": "eget -t v2.2.2 --to=/go/bin/ josephburnett/jd",
     "go-jsonschema": "eget -t v0.18.0 --to=/go/bin/ omissis/go-jsonschema"
   }
 }

@@ -144,6 +144,7 @@ jobs:
 
           END
 
+          set -e
           bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Login to Docker Hub

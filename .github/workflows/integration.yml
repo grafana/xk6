@@ -47,4 +47,5 @@ jobs:
 
           END
 
+          set -e
           bats it/test | tee -a $GITHUB_STEP_SUMMARY

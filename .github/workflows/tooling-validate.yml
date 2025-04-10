@@ -224,6 +224,7 @@ jobs:
 
           END
 
+          set -e
           bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
   report:

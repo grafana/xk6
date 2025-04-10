@@ -4,7 +4,7 @@
 >[!IMPORTANT]
 > **Upcoming changes**
 >
-> The xk6 tool is currently under refactoring. As of `v0.17.0`, an early access executable (`xk6ea`) is available in the downloadable release archives alongside `xk6`. Check [READMEea.md](READMEea.md) for usage.
+> The xk6 tool is currently under refactoring. As of `v0.17.0`, an early access executable (`xk6ea`) is available in the downloadable release archives alongside `xk6`. As of `v0.18.0`, early access functionality is also included in the `xk6` executable, which can be activated by setting the `XK6_EARLY_ACCESS` environment variable to `true`. Check [READMEea.md](READMEea.md) for usage.
 
 This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/grafana/k6).
 

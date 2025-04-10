@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"strings"
 
+	"go.k6.io/xk6/internal/cmd"
 	"go.k6.io/xk6/internal/legacy"
 )
 
@@ -48,6 +49,12 @@ type buildOps struct {
 //
 //nolint:gocritic
 func main() {
+	if os.Getenv("XK6_EARLY_ACCESS") == "true" {
+		cmd.Execute()
+
+		return
+	}
+
 	log := slog.Default()
 
 	ctx, cancel := context.WithCancel(context.Background())

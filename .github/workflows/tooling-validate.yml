@@ -250,7 +250,7 @@ jobs:
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
         with:
-          token: ${{secrets.CODECOV_TOKEN}}
+          token: ${{secrets.codecov-token}}
           slug: ${{github.repository}}
 
       - name: Generate Go Report Card

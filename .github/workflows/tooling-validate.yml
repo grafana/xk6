@@ -78,7 +78,7 @@ jobs:
           END
 
           if [ -n "${{steps.configure.outputs.codecov}}" ]; then
-            echo "Upload code coverage to codecov.com" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage data will be uploaded to Codecov." >> $GITHUB_STEP_SUMMARY
           fi
 
   security:
@@ -217,6 +217,7 @@ jobs:
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+        shell: bash
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -281,10 +282,21 @@ jobs:
             } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
 
       - name: Check go version ${{inputs.go-version}}
-        run: test "${{env.GO_VERSION}}" == "$(echo ${{inputs.go-version}}|sed -e 's/\.x//g')"
+        run: |
+          if [ ! "${{env.GO_VERSION}}" == "$(echo ${{inputs.go-version}}|sed -e 's/\.x//g')" ]; then
+            echo "::error::Mismatched go versions in devcontainers.json and workflow input"
+            exit 1
+          fi
 
       - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
-        run: test "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${{inputs.golangci-lint-version}}|sed -e 's/v//g')"
+        run: |
+          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${{inputs.golangci-lint-version}}|sed -e 's/v//g')" ]; then
+            echo "::error::Mismatched golangci-lint versions in devcontainers.json and workflow input"
+            exit 1
+          fi
 
       - name: Check goreleaser version ${{inputs.goreleaser-version}}
-        run: test "${{env.GORELEASER_VERSION}}" == "${{inputs.goreleaser-version}}"
+        run: |
+          if [ ! "${{env.GORELEASER_VERSION}}" == "${{inputs.goreleaser-version}}" ]; then
+            echo "::error::Mismatched goreleaser versions in devcontainers.json and workflow input"
+          fi

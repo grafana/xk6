@@ -1,0 +1,401 @@
+name: Extension Validate
+
+on:
+  workflow_call:
+    secrets:
+      # #region secrets
+      codecov-token:
+        description: Token to be used to upload test coverage data to Codecov.
+        required: false
+      # #endregion secrets
+    inputs:
+      # #region inputs
+      go-version:
+        description: The go version to use for the build.
+        required: true
+        type: string
+      go-versions:
+        description: The go versions to use for running the tests. JSON string array (e.g. ["1.24.x", "1.23.x"])
+        required: true
+        type: string
+      platforms:
+        description: Platforms to be used to run the tests. JSON string array (e.g. ["ubuntu-latest","macos-latest"])
+        required: true
+        type: string
+      golangci-lint-version:
+        description: The golangci-lint version to use for static analysis.
+        required: true
+        type: string
+      passing-grade:
+        description: Passing compliance grade
+        type: string
+        required: false
+        default: C
+      public:
+        description: Static content directory for GitHub Pages
+        type: string
+        required: false
+        default: public
+      k6-versions:
+        description: The k6 versions to be used for integration tests. JSON string array (e.g. ["v0.57.0","v0.56.0"])
+        required: false
+        default: '["latest"]'
+        type: string
+      xk6-version:
+        description: The xk6 version to be used.
+        required: true
+        type: string
+      bats:
+        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
+      # #endregion inputs
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      devcontainer: ${{steps.configure.outputs.devcontainer}}
+      codecov: ${{steps.configure.outputs.codecov}}
+      api-doc: ${{steps.configure.outputs.api-doc}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Configure
+        id: configure
+        run: |
+          if [ -n "${{secrets.codecov-token}}" ] ; then
+            echo "codecov=true" >> $GITHUB_OUTPUT
+          fi
+          if [ -f ".devcontainer/devcontainer.json" ]; then
+            echo "devcontainer=true" >> $GITHUB_OUTPUT
+          fi
+          if [ -f 'index.d.ts' ]; then
+            if [ -f 'tsconfig.json' ] || [ -f 'typedoc.json' ]; then
+              echo "api-doc=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Configuration
+
+          Description           | Value
+          ----------------------|--------------------------------
+          go version for build  | ${{inputs.go-version}}
+          go versions for test  | ${{join(fromJSON(inputs.go-versions),', ')}}
+          platforms for test    | ${{join(fromJSON(inputs.platforms),', ')}}
+          golangci-lint version | ${{inputs.golangci-lint-version}}
+          k6 versions for test  | ${{join(fromJSON(inputs.k6-versions),', ')}}
+
+          END
+
+          if [ -n "${{steps.configure.outputs.api-doc}}" ]; then
+            echo "API documentation will be generated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -n "${{steps.configure.outputs.codecov}}" ]; then
+            echo "Coverage data will be uploaded to Codecov." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+      - name: Run Vulnerability Checker
+        id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{inputs.go-version}}
+          go-package: ./...
+
+  compliance:
+    name: Compliance
+    needs: ["security"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go ${{inputs.go-version}}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{inputs.go-version}}
+
+      - name: Setup xk6 ${{ inputs.xk6-version }}
+        uses: grafana/setup-xk6@v0.1.0
+        with:
+          xk6-version: ${{ inputs.xk6-version }}
+
+      - name: Run xk6 lint
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Compliance
+
+          ~~~
+          END
+
+          set -e
+          xk6 lint --passing ${{inputs.passing-grade}} --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
+          echo "~~~" >> $GITHUB_STEP_SUMMARY
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: ["security"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{ inputs.go-version }}"
+
+      - name: Check module dependencies
+        shell: bash
+        run: |
+          go version
+          test -z "$(go mod tidy && git status go.* --porcelain)"
+          go mod verify
+
+      - name: Run minimal golangci-lint ${{ inputs.golangci-lint-version }}
+        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') == ''}}
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: "${{ inputs.golangci-lint-version }}"
+          args: --timeout=30m --no-config --presets bugs --enable gofmt
+
+      - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
+        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: "${{ inputs.golangci-lint-version }}"
+          only-new-issues: true
+          args: --timeout=30m
+
+  smoke:
+    name: Smoke
+    runs-on: ubuntu-latest
+    needs: ["security"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{ inputs.go-version }}"
+
+      - name: Run tests
+        run: |
+          go test -short -timeout 2m ./...
+
+  test:
+    name: Test
+    needs:
+      - lint
+      - smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ${{ fromJSON(inputs.go-versions) }}
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run tests
+        run: |
+          go test -race -timeout 2m ./...
+
+  build:
+    name: Build
+    needs:
+      - lint
+      - smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        k6-version: ${{ fromJSON(inputs.k6-versions) }}
+        go-version: ${{ fromJSON(inputs.go-versions) }}
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Setup Bats
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        uses: bats-core/bats-action@3.0.1
+        with:
+          bats-version: "1.11.1"
+
+      - name: Setup xk6 ${{ inputs.xk6-version }}
+        uses: grafana/setup-xk6@v0.1.0
+        with:
+          xk6-version: ${{ inputs.xk6-version }}
+
+      - name: Build k6
+        shell: bash
+        run: |
+          MODULE=$(go list -f '{{.Module.Path}}')
+          xk6 build ${{ matrix.k6-version }} -v --with ${MODULE}="."
+
+      - name: Run k6 version
+        shell: bash
+        run: ./k6 version
+
+      - name: Test Build
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        env:
+          K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Test Build
+
+          END
+
+          set -e
+          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
+
+  report:
+    name: Report
+    needs:
+      - config
+      - test
+      - build
+    if: ${{ (github.ref_name == 'main' || github.ref_name == 'master') && (needs.config.outputs.codecov == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go ${{inputs.go-version}}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "${{inputs.go-version}}"
+
+      - name: Test
+        run: go test -count 1 -coverprofile=coverage.txt ./...
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{secrets.codecov-token}}
+          slug: ${{github.repository}}
+
+      - name: Generate Go Report Card
+        uses: creekorful/goreportcard-action@v1.0
+
+  pages:
+    name: Pages
+    needs: ["config"]
+    if: ${{ needs.config.outputs.api-doc }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Prepare htdocs
+        run: mkdir -p ${{runner.temp}}/htdocs
+
+      - name: Generate API doc
+        run: |
+          if [ -f index.d.ts ]; then
+            bun x typedoc --out ${{runner.temp}}/htdocs
+            cp index.d.ts ${{runner.temp}}/htdocs/
+          fi
+
+      - name: Copy static content
+        run: |
+          if test -d "${{inputs.public}}"; then
+            cp -a ${{inputs.public}}/. ${{runner.temp}}/htdocs/
+          fi
+
+      - name: Setup Pages
+        if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{runner.temp}}/htdocs
+
+      - name: Deploy to GitHub Pages
+        if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+        uses: actions/deploy-pages@v4
+
+  devcontainer:
+    name: DevContainer
+    needs: ["config"]
+    if: ${{ needs.config.outputs.devcontainer }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    env:
+      GO_VERSION: ""
+      GOLANGCI_LINT_VERSION: ""
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Config
+        run: |
+          cat .devcontainer/devcontainer.json | jq -r '
+            {
+              GO_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["version"],
+              GOLANGCI_LINT_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"]
+            } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
+
+      - name: Check go version ${{inputs.go-version}}
+        run: |
+          if [ ! "${{env.GO_VERSION}}" == "$(echo ${{inputs.go-version}}|sed -e 's/\.x//g')" ]; then
+            echo "::error::Mismatched go versions in devcontainers.json and workflow input"
+            exit 1
+          fi
+
+      - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
+        run: |
+          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${{inputs.golangci-lint-version}}|sed -e 's/v//g')" ]; then
+            echo "::error::Mismatched golangci-lint versions in devcontainers.json and workflow input"
+            exit 1
+          fi

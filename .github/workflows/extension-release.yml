@@ -1,0 +1,224 @@
+name: Extension Release
+
+on:
+  workflow_call:
+    inputs:
+      # #region inputs
+      k6-version:
+        description: The k6 versions to be used.
+        type: string
+        required: true
+      xk6-version:
+        description: The xk6 versions to be used.
+        type: string
+        required: true
+      go-version:
+        description: The go version to use for the build.
+        type: string
+        required: true
+      os:
+        description: Target GOOS values. JSON string array (e.g. ["linux","windows","darwin"])
+        type: string
+        required: true
+      arch:
+        description: Target GOARCH values. JSON string array (e.g. ["amd64","arm64"])
+        type: string
+        required: true
+      with:
+        description: List of additional extension modules to be included.
+        type: string
+        required: false
+      cgo:
+        description: Enable CGO
+        type: boolean
+      private:
+        description: The repository is private
+        type: boolean
+      # #endregion inputs
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      module-path: ${{steps.module.outputs.path}}
+      repository-name: ${{steps.repository.outputs.name}}
+      version: ${{steps.version.outputs.version}}
+      with: ${{steps.with.outputs.with}}
+      cgo: ${{steps.cgo.outputs.cgo}}
+      goprivate: ${{steps.goprivate.outputs.goprivate}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Detect go module path
+        id: module
+        shell: bash
+        run: |
+          echo "path=$(go list -f '{{.Module.Path}}')" >> $GITHUB_OUTPUT
+      - name: Parse repository name
+        id: repository
+        shell: bash
+        run: |
+          echo "name=$(echo ${{github.repository}}|cut -d/ -f2)" >> $GITHUB_OUTPUT
+      - name: Version from input or tag
+        id: version
+        shell: bash
+        run: |
+          if [ "${{github.ref_type}}" == "tag" ]; then
+            echo "version=${{github.ref_name}}" >> $GITHUB_OUTPUT
+          else
+            echo "The run was not triggered by a git tag push." >&2
+            exit 1
+          fi
+      - name: Prepare extra --with arguments
+        id: with
+        shell: bash
+        run: |
+          if [ -z "${{inputs.with}}" ]; then
+            exit 0
+          fi
+          value=`for part in $(echo "${{inputs.with}}"); do echo -n " --with $part" ; done`
+          echo "with=$value" >> $GITHUB_OUTPUT
+      - name: Prepare CGO environment valiable
+        id: cgo
+        shell: bash
+        run: |
+          cgo="0"
+          if [ "${{inputs.cgo}}" == "true" ]; then
+            cgo="1"
+          fi
+          echo "cgo=${cgo}" >> $GITHUB_OUTPUT
+      - name: Prepare GOPRIVATE environment valiable
+        id: goprivate
+        shell: bash
+        run: |
+          goprivate=""
+          if [ "${{inputs.private}}" == "true" ]; then
+            goprivate="$(go list -f '{{.Module.Path}}')"
+          fi
+          echo "goprivate=${goprivate}" >> $GITHUB_OUTPUT
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: files
+          path: |
+            LICENSE*
+            README.md
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ## ${{ github.ref_name }}
+
+          ### Configuration
+
+          Description          | Value
+          ------------|-----------------------------
+          go version  | ${{inputs.go-version}}
+          k6 version  | ${{inputs.k6-version}}
+          xk6 version | ${{inputs.xk6-version}}
+          os          | ${{join(fromJSON(inputs.os),', ')}}
+          arch        | ${{join(fromJSON(inputs.arch),', ')}}
+          with        | ${{inputs.with}}
+
+          END
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+      - name: Run Vulnerability Checker
+        id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: ${{inputs.go-version}}
+          go-package: ./...
+
+  build:
+    name: Build
+    needs: ["config", "security"]
+    strategy:
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+        arch: ${{ fromJSON(inputs.arch) }}
+    env:
+      DIST_DIR: ${{needs.config.outputs.repository-name}}_${{needs.config.outputs.version}}_${{matrix.os}}_${{matrix.arch}}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: Setup xk6 ${{ inputs.xk6-version }}
+        uses: grafana/setup-xk6@v0.1.0
+        with:
+          xk6-version: ${{ inputs.xk6-version }}
+
+      - name: Build k6
+        shell: bash
+        env:
+          GOOS: ${{matrix.os}}
+          GOARCH: ${{matrix.arch}}
+          CGO: ${{needs.config.outputs.cgo}}
+          GOPRIVATE: ${{needs.config.outputs.goprivate}}
+          GH_TOKEN: ${{github.token}}
+        run: |
+          mkdir -p $DIST_DIR
+          cd $DIST_DIR
+          git config --global --add 'credential.https://github.com.helper' '!gh auth git-credential'
+          xk6 build ${{ inputs.k6-version }} --with ${{needs.config.outputs.module-path}}@${{needs.config.outputs.version}} ${{needs.config.outputs.with}}
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{env.DIST_DIR}}
+          name: files
+
+      - name: Create Archive
+        shell: bash
+        run: |
+          if [ "${{matrix.os}}" == "windows" ]; then
+            zip -r ${DIST_DIR}.zip $DIST_DIR
+          else
+            tar czf ${DIST_DIR}.tar.gz $DIST_DIR
+          fi
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{env.DIST_DIR}}.*
+          name: archive-${{matrix.os}}_${{matrix.arch}}
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+      - build
+      - config
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+          pattern: archive-*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          tag_name: ${{needs.config.outputs.version}}

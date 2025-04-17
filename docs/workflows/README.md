@@ -343,4 +343,8 @@ The **Extension Release** ([`extension-release.yml`](../../.github/workflows/ext
       private:
         description: The repository is private
         type: boolean
+      bats:
+        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
 ```

@@ -1,15 +1,13 @@
 module go.k6.io/xk6
 
-go 1.23.0
-
-toolchain go1.23.8
+go 1.24.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/fatih/color v1.18.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
-	github.com/go-git/go-git/v5 v5.15.0
-	github.com/grafana/k6foundry v0.4.5
+	github.com/go-git/go-git/v5 v5.16.0
+	github.com/grafana/k6foundry v0.4.6
 	github.com/lmittmann/tint v1.0.7
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20

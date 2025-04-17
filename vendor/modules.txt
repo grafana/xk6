@@ -94,7 +94,7 @@ github.com/go-git/go-billy/v5/helper/polyfill
 github.com/go-git/go-billy/v5/memfs
 github.com/go-git/go-billy/v5/osfs
 github.com/go-git/go-billy/v5/util
-# github.com/go-git/go-git/v5 v5.15.0
+# github.com/go-git/go-git/v5 v5.16.0
 ## explicit; go 1.23.0
 github.com/go-git/go-git/v5
 github.com/go-git/go-git/v5/config
@@ -145,7 +145,7 @@ github.com/go-git/go-git/v5/utils/trace
 # github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 ## explicit; go 1.20
 github.com/golang/groupcache/lru
-# github.com/grafana/k6foundry v0.4.5
+# github.com/grafana/k6foundry v0.4.6
 ## explicit; go 1.22.2
 github.com/grafana/k6foundry
 # github.com/hhatto/gorst v0.0.0-20181029133204-ca9f730cac5b

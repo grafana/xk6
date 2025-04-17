@@ -55,6 +55,76 @@ func FromOSEnv() Builder {
 	return parseEnv(env)
 }
 
+// Build builds k6 at the configured version with the
+// configured extensions and writes a binary at outputFile.
+func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
+	if outfile == "" {
+		return errMissingOutputFile
+	}
+
+	log.Info("Building k6")
+
+	opts := k6foundry.NativeFoundryOpts{
+		GoOpts: k6foundry.GoOpts{
+			GoGetTimeout:   b.TimeoutGet,
+			GOBuildTimeout: b.TimeoutBuild,
+			CopyGoEnv:      true,
+			Env:            b.newBuilderEnv(log),
+		},
+		K6Repo:      b.K6Repo,
+		SkipCleanup: b.SkipCleanup,
+		Stdout:      os.Stdout,
+		Stderr:      os.Stderr,
+		Logger:      log,
+	}
+
+	k6b, err := k6foundry.NewNativeFoundry(ctx, opts)
+	if err != nil {
+		return err
+	}
+
+	// the user's specified output file might be relative, and
+	// because the `go build` command is executed in a different,
+	// temporary folder, we convert the user's input to an
+	// absolute path so it goes the expected place
+	absOutputFile, err := filepath.Abs(outfile)
+	if err != nil {
+		return err
+	}
+
+	const outFilePerm = 0o777
+
+	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, outFilePerm) // #nosec G302 G304
+	if err != nil {
+		return err
+	}
+	defer outFile.Close() //nolint:errcheck
+
+	platform, err := b.parsePlatform()
+	if err != nil {
+		return err
+	}
+
+	mods, err := b.getModules()
+	if err != nil {
+		return err
+	}
+
+	reps, err := b.getReplacements()
+	if err != nil {
+		return err
+	}
+
+	k6Version := b.K6Version
+	if k6Version == "" {
+		k6Version = "latest"
+	}
+
+	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
+
+	return err
+}
+
 func parseEnv(env map[string]string) Builder {
 	return Builder{
 		Compile: Compile{
@@ -144,76 +214,6 @@ func (b Builder) parsePlatform() (k6foundry.Platform, error) {
 	}
 
 	return k6foundry.ParsePlatform(os + "/" + arch)
-}
-
-// Build builds k6 at the configured version with the
-// configured extensions and writes a binary at outputFile.
-func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) error {
-	if outfile == "" {
-		return errMissingOutputFile
-	}
-
-	log.Info("Building k6")
-
-	opts := k6foundry.NativeFoundryOpts{
-		GoOpts: k6foundry.GoOpts{
-			GoGetTimeout:   b.TimeoutGet,
-			GOBuildTimeout: b.TimeoutBuild,
-			CopyGoEnv:      true,
-			Env:            b.newBuilderEnv(log),
-		},
-		K6Repo:      b.K6Repo,
-		SkipCleanup: b.SkipCleanup,
-		Stdout:      os.Stdout,
-		Stderr:      os.Stderr,
-		Logger:      log,
-	}
-
-	k6b, err := k6foundry.NewNativeFoundry(ctx, opts)
-	if err != nil {
-		return err
-	}
-
-	// the user's specified output file might be relative, and
-	// because the `go build` command is executed in a different,
-	// temporary folder, we convert the user's input to an
-	// absolute path so it goes the expected place
-	absOutputFile, err := filepath.Abs(outfile)
-	if err != nil {
-		return err
-	}
-
-	const outFilePerm = 0o777
-
-	outFile, err := os.OpenFile(absOutputFile, os.O_WRONLY|os.O_CREATE, outFilePerm) // #nosec G302 G304
-	if err != nil {
-		return err
-	}
-	defer outFile.Close() //nolint:errcheck
-
-	platform, err := b.parsePlatform()
-	if err != nil {
-		return err
-	}
-
-	mods, err := b.getModules()
-	if err != nil {
-		return err
-	}
-
-	reps, err := b.getReplacements()
-	if err != nil {
-		return err
-	}
-
-	k6Version := b.K6Version
-	if k6Version == "" {
-		k6Version = "latest"
-	}
-
-	_, err = k6b.Build(ctx, platform, k6Version, mods, reps, buildCommandArgs(b.BuildFlags), outFile)
-
-	return err
 }
 
 func envOrDefaultValue(env map[string]string, name, defaultValue string) string {

@@ -126,7 +126,7 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: "${{ inputs.golangci-lint-version }}"
-          args: --timeout=30m --no-config --presets bugs --enable gofmt
+          args: --timeout=30m --no-config
 
       - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
         if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}

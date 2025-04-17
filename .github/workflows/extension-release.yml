@@ -34,6 +34,10 @@ on:
       private:
         description: The repository is private
         type: boolean
+      bats:
+        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
       # #endregion inputs
 
 jobs:
@@ -161,6 +165,12 @@ jobs:
         with:
           go-version: ${{ inputs.go-version }}
 
+      - name: Setup Bats
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        uses: bats-core/bats-action@3.0.1
+        with:
+          bats-version: "1.11.1"
+
       - name: Setup xk6 ${{ inputs.xk6-version }}
         uses: grafana/setup-xk6@v0.1.0
         with:
@@ -179,6 +189,22 @@ jobs:
           cd $DIST_DIR
           git config --global --add 'credential.https://github.com.helper' '!gh auth git-credential'
           xk6 build ${{ inputs.k6-version }} --with ${{needs.config.outputs.module-path}}@${{needs.config.outputs.version}} ${{needs.config.outputs.with}}
+
+      - name: Integration Test
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        env:
+          K6_VERSION: ${{ inputs.k6-version }}
+          K6: ${{env.DIST_DIR}}/k6
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          set -e
+          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Download Artifacts
         uses: actions/download-artifact@v4

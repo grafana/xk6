@@ -213,7 +213,7 @@ jobs:
           args: build --clean --snapshot --single-target
           # #endregion build-args
 
-      - name: Test Build
+      - name: Integration Test
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
@@ -221,7 +221,7 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ### Test Build
+          ### Integration Test
 
           END
 

@@ -274,15 +274,16 @@ jobs:
         shell: bash
         run: ./k6 version
 
-      - name: Test Build
+      - name: Integration Test
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+          K6: "${{github.workspace}}/k6"
         shell: bash
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ### Test Build
+          ### Integration Test
 
           END
 

@@ -133,14 +133,14 @@ jobs:
           version: "${{ inputs.goreleaser-version }}"
           args: release --clean --snapshot
 
-      - name: Test Snapshot
+      - name: Integration Test
         if: ${{ inputs.bats != '' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ### Test Snapshot
+          ### Integration Test
 
           END
 

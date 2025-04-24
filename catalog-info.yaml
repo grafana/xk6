@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: xk6
+  title: xk6
+  description: |
+    This command line tool and associated Go package makes it easy to make custom builds of k6.
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: grafana/xk6
+spec:
+  type: tool
+  owner: group:default/k6-extensions
+  lifecycle: production

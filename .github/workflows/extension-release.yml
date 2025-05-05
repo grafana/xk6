@@ -54,6 +54,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Detect go module path
         id: module
         shell: bash
@@ -67,9 +69,12 @@ jobs:
       - name: Version from input or tag
         id: version
         shell: bash
+        env:
+          REF_TYPE: ${{github.ref_type}}
+          REF_NAME: ${{github.ref_name}}
         run: |
-          if [ "${{github.ref_type}}" == "tag" ]; then
-            echo "version=${{github.ref_name}}" >> $GITHUB_OUTPUT
+          if [ "${REF_TYPE}" == "tag" ]; then
+            echo "version=${REF_NAME}" >> $GITHUB_OUTPUT
           else
             echo "The run was not triggered by a git tag push." >&2
             exit 1
@@ -77,27 +82,33 @@ jobs:
       - name: Prepare extra --with arguments
         id: with
         shell: bash
+        env:
+          WITH: ${{inputs.with}}
         run: |
-          if [ -z "${{inputs.with}}" ]; then
+          if [ -z "${WITH}" ]; then
             exit 0
           fi
-          value=`for part in $(echo "${{inputs.with}}"); do echo -n " --with $part" ; done`
+          value=`for part in $(echo "${WITH}"); do echo -n " --with $part" ; done`
           echo "with=$value" >> $GITHUB_OUTPUT
       - name: Prepare CGO environment valiable
         id: cgo
         shell: bash
+        env:
+          CGO: ${{inputs.cgo}}
         run: |
           cgo="0"
-          if [ "${{inputs.cgo}}" == "true" ]; then
+          if [ "${CGO}" == "true" ]; then
             cgo="1"
           fi
           echo "cgo=${cgo}" >> $GITHUB_OUTPUT
       - name: Prepare GOPRIVATE environment valiable
         id: goprivate
         shell: bash
+        env:
+          PRIVATE: ${{inputs.private}}
         run: |
           goprivate=""
-          if [ "${{inputs.private}}" == "true" ]; then
+          if [ "${PRIVATE}" == "true" ]; then
             goprivate="$(go list -f '{{.Module.Path}}')"
           fi
           echo "goprivate=${goprivate}" >> $GITHUB_OUTPUT
@@ -109,21 +120,30 @@ jobs:
             LICENSE*
             README.md
       - name: Summary
+        env:
+          GO_VERSION: ${{ inputs.go-version }}
+          K6_VERSION: ${{ inputs.k6-version }}
+          XK6_VERSION: ${{ inputs.xk6-version }}
+          WITH: ${{ inputs.with }}
+          OS: ${{ join(fromJSON(inputs.os),', ') }}
+          ARCH: ${{ join(fromJSON(inputs.arch),', ') }}
+          REF_NAME: ${{ github.ref_name }}
+        shell: bash
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ## ${{ github.ref_name }}
+          ## ${REF_NAME}
 
           ### Configuration
 
           Description          | Value
           ------------|-----------------------------
-          go version  | ${{inputs.go-version}}
-          k6 version  | ${{inputs.k6-version}}
-          xk6 version | ${{inputs.xk6-version}}
-          os          | ${{join(fromJSON(inputs.os),', ')}}
-          arch        | ${{join(fromJSON(inputs.arch),', ')}}
-          with        | ${{inputs.with}}
+          go version  | ${GO_VERSION}
+          k6 version  | ${K6_VERSION}
+          xk6 version | ${XK6_VERSION}
+          os          | ${OS}
+          arch        | ${ARCH}
+          with        | ${WITH}
 
           END
 
@@ -134,15 +154,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+        uses: securego/gosec@955a68d0d19f4afb7503068f95059f7d0c529017 # v2.22.3
         with:
           args: ./...
 
       - name: Run Vulnerability Checker
         id: govulncheck
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           go-version-input: ${{inputs.go-version}}
           go-package: ./...
@@ -167,7 +189,7 @@ jobs:
 
       - name: Setup Bats
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
-        uses: bats-core/bats-action@3.0.1
+        uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
           bats-version: "1.11.1"
 
@@ -184,17 +206,22 @@ jobs:
           CGO: ${{needs.config.outputs.cgo}}
           GOPRIVATE: ${{needs.config.outputs.goprivate}}
           GH_TOKEN: ${{github.token}}
+          K6_VERSION: ${{ inputs.k6-version }}
+          MODULE_PATH: ${{needs.config.outputs.module-path}}
+          VERSION: ${{needs.config.outputs.version}}
+          WITH: ${{needs.config.outputs.with}}
         run: |
           mkdir -p $DIST_DIR
           cd $DIST_DIR
           git config --global --add 'credential.https://github.com.helper' '!gh auth git-credential'
-          xk6 build ${{ inputs.k6-version }} --with ${{needs.config.outputs.module-path}}@${{needs.config.outputs.version}} ${{needs.config.outputs.with}}
+          xk6 build ${K6_VERSION} --with ${MODULE_PATH}@${VERSION} ${WITH}
 
       - name: Integration Test
-        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
+        if: ${{ env.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSION: ${{ inputs.k6-version }}
           K6: ${{env.DIST_DIR}}/k6
+          BATS: ${{ inputs.bats }}
         shell: bash
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
@@ -204,7 +231,7 @@ jobs:
           END
 
           set -e
-          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
+          bats ${{ env.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -214,8 +241,10 @@ jobs:
 
       - name: Create Archive
         shell: bash
+        env:
+          OS: ${{matrix.os}}
         run: |
-          if [ "${{matrix.os}}" == "windows" ]; then
+          if [ "${OS}" == "windows" ]; then
             zip -r ${DIST_DIR}.zip $DIST_DIR
           else
             tar czf ${DIST_DIR}.tar.gz $DIST_DIR
@@ -244,7 +273,7 @@ jobs:
           pattern: archive-*
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
           files: dist/*
           tag_name: ${{needs.config.outputs.version}}

@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write
     with:
       # #region inputs
       go-version: ${{vars.GO_VERSION}}

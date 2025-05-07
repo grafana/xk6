@@ -214,7 +214,7 @@ jobs:
           mkdir -p $DIST_DIR
           cd $DIST_DIR
           git config --global --add 'credential.https://github.com.helper' '!gh auth git-credential'
-          xk6 build ${K6_VERSION} --with ${MODULE_PATH}@${VERSION} ${WITH}
+          xk6 build --with ${MODULE_PATH}@${VERSION} ${WITH}
 
       - name: Integration Test
         if: ${{ env.bats != '' && runner.os == 'Linux' }}

@@ -293,7 +293,7 @@ jobs:
           K6_VERSION: ${{ matrix.k6-version }}
         run: |
           MODULE=$(go list -f '{{.Module.Path}}')
-          xk6 build ${K6_VERSION} -v --with ${MODULE}="."
+          xk6 build -v --with ${MODULE}="."
 
       - name: Run k6 version
         shell: bash

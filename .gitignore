@@ -8,4 +8,4 @@ k6.exe
 /dist/
 
 # grafana/shared-workflows
-/_shared-workflows/
+/_shared-workflows*

@@ -6,3 +6,6 @@ k6.exe
 /coverage.txt
 
 /dist/
+
+# grafana/shared-workflows
+/_shared-workflows/

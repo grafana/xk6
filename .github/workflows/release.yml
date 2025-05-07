@@ -12,6 +12,9 @@ jobs:
   release:
     name: Release
     uses: ./.github/workflows/tooling-release.yml
+    permissions:
+      contents: write
+      packages: write
     secrets:
       # #region secrets
       docker-user: ${{secrets.DOCKER_USER}}

@@ -15,11 +15,6 @@ jobs:
     permissions:
       contents: write
       packages: write
-    secrets:
-      # #region secrets
-      docker-user: ${{secrets.DOCKER_USER}}
-      docker-token: ${{secrets.DOCKER_PASS}}
-      # #endregion
     with:
       # #region inputs
       go-version: ${{vars.GO_VERSION}}

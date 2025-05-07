@@ -51,13 +51,6 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
     tags: ["v*.*.*"]
 ```
 
-**secrets**
-
-```yaml file=../../.github/workflows/release.yml region=secrets
-      docker-user: ${{secrets.DOCKER_USER}}
-      docker-token: ${{secrets.DOCKER_PASS}}
-```
-
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
@@ -165,18 +158,7 @@ The **Tooling Release** ([`tooling-release.yml`](../../.github/workflows/tooling
 
 - **Release**: Create and publish release artifacts using [GoReleaser](https://goreleaser.com/) tool. Before creating the final release artifacts, a snapshot build is created. [Bats](https://github.com/bats-core/bats-core) (Bash Automated Testing System) scripts can be specified as integration tests for the snapshot build. These will be executed and if any of them fail, the workflow will stop with an error.
 
-  The created release artifacts will be published to GitHub releases. If the GoReleaser configuration contains a Docker image configuration, the created Docker images will also be published to the appropriate Docker registry. GitHub Packages and Docker Hub repositories are supported.  It is even possible to publish to both registries at the same time. Docker Hub authentication credentials should be passed as a workflow input parameter (`docker-user`, `docker-token`).
-
-**Secrets**
-
-```yaml file=../../.github/workflows/tooling-release.yml region=secrets
-      docker-user:
-        description: Username to use for pushing Docker images to Docker Hub.
-        required: false
-      docker-token:
-        description: Token to use for pushing Docker images to Docker Hub.
-        required: false
-```
+  The created release artifacts will be published to GitHub releases. If the GoReleaser configuration contains a Docker image configuration, the created Docker images will also be published to the appropriate Docker registry. GitHub Packages and Docker Hub repositories are supported.  It is even possible to publish to both registries at the same time.
 
 **Inputs**
 

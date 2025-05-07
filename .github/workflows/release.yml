@@ -6,6 +6,8 @@ on:
     tags: ["v*.*.*"]
   # #endregion triggers
 
+permissions: {}
+
 jobs:
   release:
     name: Release

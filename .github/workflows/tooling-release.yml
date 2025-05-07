@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Configure
         id: configure
         run: |
@@ -55,25 +57,32 @@ jobs:
             echo "docker-io=true" >> $GITHUB_OUTPUT
           fi
       - name: Summary
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          GO_VERSION: ${{ inputs.go-version }}
+          GORELEASER_VERSION: ${{ inputs.goreleaser-version }}
+          K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+          GHCR_IO: ${{ steps.configure.outputs.ghcr-io }}
+          DOCKER_IO: ${{ steps.configure.outputs.docker-io }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ## ${{ github.ref_name }}
+          ## ${REF_NAME}
 
           ### Configuration
 
           Description          | Value
           ---------------------|-----------------------------
-          go version for build | ${{inputs.go-version}}
-          GoReleaser version   | ${{inputs.goreleaser-version}}
-          k6 versions for test | ${{join(fromJSON(inputs.k6-versions),', ')}}
+          go version for build | ${GO_VERSION}
+          GoReleaser version   | ${GORELEASER_VERSION}
+          k6 versions for test | ${K6_VERSIONS}
 
           END
 
-          if [ -n "${{steps.configure.outputs.ghcr-io}}" ]; then
+          if [ -n "${GHCR_IO}" ]; then
             echo "Push Docker image to ghcr.io" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -n "${{steps.configure.outputs.docker-io}}" ]; then
+          if [ -n "${DOCKER_IO}" ]; then
             echo "Push Docker image to docker.io" >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -84,15 +93,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+        uses: securego/gosec@955a68d0d19f4afb7503068f95059f7d0c529017 # v2.22.3
         with:
           args: ./...
 
       - name: Run Vulnerability Checker
         id: govulncheck
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           go-version-input: ${{inputs.go-version}}
           go-package: ./...
@@ -109,34 +120,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Go ${{ inputs.go-version }}
         uses: actions/setup-go@v5
         with:
           go-version: "${{ inputs.go-version }}"
+          cache: false
 
       - name: Set up QEMU
         if: ${{needs.config.outputs.docker == 'true'}}
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
           platforms: "amd64,arm64"
 
       - name: Setup Bats
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
-        uses: bats-core/bats-action@3.0.1
+        uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
           bats-version: "1.11.1"
 
       - name: GoReleaser snapshot
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
           version: "${{ inputs.goreleaser-version }}"
           args: release --clean --snapshot
 
       - name: Integration Test
-        if: ${{ inputs.bats != '' }}
+        if: ${{ env.bats != '' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+          BATS: ${{ inputs.bats }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -145,25 +159,25 @@ jobs:
           END
 
           set -e
-          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
+          bats ${{ env.bats }} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Login to Docker Hub
         if: ${{ needs.config.outputs.docker-io == 'true' }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           username: ${{ secrets.docker-user }}
           password: ${{ secrets.docker-token }}
 
       - name: Login to GitHub Packages
         if: ${{ needs.config.outputs.ghcr-io == 'true' }}
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: GoReleaser release
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
           version: "${{ inputs.goreleaser-version }}"
           args: release --clean

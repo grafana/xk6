@@ -62,6 +62,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Configure
         id: configure
         run: |
@@ -77,6 +79,15 @@ jobs:
             fi
           fi
       - name: Summary
+        shell: bash
+        env:
+          GO_VERSION: ${{inputs.go-version}}
+          GO_VERSIONS: ${{ join(fromJSON(inputs.go-versions),' ') }}
+          GOLANGCI_LINT_VERSION: ${{inputs.golangci-lint-version}}
+          K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
+          PLATFORMS: ${{ join(fromJSON(inputs.platforms),' ') }}
+          API_DOC: ${{ steps.configure.outputs.api-doc }}
+          CODECOV: ${{ steps.configure.outputs.codecov }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -84,19 +95,19 @@ jobs:
 
           Description           | Value
           ----------------------|--------------------------------
-          go version for build  | ${{inputs.go-version}}
-          go versions for test  | ${{join(fromJSON(inputs.go-versions),', ')}}
-          platforms for test    | ${{join(fromJSON(inputs.platforms),', ')}}
-          golangci-lint version | ${{inputs.golangci-lint-version}}
-          k6 versions for test  | ${{join(fromJSON(inputs.k6-versions),', ')}}
+          go version for build  | ${GO_VERSION}
+          go versions for test  | ${GO_VERSIONS}
+          platforms for test    | ${PLATFORMS}
+          golangci-lint version | ${GOLANGCI_LINT_VERSION}
+          k6 versions for test  | ${K6_VERSIONS}
 
           END
 
-          if [ -n "${{steps.configure.outputs.api-doc}}" ]; then
+          if [ -n "${API_DOC}" ]; then
             echo "API documentation will be generated." >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -n "${{steps.configure.outputs.codecov}}" ]; then
+          if [ -n "${CODECOV}" ]; then
             echo "Coverage data will be uploaded to Codecov." >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -107,15 +118,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
+        uses: securego/gosec@955a68d0d19f4afb7503068f95059f7d0c529017 # v2.22.3
         with:
           args: ./...
 
       - name: Run Vulnerability Checker
         id: govulncheck
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           go-version-input: ${{inputs.go-version}}
           go-package: ./...
@@ -129,6 +142,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
         uses: actions/setup-go@v5
@@ -142,6 +156,8 @@ jobs:
 
       - name: Run xk6 lint
         shell: bash
+        env:
+          PASSING_GRADE: ${{ inputs.passing-grade }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -151,7 +167,7 @@ jobs:
           END
 
           set -e
-          xk6 lint --passing ${{inputs.passing-grade}} --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
+          xk6 lint --passing ${PASSING_GRADE} --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
           echo "~~~" >> $GITHUB_STEP_SUMMARY
 
   lint:
@@ -161,6 +177,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
         uses: actions/setup-go@v5
@@ -176,14 +194,14 @@ jobs:
 
       - name: Run minimal golangci-lint ${{ inputs.golangci-lint-version }}
         if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') == ''}}
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
         with:
           version: "${{ inputs.golangci-lint-version }}"
           args: --timeout=30m --no-config
 
       - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
         if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
         with:
           version: "${{ inputs.golangci-lint-version }}"
           only-new-issues: true
@@ -196,6 +214,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
         uses: actions/setup-go@v5
@@ -220,6 +240,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
@@ -247,6 +269,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
@@ -255,7 +278,7 @@ jobs:
 
       - name: Setup Bats
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
-        uses: bats-core/bats-action@3.0.1
+        uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
           bats-version: "1.11.1"
 
@@ -266,9 +289,11 @@ jobs:
 
       - name: Build k6
         shell: bash
+        env:
+          K6_VERSION: ${{ matrix.k6-version }}
         run: |
           MODULE=$(go list -f '{{.Module.Path}}')
-          xk6 build ${{ matrix.k6-version }} -v --with ${MODULE}="."
+          xk6 build -v --with ${MODULE}="."
 
       - name: Run k6 version
         shell: bash
@@ -279,6 +304,7 @@ jobs:
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
           K6: "${{github.workspace}}/k6"
+          BATS: ${{ inputs.bats }}
         shell: bash
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
@@ -288,7 +314,7 @@ jobs:
           END
 
           set -e
-          bats ${{ inputs.bats }} | tee -a $GITHUB_STEP_SUMMARY
+          bats ${BATS} | tee -a $GITHUB_STEP_SUMMARY
 
   report:
     name: Report
@@ -301,6 +327,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
         uses: actions/setup-go@v5
@@ -311,13 +339,13 @@ jobs:
         run: go test -count 1 -coverprofile=coverage.txt ./...
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
         with:
           token: ${{secrets.codecov-token}}
           slug: ${{github.repository}}
 
       - name: Generate Go Report Card
-        uses: creekorful/goreportcard-action@v1.0
+        uses: creekorful/goreportcard-action@1f35ced8cdac2cba28c9a2f2288a16aacfd507f9 # v1.0
 
   pages:
     name: Pages
@@ -331,9 +359,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
 
       - name: Prepare htdocs
         run: mkdir -p ${{runner.temp}}/htdocs
@@ -346,9 +376,12 @@ jobs:
           fi
 
       - name: Copy static content
+        shell: bash
+        env:
+          PUBLIC: ${{ inputs.public }}
         run: |
-          if test -d "${{inputs.public}}"; then
-            cp -a ${{inputs.public}}/. ${{runner.temp}}/htdocs/
+          if test -d "${PUBLIC}"; then
+            cp -a ${PUBLIC}/. ${{runner.temp}}/htdocs/
           fi
 
       - name: Setup Pages
@@ -378,6 +411,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Config
         run: |
@@ -388,15 +423,21 @@ jobs:
             } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
 
       - name: Check go version ${{inputs.go-version}}
+        shell: bash
+        env:
+          INPUT_GO_VERSION: ${{inputs.go-version}}
         run: |
-          if [ ! "${{env.GO_VERSION}}" == "$(echo ${{inputs.go-version}}|sed -e 's/\.x//g')" ]; then
+          if [ ! "${{env.GO_VERSION}}" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
             echo "::error::Mismatched go versions in devcontainers.json and workflow input"
             exit 1
           fi
 
       - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
+        shell: bash
+        env:
+          INPUT_GOLANGCI_LINT_VERSION: ${{inputs.golangci-lint-version}}
         run: |
-          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${{inputs.golangci-lint-version}}|sed -e 's/v//g')" ]; then
+          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${INPUT_GOLANGCI_LINT_VERSION}|sed -e 's/v//g')" ]; then
             echo "::error::Mismatched golangci-lint versions in devcontainers.json and workflow input"
             exit 1
           fi

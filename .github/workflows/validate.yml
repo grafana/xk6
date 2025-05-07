@@ -9,6 +9,8 @@ on:
     branches: ["main", "master"]
   # #endregion triggers
 
+permissions: {}
+
 jobs:
   validate:
     name: Validate
@@ -27,3 +29,20 @@ jobs:
       k6-versions: ${{vars.K6_VERSIONS}}
       bats: .github/validate.bats
       # #endregion inputs
+
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6.0.1
+
+      - name: Run zizmor
+        run: uvx zizmor --format=github --config .github/zizmor.yml .github/workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

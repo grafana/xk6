@@ -19,7 +19,8 @@ builds:
     ldflags:
       - "-s -w"
       - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
-      - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
+      - "-X {{.ModulePath}}/internal/cmd.appname={{.ProjectName}}"
+      - "-X {{.ModulePath}}/internal/cmd.binary={{.Binary}}"
     hooks:
       post:
         - cp "{{ .Path }}" it/xk6
@@ -34,7 +35,8 @@ builds:
     ldflags:
       - "-s -w"
       - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
-      - "-X {{.ModulePath}}/internal/cmd.appname={{.Binary}}"
+      - "-X {{.ModulePath}}/internal/cmd.appname={{.ProjectName}}"
+      - "-X {{.ModulePath}}/internal/cmd.binary={{.Binary}}"
     hooks:
       post:
         - cp "{{ .Path }}" it/xk6
@@ -47,6 +49,20 @@ builds:
     flags: ["-trimpath"]
     env: ["CGO_ENABLED=0"]
     ldflags: ["-s -w"]
+
+  - id: gh-xk6
+    no_unique_dist_dir: true
+    binary: "gh-xk6/gh-xk6_{{ .Tag }}_{{ .Os }}-{{ .Arch }}{{if .Arm}}_{{.Arm}}{{end}}"
+    main: .
+    goos: ["linux", "windows", "darwin"]
+    goarch: ["amd64", "arm64"]
+    flags: ["-trimpath"]
+    env: ["CGO_ENABLED=0"]
+    ldflags:
+      - "-s -w"
+      - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
+      - "-X {{.ModulePath}}/internal/cmd.appname={{.ProjectName}}"
+      - "-X {{.ModulePath}}/internal/cmd.binary=gh-xk6"
 
 source:
   enabled: true

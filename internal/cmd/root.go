@@ -56,7 +56,8 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 var (
 	version = ""
 	appname = "xk6"
-	binary  = appname
+	// Note that binary = appname will not work because ldflags inserts the values to the same place.
+	binary = "xk6"
 )
 
 //go:embed help/root.md

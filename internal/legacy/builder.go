@@ -128,6 +128,7 @@ func (b Builder) Build(ctx context.Context, log *slog.Logger, outfile string) er
 func parseEnv(env map[string]string) Builder {
 	return Builder{
 		Compile: Compile{
+			Cgo: env["CGO_ENABLED"] == "1",
 			Platform: Platform{
 				OS:   env["GOOS"],
 				Arch: env["GOARCH"],

@@ -88,12 +88,12 @@ func buildCommonFlags(flags *pflag.FlagSet, opts *buildOptions) error {
 
 	env = efa.New(flags, "", nil)
 
-	err = env.Bind("k6-version", "cgo")
+	err = env.Bind("k6-version")
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return env.BindTo("cgo", "CGO_ENABLED")
 }
 
 func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, error) { //nolint:ireturn

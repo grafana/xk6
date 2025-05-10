@@ -206,7 +206,7 @@ xk6 build [flags] [k6-version]
   GOARM                  The target ARM version
   XK6_SKIP_CLEANUP       Keep the temporary build directory
   XK6_RACE_DETECTOR      Enable/disable race detector
-  CGO                    Enable/disable cgo
+  CGO_ENABLED            Enable/disable cgo
   XK6_BUILD_FLAGS        Specify Go build flags
 ```
 
@@ -268,7 +268,7 @@ xk6 run [flags] [--] [k6-flags] script
   GOARM                  The target ARM version
   XK6_SKIP_CLEANUP       Keep the temporary build directory
   XK6_RACE_DETECTOR      Enable/disable race detector
-  CGO                    Enable/disable cgo
+  CGO_ENABLED            Enable/disable cgo
   XK6_BUILD_FLAGS        Specify Go build flags
 ```
 

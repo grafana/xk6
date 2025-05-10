@@ -21,9 +21,6 @@ builds:
       - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
       - "-X {{.ModulePath}}/internal/cmd.appname={{.ProjectName}}"
       - "-X {{.ModulePath}}/internal/cmd.binary={{.Binary}}"
-    hooks:
-      post:
-        - cp "{{ .Path }}" it/xk6
 
   - id: xk6
     binary: xk6ea

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -55,6 +56,8 @@ func trapSignals(ctx context.Context, cancel context.CancelFunc) {
 var (
 	version = ""
 	appname = "xk6"
+	// Note that binary = appname will not work because ldflags inserts the values to the same place.
+	binary = "xk6"
 )
 
 //go:embed help/root.md
@@ -72,6 +75,10 @@ func New(levelVar *slog.LevelVar) *cobra.Command {
 		SilenceErrors:     true,
 		DisableAutoGenTag: true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
+	}
+
+	if binary != appname {
+		root.Annotations = map[string]string{cobra.CommandDisplayNameAnnotation: strings.ReplaceAll(binary, "-", " ")}
 	}
 
 	flags := root.Flags()

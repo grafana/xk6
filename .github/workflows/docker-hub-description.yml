@@ -1,0 +1,40 @@
+name: Docker Hub Description
+# This workflow is triggered by a push to the main branch and updates the Docker Hub description.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: ["main", "master"]
+
+permissions: {}
+
+jobs:
+  dockerhub:
+    name: Docker Hub Description
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    env:
+      README: docs/docker-hub/README.md
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Login to Docker Hub
+        uses: grafana/shared-workflows/actions/dockerhub-login@13fb504e3bfe323c1188bf244970d94b2d336e86 # dockerhub-login-v1.0.1
+
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@432a30c9e07499fd01da9f8a49f0faf9e0ca5b77 # v4.0.2
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_PASSWORD }}
+          readme-filepath: ${{ env.README }}
+
+      - name: Config
+        run: |
+          echo "## Docker Hub Description" >> $GITHUB_STEP_SUMMARY
+          echo "---"
+          cat ${{env.README}} >> $GITHUB_STEP_SUMMARY

@@ -70,7 +70,7 @@ source:
 
 archives:
   - id: bundle
-    builds: ["xk6", "xk6legacy"]
+    ids: ["xk6", "xk6legacy"]
     formats: ["tar.gz"]
     format_overrides:
       - goos: windows

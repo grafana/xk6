@@ -194,7 +194,7 @@ jobs:
           bats-version: "1.11.1"
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@v0.1.0
+        uses: grafana/setup-xk6@v1.0.0
         with:
           xk6-version: ${{ inputs.xk6-version }}
 

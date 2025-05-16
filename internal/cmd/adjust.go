@@ -14,6 +14,7 @@ var adjustHelp string
 
 type adjustOptions struct {
 	directory string
+	container bool
 	scaffold.Sample
 }
 
@@ -45,6 +46,7 @@ func adjustCmd() *cobra.Command {
 
 	flags.StringVarP(&opts.Description, "description", "d", "", "A short, on-sentence description of the extension")
 	flags.StringVarP(&opts.Package, "package", "p", "", "The go package name for the extension")
+	flags.BoolVar(&opts.container, "dev-container", false, "Run in a development container")
 
 	return cmd
 }
@@ -57,7 +59,10 @@ func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 
 	ok, sample := scaffold.IsSample(modulePath)
 	if !ok {
-		slog.Info("Not a sample extension, skipping customization", "module", modulePath)
+		// Exit silently if run in a development container
+		if !opts.container {
+			slog.Info("Not a sample extension, skipping customization", "module", modulePath)
+		}
 
 		return nil
 	}

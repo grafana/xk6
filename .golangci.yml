@@ -35,6 +35,8 @@ linters:
             - github.com/go-enry/go-license-detector/v4
             - github.com/szkiba/docsme
             - github.com/szkiba/efa
+            - github.com/chainguard-dev/git-urls
+            - github.com/charmbracelet/huh
             - github.com/grafana/k6foundry
             - go.k6.io/xk6
   exclusions:

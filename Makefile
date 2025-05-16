@@ -51,6 +51,7 @@ coverage: test
 doc: 
 	@(\
 		mdcode update docs/workflows/README.md;\
+		mdcode update examples/README.md;\
 		go run ./tools/docsme --heading 1 -o READMEea.md;\
 	)
 

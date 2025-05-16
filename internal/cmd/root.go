@@ -94,8 +94,12 @@ func New(levelVar *slog.LevelVar) *cobra.Command {
 
 	root.MarkFlagsMutuallyExclusive("quiet", "verbose")
 
-	root.AddCommand(versionCmd(), buildCmd(), runCmd(), lintCmd())
+	root.AddCommand(versionCmd(), newCmd(), buildCmd(), runCmd(), lintCmd())
 	root.AddCommand(helpTopics()...)
+
+	cmd := adjustCmd()
+	cmd.Hidden = true // This is an internal command, so we don't want to show it in the help output.
+	root.AddCommand(cmd)
 
 	if levelVar != nil {
 		root.PersistentPreRun = func(_ *cobra.Command, _ []string) {

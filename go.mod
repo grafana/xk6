@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/fatih/color v1.18.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.16.0

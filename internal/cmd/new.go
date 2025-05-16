@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	_ "embed"
+	"log/slog"
+	"path"
 
 	"github.com/spf13/cobra"
 	"go.k6.io/xk6/internal/scaffold"
@@ -58,5 +60,16 @@ func newRunE(ctx context.Context, opts *newOptions) error {
 		opts.Description, _ = getDescription(ctx, moduleToGitURL(opts.Module))
 	}
 
-	return scaffold.Scaffold(ctx, sam, &opts.Sample, opts.parent)
+	if err := scaffold.Scaffold(ctx, sam, &opts.Sample, opts.parent); err != nil {
+		return err
+	}
+
+	dir := path.Base(opts.Module)
+	if opts.parent != "." {
+		dir = path.Join(opts.parent, dir)
+	}
+
+	slog.Info("Extension created", "module", opts.Module, "directory", dir)
+
+	return nil
 }

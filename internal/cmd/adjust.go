@@ -94,5 +94,12 @@ func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 		}
 	}
 
-	return scaffold.Adjust(opts.directory, sample, &opts.Sample)
+	if err := scaffold.Adjust(opts.directory, sample, &opts.Sample); err != nil {
+		return err
+	}
+
+	slog.Info("Extension customized", "directory", opts.directory)
+	slog.Info("Please review the changes and commit them to your repository")
+
+	return nil
 }

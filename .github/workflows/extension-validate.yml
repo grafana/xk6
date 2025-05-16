@@ -66,6 +66,9 @@ jobs:
           persist-credentials: false
       - name: Configure
         id: configure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -n "${{secrets.codecov-token}}" ] ; then
             echo "codecov=true" >> $GITHUB_OUTPUT
@@ -75,7 +78,11 @@ jobs:
           fi
           if [ -f 'index.d.ts' ]; then
             if [ -f 'tsconfig.json' ] || [ -f 'typedoc.json' ]; then
-              echo "api-doc=true" >> $GITHUB_OUTPUT
+              if gh api --silent /repos/${{github.repository}}/pages >/dev/null 2>&1; then
+                echo "api-doc=true" >> $GITHUB_OUTPUT
+              else
+                echo "::warning::GitHub Pages is not enabled for this repository. Please enable it to generate API documentation."
+              fi
             fi
           fi
       - name: Summary

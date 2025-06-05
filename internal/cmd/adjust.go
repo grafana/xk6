@@ -51,6 +51,48 @@ func adjustCmd() *cobra.Command {
 	return cmd
 }
 
+func probeModuleFromGitURL(opts *adjustOptions) bool {
+	if len(opts.Module) == 0 {
+		gitURL, err := getGitURL(opts.directory)
+		if err != nil {
+			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
+
+			return false
+		}
+
+		opts.Module, err = gitURLToModule(gitURL)
+		if err != nil {
+			slog.Info("Unsupported git URL, skipping customization", "url", gitURL)
+
+			return false
+		}
+	}
+
+	return true
+}
+
+func probeDescriptionFromGitURL(ctx context.Context, opts *adjustOptions) bool {
+	if len(opts.Description) == 0 {
+		gitURL, err := getGitURL(opts.directory)
+		if err != nil {
+			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
+
+			return false
+		}
+
+		description, err := getDescription(ctx, gitURL)
+		if err != nil {
+			slog.Info("Failed to get description from git URL, skipping customization", "url", gitURL)
+
+			return false
+		}
+
+		opts.Description = description
+	}
+
+	return true
+}
+
 func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 	modulePath, err := getModulePath(opts.directory)
 	if err != nil {
@@ -67,36 +109,12 @@ func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 		return nil
 	}
 
-	if len(opts.Module) == 0 {
-		gitURL, err := getGitURL(opts.directory)
-		if err != nil {
-			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
-
-			return nil //nolint:nilerr
-		}
-
-		opts.Module, err = gitURLToModule(gitURL)
-		if err != nil {
-			slog.Info("Unsupported git URL, skipping customization", "url", gitURL)
-
-			return nil //nolint:nilerr
-		}
+	if !probeModuleFromGitURL(opts) {
+		return nil
 	}
 
-	if len(opts.Description) == 0 {
-		gitURL, err := getGitURL(opts.directory)
-		if err != nil {
-			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
-
-			return nil //nolint:nilerr
-		}
-
-		opts.Description, err = getDescription(ctx, gitURL)
-		if err != nil {
-			slog.Info("Failed to get description from git URL, skipping customization", "url", gitURL)
-
-			return nil //nolint:nilerr
-		}
+	if !probeDescriptionFromGitURL(ctx, opts) {
+		return nil
 	}
 
 	if err := scaffold.Adjust(opts.directory, sample, &opts.Sample); err != nil {

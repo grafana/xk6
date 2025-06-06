@@ -26,6 +26,10 @@ jobs:
       - name: Login to Docker Hub
         uses: grafana/shared-workflows/actions/dockerhub-login@13fb504e3bfe323c1188bf244970d94b2d336e86 # dockerhub-login-v1.0.1
 
+      - name: Setup
+        run: |
+          echo "User ${{ env.DOCKERHUB_USERNAME }}" >> $GITHUB_STEP_SUMMARY
+
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@432a30c9e07499fd01da9f8a49f0faf9e0ca5b77 # v4.0.2
         with:

@@ -14,6 +14,18 @@
 - Provide reusable GitHub workflows
 - Distribute xk6 as a Dev Container Feature
 
+### Use with Development Containers
+
+Get started developing k6 extensions quickly!
+
+xk6 is now a [Development containers] feature, meaning you can develop without installing any tooling or xk6.
+
+Check out the [k6 extension development quickstart guide] and [k6 extension development tutorial] for details.
+
+[Development containers]: https://containers.dev/
+[k6 extension development quickstart guide]: https://github.com/grafana/xk6/wiki/k6-extension-development-quick-start-guide
+[k6 extension development tutorial]: https://github.com/grafana/xk6/wiki/k6-extension-development-tutorial
+
 ### Use with Docker
 
 The easiest way to use xk6 is via our [Docker image]. This avoids having to setup a local Go environment, and install xk6 manually.

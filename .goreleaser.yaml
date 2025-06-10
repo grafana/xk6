@@ -9,21 +9,8 @@ before:
     - go mod tidy
 
 builds:
-  - id: xk6legacy
-    binary: xk6
-    main: ./cmd/xk6
-    goos: ["linux", "windows", "darwin"]
-    goarch: ["amd64", "arm64"]
-    flags: ["-trimpath"]
-    env: ["CGO_ENABLED=0"]
-    ldflags:
-      - "-s -w"
-      - "-X {{.ModulePath}}/internal/cmd.version={{.Version}}"
-      - "-X {{.ModulePath}}/internal/cmd.appname={{.ProjectName}}"
-      - "-X {{.ModulePath}}/internal/cmd.binary={{.Binary}}"
-
   - id: xk6
-    binary: xk6ea
+    binary: xk6
     main: .
     goos: ["linux", "windows", "darwin"]
     goarch: ["amd64", "arm64"]
@@ -67,13 +54,11 @@ source:
 
 archives:
   - id: bundle
-    ids: ["xk6", "xk6legacy"]
+    ids: ["xk6"]
     formats: ["tar.gz"]
     format_overrides:
       - goos: windows
         formats: ["zip"]
-    files:
-      - READMEea.md
 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
@@ -83,7 +68,7 @@ snapshot:
 
 dockers:
   - id: amd64
-    ids: ["xk6legacy", "fixids"]
+    ids: ["xk6", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files: ["docker-entrypoint.sh"]

@@ -9,7 +9,7 @@ COPY . .
 
 ARG GOFLAGS="-ldflags=-w -ldflags=-s"
 
-RUN CGO_ENABLED=0 go build -o /xk6 -trimpath ./cmd/xk6
+RUN CGO_ENABLED=0 go build -o /xk6 -trimpath .
 RUN CGO_ENABLED=0 go build -o /fixids -trimpath ./internal/fixids
 
 FROM golang:${GO_VERSION}-${VARIANT}

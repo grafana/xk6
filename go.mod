@@ -7,7 +7,7 @@ require (
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/fatih/color v1.18.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.2
 	github.com/grafana/k6foundry v0.4.6
 	github.com/lmittmann/tint v1.1.2
 	github.com/mattn/go-colorable v0.1.14

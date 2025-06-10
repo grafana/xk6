@@ -1,27 +1,29 @@
-`xk6` - Custom k6 Builder
-===============================
+<!-- #region cli -->
+# xk6
 
->[!IMPORTANT]
-> **Upcoming changes**
->
-> The xk6 tool is currently under refactoring. As of `v0.17.0`, an early access executable (`xk6ea`) is available in the downloadable release archives alongside `xk6`. As of `v0.18.0`, early access functionality is also included in the `xk6` executable, which can be activated by setting the `XK6_EARLY_ACCESS` environment variable to `true`. Check [READMEea.md](READMEea.md) for usage.
-
-This command line tool and associated Go package makes it easy to make custom builds of [k6](https://github.com/grafana/k6).
-
-It is used heavily by k6 extension developers as well as anyone who wishes to make custom `k6` binaries (with or without extensions).
+**k6 extension development toolbox**
 
 
-## Docker
 
-The easiest way to use xk6 is via our [Docker image](https://hub.docker.com/r/grafana/xk6/). This avoids having to setup a local Go environment, and install xk6 manually.
+### Main features
 
-For example, to build a k6 v0.45.1 binary on Linux with the [xk6-kafka](https://github.com/mostafa/xk6-kafka) and [xk6-output-influxdb](https://github.com/grafana/xk6-output-influxdb) extensions, you would run:
+- Create new extension skeleton (project scaffolding)
+- Build k6 with extensions
+- Run k6 with extensions
+- Check the extension for compliance (lint)
+- Provide reusable GitHub workflows
+- Distribute xk6 as a Dev Container Feature
 
-```bash
-docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.45.1 \
-  --with github.com/mostafa/xk6-kafka@v0.17.0 \
-  --with github.com/grafana/xk6-output-influxdb@v0.3.0
-```
+### Use with Docker
+
+The easiest way to use xk6 is via our [Docker image]. This avoids having to setup a local Go environment, and install xk6 manually.
+
+**Linux**
+
+For example, to build a k6 v1.0.0 binary on Linux with the [xk6-faker] extension:
+
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v1.0.0 \
+      --with github.com/grafana/xk6-faker
 
 This would create a `k6` binary in the current working directory.
 
@@ -31,180 +33,373 @@ The `-v` (volume) option is also required to mount the current working directory
 
 Note that if you're using SELinux, you might need to add `:z` to the `--volume` option to avoid permission errors. E.g. `-v "${PWD}:/xk6:z"`.
 
-If you prefer to setup Go and use xk6 without Docker, see the "Local Installation" section below.
+**macOS**
 
-Docker images can be used with major version, minor version, and specific version tags.
+On macOS you will need to use `--os darwin` flag to build a macOS binary.
 
-For example, let's say `1.2.3` is the latest xk6 Docker image version.
-- the latest release of major version `1` is available using the `1` tag:
-  ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1
-  ```
-- the latest release of minor version `1.2` is available using the `1.2` tag:
-  ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2
-  ```
-- of course version `1.2.3` is still available using the `v1.2.3` tag:
-  ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2.3
-  ```
-- the latest release is still available using the `latest` tag:
-  ```bash
-  docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:latest
-  ```
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os darwin v1.0.0 \
+      --with github.com/grafana/xk6-faker
 
-> [!IMPORTANT]
-> In CI pipelines it is recommended to use the major version tag (or the minor version tag) instead of the latest tag. Using the `latest` tag ignores the benefits of semantic versioning and can easily break the CI pipeline. 
-
-### macOS
-
-On macOS you will need to set the `GOOS=darwin` environment variable to build a macOS binary.
-
-You can do this with the `--env` or `-e` argument to `docker run`:
-```bash
-docker run --rm -it -e GOOS=darwin -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" \
-  grafana/xk6 build v0.45.1 \
-  --with github.com/mostafa/xk6-kafka@v0.17.0 \
-  --with github.com/grafana/xk6-output-influxdb@v0.3.0
-```
-
-
-### Windows
+**Windows**
 
 On Windows you can either build a native Windows binary, or, if you're using WSL2, a Linux binary you can use in WSL2.
 
 For the native Windows binary if you're using PowerShell:
-```powershell
-docker run --rm -it -e GOOS=windows -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" `
-  grafana/xk6 build v0.45.1 --output k6.exe `
-  --with github.com/mostafa/xk6-kafka@v0.17.0 `
-  --with github.com/grafana/xk6-output-influxdb@v0.3.0
-```
+
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os windows v1.0.0 `
+      --with github.com/grafana/xk6-faker --output k6.exe 
 
 For the native Windows binary if you're using cmd.exe:
-```batch
-docker run --rm -it -e GOOS=windows -v "%cd%:/xk6" ^
-  grafana/xk6 build v0.45.1 --output k6.exe ^
-  --with github.com/mostafa/xk6-kafka@v0.17.0 ^
-  --with github.com/grafana/xk6-output-influxdb@v0.3.0
-```
+
+    docker run --rm -it -v "%cd%:/xk6" grafana/xk6 build --os windows v1.0.0 ^
+      --with github.com/grafana/xk6-faker --output k6.exe
 
 For the Linux binary on WSL2, you can use the same command as for Linux.
 
+**Tags**
 
-## Local Installation
+Docker images can be used with major version, minor version, and specific version tags.
 
-### Requirements
+For example, let's say `1.2.3` is the latest xk6 Docker image version.
 
-- [Go installed](https://golang.org/doc/install). At least version 1.17 is needed.
+- the latest release of major version `1` is available using the `1` tag:
 
-### Install xk6
+      docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1
 
-```bash
-go install go.k6.io/xk6/cmd/xk6@latest
-```
+- the latest release of minor version `1.2` is available using the `1.2` tag:
 
-This will install the `xk6` binary in your `$GOPATH/bin` directory.
+      docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2
 
-If you're getting a `command not found` error when trying to run `xk6`, make sure that you precisely follow the [Go installation instructions](https://go.dev/doc/install) for your platform.
-Specifically, ensure that the `$GOPATH/bin` directory is part of your `$PATH`. For example, you might want to add this to your shell's initialization file: `export PATH=$(go env GOPATH)/bin:$PATH`. See [this article](https://go.dev/doc/gopath_code#GOPATH) for more information.
+- of course version `1.2.3` is still available using the `v1.2.3` tag:
 
+      docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:1.2.3
 
-## Command usage
+- the latest release is still available using the `latest` tag:
 
-The `xk6` command has two primary uses:
+      docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6:latest
 
-1. Compile custom `k6` binaries
-2. A replacement for `go run` while developing k6 extensions
+[Docker image]: https://hub.docker.com/r/grafana/xk6
+[xk6-faker]: https://github.com/grafana/xk6-faker
 
-The `xk6` command will use the latest version of k6 by default. You can customize this for all invocations by setting the `K6_VERSION` environment variable.
+### Local Installation
 
-As usual with `go` command, the `xk6` command will pass the `GOOS`, `GOARCH`, and `GOARM` environment variables through for cross-compilation.
+Precompiled binaries can be downloaded and installed from the [Releases] page.
 
+**Prerequisites**
 
-### Custom builds
+A [stable version] of the Go toolkit must be installed.
 
-Syntax:
+The xk6 tool can also be installed using the `go install` command.
 
-```
-xk6 build [<k6_version>]
-    [--output <file>]
-    [--with <module[@version][=replacement]>...]
-    [--replace <module=replacement>...]
-```
+    go install go.k6.io/xk6@latest
 
-- `<k6_version>` is the core k6 version to build; defaults to `K6_VERSION` env variable or whatever is the latest version needed by all extensions.
-  For example, if extension A requires k6 v0.41.0 and extension B requires k6 v0.43.0, the final k6 version used in the binary will be v0.43.0. Note that depending on the differences in these versions, this behavior might cause the build to fail. This is something enforced by the Go build system, and we have no way of fixing it.
-- `--output` changes the output file.
-- `--with` can be used multiple times to add extensions by specifying the Go module name and optionally its version, similar to `go get`. Module name is required, but specific version and/or local replacement are optional. For an up-to-date list of k6 extensions, head to our [extensions page](https://k6.io/docs/extensions/).
-- `--replace` can be used multiple times to add replacements by specifying the Go module name and the replacement module, similar to `go mod edit -replace=`. Version of the replacement can be specified with the `@version` suffix in the replacement path.
+This will install the `xk6` binary in `$GOPATH/bin` directory.
 
-Versions can be anything compatible with `go get`.
+[Releases]: https://github.com/grafana/xk6/releases
+[stable version]: https://go.dev/dl/
 
-Examples:
+## Commands
 
-```bash
-xk6 build \
-    --with github.com/grafana/xk6-browser
+* [xk6 version](#xk6-version)	 - Display version information
+* [xk6 new](#xk6-new)	 - Create a new k6 extension
+* [xk6 build](#xk6-build)	 - Build a custom k6 executable
+* [xk6 run](#xk6-run)	 - Execute the run command with the custom k6
+* [xk6 lint](#xk6-lint)	 - Static analyzer for k6 extensions
 
-xk6 build v0.35.0 \
-    --with github.com/grafana/xk6-browser@v0.1.1
+---
 
-xk6 build \
-    --with github.com/grafana/xk6-browser=../../my-fork
+# xk6 version
 
-xk6 build \
-    --with github.com/grafana/xk6-browser=.
+Display version information
 
-xk6 build \
-    --with github.com/grafana/xk6-browser@v0.1.1=../../my-fork
+## Synopsis
 
-# Build using a k6 fork repository. Note that a version is required if
-# XK6_K6_REPO is a URI.
-XK6_K6_REPO=github.com/example/k6 xk6 build master \
-    --with github.com/grafana/xk6-browser
+The version is printed to standard output in the following format:
 
-# Build using a k6 fork repository from a local path. The version must be omitted
-# and the path must be absolute.
-XK6_K6_REPO="$PWD/../../k6" xk6 build \
-    --with github.com/grafana/xk6-browser
-```
+    xk6 version XXX
 
-### For extension development
+XXX is the semantic version of xk6, without the v prefix.
 
-If you run `xk6` from within the folder of the k6 extension you're working on _without the `build` subcommand_, it will build k6 with your current module and run it, as if you manually plugged it in and invoked `go run`.
-
-The binary will be built and run from the current directory, then cleaned up.
-
-The current working directory must be inside an initialized Go module.
-
-Also note that because of the way xk6 works, vendored dependencies (the vendor directory created by `go mod vendor`) will not be taken into account when building a binary, and you don't need to commit them to the extension repository.
-
-Syntax:
-
-```
-xk6 <args...>
-```
-- `<args...>` are passed through to the `k6` command.
-
-For example:
+## Usage
 
 ```bash
-xk6 version
-xk6 run -u 10 -d 10s test.js
+xk6 version [flags]
 ```
 
-The race detector can be enabled by setting the env variable `XK6_RACE_DETECTOR=1` or through the `XK6_BUILD_FLAGS` env variable.
+## Global Flags
 
-## Environment variables
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
 
-Because the subcommands and flags are constrained to benefit rapid extension prototyping, xk6 does read some environment variables to take cues for its behavior and/or configuration when there is no room for flags.
+## SEE ALSO
 
-- `K6_VERSION` sets the version of k6 to build.
-- `XK6_BUILD_FLAGS` sets any go build flags if needed. Defaults to '-ldflags=-w -s -trim'.
-- `XK6_RACE_DETECTOR=1` enables the Go race detector in the build. Forces `GCO_ENABLED=1`.
-- `XK6_SKIP_CLEANUP=1` causes xk6 to leave build artifacts on disk after exiting.
-- `XK6_K6_REPO` optionally sets the path to the main k6 repository. This is useful when building with k6 forks.
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 new
+
+Create a new k6 extension
+
+## Synopsis
+
+Create and initialize a new k6 extension using one of the predefined templates.
+
+The go module path of the new extension must be passed as an argument.
+
+An optional extension description can be specified as a flag.
+The default description is generated from the go module path as follows:
+- remote git URL is generated from the go module path
+- the description is retrieved from the remote repository manager
+
+An optional go package name can be specified as a flag.
+The default go package name is generated from the go module path as follows:
+- the last element of the go module path is kept
+- the `xk6-output-` and `xk6-` prefixes are removed
+- the `-` characters are replaced with `_` characters
+
+A JavaScript type k6 extension will be generated by default.
+The extension type can be optionally specified as a flag.
+
+The `grafana/xk6-example` and `grafana/xk6-output-example` GitHub repositories are used as sources for generation.
+
+## Usage
+
+```bash
+xk6 new [flags] module
+```
+
+## Flags
+
+```
+  -t, --type string          The type of template to use (javascript or output)
+  -d, --description string   A short, on-sentence description of the extension
+  -p, --package string       The go package name for the extension
+  -C, --parent-dir string    The parent directory (default ".")
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 build
+
+Build a custom k6 executable
+
+## Synopsis
+
+This command can be used to build custom k6 executables with or without extensions.
+
+The target platform (operating system, architecture) can be specified with flags or environment variables.
+
+The k6 version to be used and the k6 repository (for forks) can be specified with flags or environment variables.
+
+**Precedence**
+
+If a setting can be specified with both a flag and an environment variable, the flag takes precedence.
+
+**Extensions**
+
+The `--with` flag can be used to specify one or more extensions to be included. Extensions can be referenced with the go module path, optionally followed by a version specification. In the case of a fork, the path of the forked go module can be specified as replacement.
+
+**Fork**
+
+The `--replace` flag can be used to specify a replacement for any go module. This allows forks to be used instead of extension dependencies.
+
+A k6 fork can be specified with the `--k6-repo` flag (or the `K6_REPO` environment variable).
+
+## Usage
+
+```bash
+xk6 build [flags] [k6-version]
+```
+
+## Flags
+
+```
+  -o, --output string                         Output filename (default "./k6")
+      --with module[@version][=replacement]   Add one or more k6 extensions with Go module path
+      --replace module=replacement            Replace one or more Go modules
+  -k, --k6-version string                     The k6 version to use for build (default "latest")
+      --k6-repo string                        The k6 repository to use for the build (default "go.k6.io/k6")
+      --os string                             The target operating system (default "linux")
+      --arch string                           The target architecture (default "amd64")
+      --arm string                            The target ARM version
+      --skip-cleanup int[=1]                  Keep the temporary build directory
+      --race-detector int[=1]                 Enable/disable race detector
+      --cgo int[=1]                           Enable/disable cgo
+      --build-flags stringArray               Specify Go build flags (default [-trimpath,-ldflags=-s -w])
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## Environment
+
+```
+  K6_VERSION             The k6 version to use for build
+  XK6_K6_REPO            The k6 repository to use for the build
+  GOOS                   The target operating system
+  GOARCH                 The target architecture
+  GOARM                  The target ARM version
+  XK6_SKIP_CLEANUP       Keep the temporary build directory
+  XK6_RACE_DETECTOR      Enable/disable race detector
+  CGO_ENABLED            Enable/disable cgo
+  XK6_BUILD_FLAGS        Specify Go build flags
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 run
+
+Execute the run command with the custom k6
+
+## Synopsis
+
+This is a useful command when developing the k6 extension. After modifying the source code of the extension, a k6 test script can simply be run without building the k6 executable.
+
+Under the hood, the command builds a k6 executable into a temporary directory and runs it with the arguments. The usual flags for the build command can be used.
+
+Two dashes are used to indicate that the following flags are no longer the flags of the `xk6 run` command but the flags of the `k6 run` command.
+
+## Usage
+
+```bash
+xk6 run [flags] [--] [k6-flags] script
+```
+
+## Flags
+
+```
+      --with module[@version][=replacement]   Add one or more k6 extensions with Go module path
+      --replace module=replacement            Replace one or more Go modules
+  -k, --k6-version string                     The k6 version to use for build (default "latest")
+      --k6-repo string                        The k6 repository to use for the build (default "go.k6.io/k6")
+      --os string                             The target operating system (default "linux")
+      --arch string                           The target architecture (default "amd64")
+      --arm string                            The target ARM version
+      --skip-cleanup int[=1]                  Keep the temporary build directory
+      --race-detector int[=1]                 Enable/disable race detector
+      --cgo int[=1]                           Enable/disable cgo
+      --build-flags stringArray               Specify Go build flags (default [-trimpath,-ldflags=-s -w])
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## Environment
+
+```
+  K6_VERSION             The k6 version to use for build
+  XK6_K6_REPO            The k6 repository to use for the build
+  GOOS                   The target operating system
+  GOARCH                 The target architecture
+  GOARM                  The target ARM version
+  XK6_SKIP_CLEANUP       Keep the temporary build directory
+  XK6_RACE_DETECTOR      Enable/disable race detector
+  CGO_ENABLED            Enable/disable cgo
+  XK6_BUILD_FLAGS        Specify Go build flags
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 lint
+
+Static analyzer for k6 extensions
+
+## Synopsis
+
+**Linter for k6 extensions**
+
+xk6 lint analyzes the source of the k6 extension and try to build k6 with the extension.
+
+The contents of the source directory are used for analysis. If the directory is a git workdir, it also analyzes the git metadata. The analysis is completely local and does not use external APIs (e.g. repository manager API) or services.
+
+The result of the analysis is compliance expressed as a percentage (`0`-`100`). This value is created as a weighted, normalized value of the scores of each checker. A compliance grade is created from the percentage value (`A`-`F`).
+
+By default, text output is generated. The `--json` flag can be used to generate the result in JSON format.
+
+If the grade is `C` or higher, the command is successful, otherwise it returns an exit code larger than `0`.
+This passing grade can be modified using the `--passing` flag.
+
+## Usage
+
+```bash
+xk6 lint [flags] [directory]
+```
+
+### Checkers
+
+Compliance with the requirements expected of k6 extensions is checked by various compliance checkers. The result of the checks is compliance as a percentage value (`0-100`). This value is created as a weighted, normalized value of the scores of each checker. A compliance grade is created from the percentage value (`A`-`F`, `A` is the best).
+
+- `security` - check for security issues (using the `gosec` tool)
+- `vulnerability` - check for vulnerability issues (using the `govulncheck` tool)
+- `module` - checks if there is a valid `go.mod`
+- `replace` - checks if there is no `replace` directive in `go.mod`
+- `readme` - checks if there is a readme file
+- `examples` - checks if there are files in the `examples` directory
+- `license` - checks whether there is a suitable OSS license
+- `git` - checks if the directory is git workdir
+- `versions` - checks for semantic versioning git tags
+- `build` - checks if the latest k6 version can be built with the extension
+- `smoke` - checks if the smoke test script exists and runs successfully (`smoke.js`, `smoke.ts`, `smoke.test.js` or `smoke.test.ts` in the `test`,`tests`, `examples`, `scripts` or in the base directory)
+- `types` - checks if the TypeScript API declaration file exists (`index.d.ts` in the `docs`, `api-docs` or the base directory)
+- `codeowners` - checks if there is a `CODEOWNERS` file (for official extensions) (in the `.github` or `docs` or in the base directory)
+
+## Flags
+
+```
+      --passing A|B|C|D|E|F|G|Z   Set lowest passing grade (default C)
+      --official                  Enable extra checks for official extensions
+  -o, --out string                Write output to file instead of stdout
+      --json                      Generate JSON output
+  -c, --compact                   Compact instead of pretty-printed JSON output
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+<!-- #endregion cli -->
 
 ## Keeping dependencies in sync
 
@@ -212,16 +407,9 @@ We recommend extension maintainers to keep dependencies in common with k6 core i
 
 The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for this automatically and produce a `go get` command that syncs common dependencies:
 
-```console
-/your/extension$ go-depsync --parent go.k6.io/k6
+```shell
+go-depsync --parent go.k6.io/k6
 ```
-
-## Library usage
-
->[!IMPORTANT]
-> **Breaking change**
->
-> As of `v0.16.0`, xk6 library usage is not supported!
 
 ---
 

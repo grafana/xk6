@@ -4,9 +4,9 @@ The easiest way to use xk6 is via our [Docker image]. This avoids having to setu
 
 **Linux**
 
-For example, to build a k6 v0.58.0 binary on Linux with the [xk6-faker] extension:
+For example, to build a k6 v1.0.0 binary on Linux with the [xk6-faker] extension:
 
-    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.58.0 \
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v1.0.0 \
       --with github.com/grafana/xk6-faker
 
 This would create a `k6` binary in the current working directory.
@@ -21,7 +21,7 @@ Note that if you're using SELinux, you might need to add `:z` to the `--volume` 
 
 On macOS you will need to use `--os darwin` flag to build a macOS binary.
 
-    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os darwin v0.58.0 \
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os darwin v1.0.0 \
       --with github.com/grafana/xk6-faker
 
 **Windows**
@@ -30,12 +30,12 @@ On Windows you can either build a native Windows binary, or, if you're using WSL
 
 For the native Windows binary if you're using PowerShell:
 
-    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os windows v0.58.0 `
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os windows v1.0.0 `
       --with github.com/grafana/xk6-faker --output k6.exe 
 
 For the native Windows binary if you're using cmd.exe:
 
-    docker run --rm -it -v "%cd%:/xk6" grafana/xk6 build --os windows v0.58.0 ^
+    docker run --rm -it -v "%cd%:/xk6" grafana/xk6 build --os windows v1.0.0 ^
       --with github.com/grafana/xk6-faker --output k6.exe
 
 For the Linux binary on WSL2, you can use the same command as for Linux.

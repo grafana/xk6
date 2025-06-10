@@ -91,7 +91,7 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--label=org.opencontainers.image.licenses=AGPL-3.0-only"
   - id: arm64
-    ids: ["xk6legacy", "fixids"]
+    ids: ["xk6", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx
     extra_files: ["docker-entrypoint.sh"]

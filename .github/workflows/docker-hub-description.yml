@@ -13,7 +13,7 @@ jobs:
     name: Docker Hub Description
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      id-token: write
     env:
       README: docs/docker-hub/README.md
 

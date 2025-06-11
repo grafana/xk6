@@ -2,11 +2,10 @@
 
 ## Main features
 
-- [ ] Create new extension skeleton (project scaffolding)
-- [x] Build k6 with extensions
-- [x] Run k6 with extensions
-- [x] Check the extension for compliance (lint)
-
+- Create new extension skeleton (project scaffolding)
+- Build k6 with extensions
+- Run k6 with extensions
+- Check the extension for compliance (lint)
 
 ## Usage
 
@@ -17,7 +16,7 @@ The easiest way to use xk6 is via our [Docker image](https://hub.docker.com/r/gr
 For example, to build a k6 v0.58.0 binary on Linux with the [xk6-faker](https://github.com/grafana/xk6-faker) extension:
 
 ```bash
-docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v0.58.0 \
+docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build v1.0.0 \
        --with github.com/grafana/xk6-faker
 ```
 
@@ -34,7 +33,7 @@ Note that if you're using SELinux, you might need to add `:z` to the `--volume` 
 On macOS you will need to use `--os darwin` flag to build a macOS binary.
 
 ```bash
-docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os darwin v0.58.0 \
+docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os darwin v1.0.0 \
        --with github.com/grafana/xk6-faker
 ```
 
@@ -45,14 +44,14 @@ On Windows you can either build a native Windows binary, or, if you're using WSL
 For the native Windows binary if you're using PowerShell:
 
 ```
-    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os windows v0.58.0 `
+    docker run --rm -it -u "$(id -u):$(id -g)" -v "${PWD}:/xk6" grafana/xk6 build --os windows v1.0.0 `
       --with github.com/grafana/xk6-faker --output k6.exe 
 ```
 
 For the native Windows binary if you're using cmd.exe:
 
 ```
-    docker run --rm -it -v "%cd%:/xk6" grafana/xk6 build --os windows v0.58.0 ^
+    docker run --rm -it -v "%cd%:/xk6" grafana/xk6 build --os windows v1.0.0 ^
       --with github.com/grafana/xk6-faker --output k6.exe
 ```
 

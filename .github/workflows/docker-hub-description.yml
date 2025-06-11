@@ -23,12 +23,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Login to Docker Hub
-        uses: grafana/shared-workflows/actions/dockerhub-login@13fb504e3bfe323c1188bf244970d94b2d336e86 # dockerhub-login-v1.0.1
+      #      - name: Login to Docker Hub
+      #        uses: grafana/shared-workflows/actions/dockerhub-login@13fb504e3bfe323c1188bf244970d94b2d336e86 # dockerhub-login-v1.0.1
 
-      - name: Setup
-        run: |
-          echo "User ${{ env.DOCKERHUB_USERNAME }}" >> $GITHUB_STEP_SUMMARY
+      - name: Get Docker Hub secrets
+        uses: grafana/shared-workflows/actions/get-vault-secrets@9f37f656e063f0ad0b0bfc38d49894b57d363936 # get-vault-secrets-v1.2.1
+        with:
+          common_secrets: |
+            DOCKERHUB_USERNAME=dockerhub:username
+            DOCKERHUB_PASSWORD=dockerhub:password
 
       - name: Docker Hub Description
         uses: peter-evans/dockerhub-description@432a30c9e07499fd01da9f8a49f0faf9e0ca5b77 # v4.0.2

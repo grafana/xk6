@@ -39,6 +39,7 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_PASSWORD }}
           readme-filepath: ${{ env.README }}
+          repository: grafana/xk6
 
       - name: Config
         run: |

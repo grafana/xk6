@@ -43,7 +43,7 @@ jobs:
 
       - name: Setup gosec
         env:
-          GOSEC_VERSION: v2.8.2
+          GOSEC_VERSION: v2.22.3
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
 

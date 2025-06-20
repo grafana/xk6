@@ -20,21 +20,15 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
     branches: ["main", "master"]
 ```
 
-**secrets**
-
-```yaml file=../../.github/workflows/validate.yml region=secrets
-      codecov-token: ${{secrets.CODECOV_TOKEN}}
-```
-
 **inputs**
 
 ```yaml file=../../.github/workflows/validate.yml region=inputs
-      go-version: ${{vars.GO_VERSION}}
-      go-versions: ${{vars.GO_VERSIONS}}
-      golangci-lint-version: ${{vars.GOLANGCI_LINT_VERSION}}
-      goreleaser-version: ${{vars.GORELEASER_VERSION}}
-      platforms: ${{vars.PLATFORMS}}
-      k6-versions: ${{vars.K6_VERSIONS}}
+      go-version: "1.24.x"
+      go-versions: '["1.23.x","1.24.x"]'
+      golangci-lint-version: "v2.1.2"
+      goreleaser-version: "2.8.2"
+      platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
+      k6-versions: '["v1.0.0","v0.57.0"]'
       bats: .github/validate.bats
 ```
 
@@ -54,9 +48,9 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: ${{vars.GO_VERSION}}
-      goreleaser-version: ${{vars.GORELEASER_VERSION}}
-      k6-versions: ${{vars.K6_VERSIONS}}
+      go-version: "1.24.x"
+      goreleaser-version: "2.8.2"
+      k6-versions: '["v1.0.0","v0.57.0"]'
       bats: ./.github/release.bats
 ```
 

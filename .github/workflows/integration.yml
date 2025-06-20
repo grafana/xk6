@@ -18,32 +18,32 @@ jobs:
           submodules: true
           persist-credentials: false
 
-      - name: Setup Go ${{ vars.GO_VERSION }}
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ vars.GO_VERSION }}
+          go-version: "1.24.x"
           cache: false
 
       - name: GoReleaser build
         uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
-          version: "${{ vars.GORELEASER_VERSION }}"
+          version: "2.8.2"
           args: build --clean --snapshot --single-target --id xk6
 
       - name: Setup Bats
         uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
-          bats-version: "${{ vars.BATS_VERSION }}"
+          bats-version: "1.11.1"
 
       - name: Setup govulncheck
         env:
-          GOVULNCHECK_VERSION: ${{ vars.GOVULNCHECK_VERSION }}
+          GOVULNCHECK_VERSION: v1.1.4
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}
 
       - name: Setup gosec
         env:
-          GOSEC_VERSION: ${{ vars.GOSEC_VERSION }}
+          GOSEC_VERSION: v2.22.3
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
 

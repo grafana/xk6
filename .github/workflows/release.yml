@@ -18,8 +18,8 @@ jobs:
       id-token: write
     with:
       # #region inputs
-      go-version: ${{vars.GO_VERSION}}
-      goreleaser-version: ${{vars.GORELEASER_VERSION}}
-      k6-versions: ${{vars.K6_VERSIONS}}
+      go-version: "1.24.x"
+      goreleaser-version: "2.8.2"
+      k6-versions: '["v1.0.0","v0.57.0"]'
       bats: ./.github/release.bats
       # #endregion inputs

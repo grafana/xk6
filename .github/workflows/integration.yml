@@ -3,7 +3,7 @@ name: Integration
 on:
   workflow_dispatch:
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main", "master", "release-*"]
 
 permissions: {}
 

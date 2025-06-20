@@ -4,9 +4,9 @@ on:
   # #region triggers
   workflow_dispatch:
   push:
-    branches: ["main", "master"]
+    branches: ["main", "master", "release-*"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main", "master", "release-*"]
   # #endregion triggers
 
 permissions: {}

@@ -151,7 +151,7 @@ jobs:
           END
 
           set -e
-          bats ${{ env.bats }} | tee -a $GITHUB_STEP_SUMMARY
+          bats $BATS | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Login to Docker Hub
         if: ${{ needs.config.outputs.docker-io == 'true' }}

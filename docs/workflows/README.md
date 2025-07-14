@@ -15,9 +15,9 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 ```yaml file=../../.github/workflows/validate.yml region=triggers
   workflow_dispatch:
   push:
-    branches: ["main", "master"]
+    branches: ["main", "master", "release-*"]
   pull_request:
-    branches: ["main", "master"]
+    branches: ["main", "master", "release-*"]
 ```
 
 **inputs**

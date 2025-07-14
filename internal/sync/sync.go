@@ -90,6 +90,8 @@ func getK6Version(ctx context.Context, opts *Options, mf *modfile.File) (string,
 
 		k6Version, found = findRequire(mf, k6Module)
 		if !found {
+			slog.Info("k6 not found in go.mod, using latest version")
+
 			k6Version = latest
 		}
 	}

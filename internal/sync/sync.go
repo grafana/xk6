@@ -30,6 +30,8 @@ func Sync(ctx context.Context, dir string, opts *Options) error {
 		return err
 	}
 
+	slog.Info("Target k6", "version", k6Version)
+
 	k6Modfile, err := getModule(ctx, k6Module, k6Version)
 	if err != nil {
 		return err
@@ -48,9 +50,11 @@ func Sync(ctx context.Context, dir string, opts *Options) error {
 		return nil
 	}
 
-	patch = append(patch, "")
+	patch = append(patch, "") // make space for the "get" command
 	copy(patch[1:], patch[0:])
 	patch[0] = "get"
+
+	slog.Info("Updating go.mod")
 
 	cmd := exec.Command("go", patch...) // #nosec G204
 

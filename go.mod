@@ -3,7 +3,7 @@ module go.k6.io/xk6
 go 1.24.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/fatih/color v1.18.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
@@ -16,7 +16,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/szkiba/docsme v0.2.0
 	github.com/szkiba/efa v0.1.0
-	golang.org/x/mod v0.25.0
+	golang.org/x/mod v0.26.0
 )
 
 require (

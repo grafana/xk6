@@ -10,7 +10,9 @@ This image allows you to use `xk6` without needing to set up a local Go developm
 
 To use the image, mount your current working directory to the `/xk6` directory inside the container. To build for a specific operating system, set the `GOOS` environment variable.
 
-The most common command is `xk6 build`. The following examples build a k6 binary in your current directory that includes the `xk6-faker` extension.
+The most common command is `xk6 build`. You can also use other `xk6` commands like `xk6 run` to execute a test with a custom binary, or `xk6 new` to scaffold a new k6 extension project.
+
+The following examples build a k6 binary in your current directory that includes the `xk6-faker` extension.
 
 ### Linux
 
@@ -23,35 +25,30 @@ docker run --rm -it -u "$(id -u):$(id -g)" -v "$(pwd):/xk6" \
 
 ### macOS
 
-To build for **macOS**, use the `GOOS=darwin` environment variable.
+To build for **macOS**, use the `--os darwin` flag.
 
 ```shell
 docker run --rm -it -u "$(id -u):$(id -g)" -v "$(pwd):/xk6" \
-  -e GOOS=darwin \
-  grafana/xk6 build --with github.com/grafana/xk6-faker
+  grafana/xk6 build --os darwin --with github.com/grafana/xk6-faker
 ```
 
 ### Windows (PowerShell)
 
-To build for **Windows**, use the `GOOS=windows` environment variable.
+To build for **Windows**, use the `--os windows` flag.
 
 ```powershell
 docker run --rm -it -v "${pwd}:/xk6" \
-  -e GOOS=windows \
-  grafana/xk6 build --with github.com/grafana/xk6-faker
+  grafana/xk6 build --os windows --with github.com/grafana/xk6-faker
 ```
 
 ### Windows (Command Prompt)
 
-To build for **Windows**, use the `GOOS=windows` environment variable.
+To build for **Windows**, use the `--os windows` flag.
 
 ```cmd
 docker run --rm -it -v "%cd%:/xk6" \
-  -e GOOS=windows \
-  grafana/xk6 build --with github.com/grafana/xk6-faker
+  grafana/xk6 build --os windows --with github.com/grafana/xk6-faker
 ```
-
-You can also use other `xk6` commands like `xk6 run` to execute a test with a custom binary, or `xk6 new` to scaffold a new k6 extension project.
 
 -----
 

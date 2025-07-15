@@ -16,6 +16,15 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+const (
+	defaultGoProxy = "https://proxy.golang.org"
+	k6Module       = "go.k6.io/k6"
+	modFile        = "go.mod"
+	latest         = "latest"
+)
+
+var errHTTP = errors.New("HTTP error")
+
 // Sync synchronizes the versions of the module dependencies in the specified directory with k6.
 func Sync(ctx context.Context, dir string, opts *Options) error {
 	slog.Info("Syncing dependencies with k6")
@@ -200,12 +209,3 @@ func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 
 	return resp, nil
 }
-
-const (
-	defaultGoProxy = "https://proxy.golang.org"
-	k6Module       = "go.k6.io/k6"
-	modFile        = "go.mod"
-	latest         = "latest"
-)
-
-var errHTTP = errors.New("HTTP error")

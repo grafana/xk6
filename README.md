@@ -117,6 +117,7 @@ This will install the `xk6` binary in `$GOPATH/bin` directory.
 * [xk6 build](#xk6-build)	 - Build a custom k6 executable
 * [xk6 run](#xk6-run)	 - Execute the run command with the custom k6
 * [xk6 lint](#xk6-lint)	 - Static analyzer for k6 extensions
+* [xk6 sync](#xk6-sync)	 - Synchronize dependencies with k6
 
 ---
 
@@ -411,17 +412,46 @@ Compliance with the requirements expected of k6 extensions is checked by various
 
 * [xk6](#xk6)	 - k6 extension development toolbox
 
-<!-- #endregion cli -->
+---
 
-## Keeping dependencies in sync
+# xk6 sync
 
-We recommend extension maintainers to keep dependencies in common with k6 core in the same version k6 core uses. This guarantees binary compatibility of the JS runtime, and ensures uses will not have to face unforeseen build-time errors when compiling several extensions together with xk6.
+Synchronize dependencies with k6
 
-The [`go-depsync`](https://github.com/grafana/go-depsync/) tool can check for this automatically and produce a `go get` command that syncs common dependencies:
+## Synopsis
 
-```shell
-go-depsync --parent go.k6.io/k6
+Synchronizes the versions of dependencies in `go.mod` with those used in the k6 project. Dependencies not found in k6's `go.mod` remain unchanged. Future updates may include synchronization of other files.
+
+The purpose of this subcommand is to avoid dependency conflicts when building the extension with k6 (and other extensions).
+
+It is recommended to keep dependencies in common with k6 core in the same version k6 core uses. This guarantees binary compatibility of the JS runtime, and ensures uses will not have to face unforeseen build-time errors when compiling several extensions together with xk6.
+
+## Usage
+
+```bash
+xk6 sync [flags]
 ```
+
+## Flags
+
+```
+  -k, --k6-version string   The k6 version to use for synchronization (default from go.mod)
+  -n, --dry-run             Do not make any changes, only log them
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+<!-- #endregion cli -->
 
 ---
 

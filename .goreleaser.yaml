@@ -68,6 +68,8 @@ snapshot:
 
 dockers:
   - id: amd64
+    goos: linux
+    goarch: amd64
     ids: ["xk6", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx
@@ -91,6 +93,8 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--label=org.opencontainers.image.licenses=AGPL-3.0-only"
   - id: arm64
+    goos: linux
+    goarch: arm64
     ids: ["xk6", "fixids"]
     dockerfile: Dockerfile.goreleaser
     use: buildx

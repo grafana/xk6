@@ -172,7 +172,7 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 	return nil
 }
 
-func jsonOutput(compliance *lint.Compliance, output io.Writer, compact bool) error {
+func jsonOutput(compliance any, output io.Writer, compact bool) error {
 	encoder := json.NewEncoder(output)
 
 	if !compact {

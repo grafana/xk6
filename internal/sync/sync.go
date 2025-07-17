@@ -25,52 +25,85 @@ const (
 
 var errHTTP = errors.New("HTTP error")
 
+// Change represents a change in a module dependency.
+type Change struct {
+	// Module is the module path.
+	Module string `json:"module,omitempty"`
+	// From is the version being replaced.
+	From string `json:"from,omitempty"`
+	// To is the version being replaced with.
+	To string `json:"to,omitempty"`
+}
+
+// Result represents the result of a synchronization operation.
+type Result struct {
+	// The k6 version used for synchronization.
+	K6Version string `json:"k6_version,omitempty"`
+	// Changes is a list of changes made to the module dependencies.
+	Changes []*Change `json:"changes,omitempty"`
+}
+
 // Sync synchronizes the versions of the module dependencies in the specified directory with k6.
-func Sync(ctx context.Context, dir string, opts *Options) error {
-	slog.Info("Syncing dependencies with k6")
+func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
+	slog.Debug("Syncing dependencies with k6")
 
 	extModfile, err := loadModfile(dir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	k6Version, err := getK6Version(ctx, opts, extModfile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	slog.Info("Target k6", "version", k6Version)
+	slog.Debug("Target k6", "version", k6Version)
 
 	k6Modfile, err := getModule(ctx, k6Module, k6Version)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	patch := diffRequires(extModfile, k6Modfile)
-	if len(patch) == 0 {
-		slog.Info("No changes needed")
+	result := &Result{
+		K6Version: k6Version,
+		Changes:   diffRequires(extModfile, k6Modfile),
+	}
 
-		return nil
+	if len(result.Changes) == 0 {
+		slog.Debug("No changes needed")
+
+		return result, nil
 	}
 
 	if opts.DryRun {
-		slog.Warn("Not saving changes, dry run")
+		slog.Debug("Not saving changes, dry run")
 
-		return nil
+		return result, nil
 	}
 
-	patch = append(patch, "") // make space for the "get" command
-	copy(patch[1:], patch[0:])
-	patch[0] = "get"
+	patch := make([]string, 0, len(result.Changes)+1) // +1 for the "get" command
 
-	slog.Info("Updating go.mod")
+	// Prepare the patch command to update go.mod
+	patch = append(patch, "get")
+
+	// Add each change to the patch command
+	for _, change := range result.Changes {
+		slog.Debug("Updating dependency", "module", change.Module, "from", change.From, "to", change.To)
+		patch = append(patch, fmt.Sprintf("%s@%s", change.Module, change.To))
+	}
+
+	slog.Debug("Updating go.mod")
 
 	cmd := exec.Command("go", patch...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // GetLatestK6Version retrieves the latest version of k6 from the Go proxy.
@@ -78,8 +111,8 @@ func GetLatestK6Version(ctx context.Context) (string, error) {
 	return getLatestVersion(ctx, k6Module)
 }
 
-func diffRequires(extModfile, k6Modfile *modfile.File) []string {
-	patch := make([]string, 0)
+func diffRequires(extModfile, k6Modfile *modfile.File) []*Change {
+	changes := make([]*Change, 0)
 
 	for _, k6Require := range k6Modfile.Require {
 		k6Modpath, k6Modversion := k6Require.Mod.Path, k6Require.Mod.Version
@@ -87,14 +120,16 @@ func diffRequires(extModfile, k6Modfile *modfile.File) []string {
 		for _, extRequire := range extModfile.Require {
 			extModpath, extModversion := extRequire.Mod.Path, extRequire.Mod.Version
 			if k6Modpath == extModpath && k6Modversion != extModversion {
-				slog.Info("Sync", "module", k6Modpath, "from", extModversion, "to", k6Modversion)
-
-				patch = append(patch, fmt.Sprintf("%s@%s", k6Modpath, k6Modversion))
+				changes = append(changes, &Change{
+					Module: k6Modpath,
+					From:   extModversion,
+					To:     k6Modversion,
+				})
 			}
 		}
 	}
 
-	return patch
+	return changes
 }
 
 func getK6Version(ctx context.Context, opts *Options, mf *modfile.File) (string, error) {

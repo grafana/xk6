@@ -437,6 +437,10 @@ xk6 sync [flags]
 ```
   -k, --k6-version string   The k6 version to use for synchronization (default from go.mod)
   -n, --dry-run             Do not make any changes, only log them
+  -o, --out string          Write output to file instead of stdout
+      --json                Generate JSON output
+  -c, --compact             Compact instead of pretty-printed JSON output
+  -m, --markdown            Generate Markdown output
 ```
 
 ## Global Flags

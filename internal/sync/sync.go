@@ -73,6 +73,11 @@ func Sync(ctx context.Context, dir string, opts *Options) error {
 	return cmd.Run()
 }
 
+// GetLatestK6Version retrieves the latest version of k6 from the Go proxy.
+func GetLatestK6Version(ctx context.Context) (string, error) {
+	return getLatestVersion(ctx, k6Module)
+}
+
 func diffRequires(extModfile, k6Modfile *modfile.File) []string {
 	patch := make([]string, 0)
 

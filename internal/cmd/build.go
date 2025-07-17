@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"go.k6.io/xk6/internal/sync"
 )
 
 //go:embed help/build.md
@@ -70,6 +71,17 @@ func buildRunE(ctx context.Context, opts *buildOptions) error {
 
 	for name, version := range info.ModVersions {
 		slog.Info("added", "module", name, "version", version)
+	}
+
+	if ok {
+		slog.Info("A new binary has been built based on k6", "version", k6ver)
+	}
+
+	k6latest, err := sync.GetLatestK6Version(ctx)
+	if err == nil && k6ver != k6latest {
+		slog.Warn("Newer k6 version available", "actual", k6ver, "latest", k6latest)
+	} else if err != nil {
+		slog.Warn("Failed to get latest k6 version", "error", err)
 	}
 
 	if !opts.outputChanged {

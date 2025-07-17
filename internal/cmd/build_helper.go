@@ -49,6 +49,12 @@ const (
 	defaultBuildFlags   = "-trimpath,-ldflags=-s -w"
 )
 
+var nonGoEnvToCopy = []string{ //nolint:gochecknoglobals
+	"HTTP_PROXY",
+	"HTTPS_PROXY",
+	"NO_PROXY",
+}
+
 func defaultK6Output() string {
 	if runtime.GOOS == "windows" {
 		return ".\\k6.exe"
@@ -96,6 +102,15 @@ func buildCommonFlags(flags *pflag.FlagSet, opts *buildOptions) error {
 	return env.BindTo("cgo", "CGO_ENABLED")
 }
 
+// copyNonGoEnv copies non-Go environment variables that might be needed for the build.
+func copyNonGoEnv(env map[string]string) {
+	for _, key := range nonGoEnvToCopy {
+		if val, ok := os.LookupEnv(key); ok {
+			env[key] = val
+		}
+	}
+}
+
 func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, error) { //nolint:ireturn
 	logger := slog.Default()
 
@@ -106,8 +121,11 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 		env["GOARM"] = opts.arm
 	}
 
-	// ANCHOR workaround only, cgo flag should be supported by k6founrdy
+	// ANCHOR workaround only, cgo flag should be supported by k6foundry
 	env["CGO_ENABLED"] = strconv.Itoa(opts.cgo)
+
+	// copy non-Go environment variables that might be needed for the build
+	copyNonGoEnv(env)
 
 	if opts.raceDetector != 0 {
 		opts.buildFlags = append(opts.buildFlags, "-race")

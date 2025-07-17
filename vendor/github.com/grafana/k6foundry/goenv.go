@@ -288,7 +288,7 @@ func (e goEnv) clean(ctx context.Context) error {
 
 func (e goEnv) modVersion(_ context.Context, mod string) (string, error) {
 	// can't use runGo because we need the output
-	cmd := exec.Command("go", "list", "-f", "{{.Version}}", "-m", mod)
+	cmd := exec.Command("go", "list", "-f", "{{.Version}} {{.Replace}}", "-m", mod)
 	cmd.Env = e.env
 	cmd.Dir = e.workDir
 	out, err := cmd.CombinedOutput()
@@ -296,8 +296,16 @@ func (e goEnv) modVersion(_ context.Context, mod string) (string, error) {
 		return "", fmt.Errorf("list module %s", err.Error())
 	}
 
-	// list will return '\n'
-	return strings.Trim(string(out), "\n"), nil
+	// go list will return the version and the replacement if any
+	result := strings.Split(strings.Trim(string(out), "\n"), " ")
+	version := result[0]
+
+	// if there's a replacement, use the replacement's version
+	if len(result) == 3 {
+		version = result[2]
+	}
+
+	return version, nil
 }
 
 func mapToSlice(m map[string]string) []string {

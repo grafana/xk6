@@ -132,9 +132,12 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 			CopyGoEnv: true,
 			Env:       env,
 		},
-		K6Repo:      opts.k6repo,
 		SkipCleanup: opts.skipCleanup != 0,
 		Logger:      logger,
+	}
+
+	if opts.k6repo != defaultK6Repo { // only set if different from default: k6foundry workaround
+		fopts.K6Repo = opts.k6repo
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {

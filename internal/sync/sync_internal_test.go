@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"reflect"
 	"testing"
 
 	"golang.org/x/mod/modfile"
@@ -45,10 +46,16 @@ func TestDiffRequires_OneDifference(t *testing.T) {
 		},
 	}
 
-	want := []string{"github.com/foo/bar@v1.2.4"}
+	want := []*Change{
+		{
+			Module: "github.com/foo/bar",
+			From:   "v1.2.3",
+			To:     "v1.2.4",
+		},
+	}
 
 	got := diffRequires(ext, k6)
-	if len(got) != 1 || got[0] != want[0] {
+	if reflect.DeepEqual(got, want) == false {
 		t.Errorf("expected %v, got %v", want, got)
 	}
 }
@@ -70,13 +77,22 @@ func TestDiffRequires_MultipleDifferences(t *testing.T) {
 		},
 	}
 
-	want := []string{
-		"github.com/foo/bar@v1.2.4",
-		"github.com/baz/qux@v2.1.0",
+	want := []*Change{
+		{
+			Module: "github.com/foo/bar",
+
+			From: "v1.2.3",
+			To:   "v1.2.4",
+		},
+		{
+			Module: "github.com/baz/qux",
+			From:   "v2.0.0",
+			To:     "v2.1.0",
+		},
 	}
 
 	got := diffRequires(ext, k6)
-	if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("expected %v, got %v", want, got)
 	}
 }

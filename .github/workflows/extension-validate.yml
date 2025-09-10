@@ -360,6 +360,7 @@ jobs:
     if: ${{ needs.config.outputs.api-doc }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
 

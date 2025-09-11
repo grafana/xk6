@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -117,33 +118,15 @@ func getVersion() string {
 		return version
 	}
 
-	var (
-		commit string
-		dirty  string
-		suffix string
-	)
-
 	buildInfo, ok := debug.ReadBuildInfo()
 	if ok {
-		for _, s := range buildInfo.Settings {
-			switch s.Key {
-			case "vcs.revision":
-				const shortCommitLen = 7
-				commit = s.Value[:min(len(s.Value), shortCommitLen)]
-			case "vcs.modified":
-				if s.Value == "true" {
-					dirty = ".dirty"
-				}
-			default:
-			}
+		ver, err := semver.NewVersion(buildInfo.Main.Version)
+		if err == nil {
+			return ver.String()
 		}
 	}
 
-	if len(commit) != 0 {
-		suffix = "+" + commit + dirty
-	}
-
-	return "0.0.1-next" + suffix
+	return "0.0.0-devel"
 }
 
 func initLogging() *slog.LevelVar {

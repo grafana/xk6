@@ -50,9 +50,21 @@ const (
 )
 
 var nonGoEnvToCopy = []string{ //nolint:gochecknoglobals
-	"HTTP_PROXY",
-	"HTTPS_PROXY",
-	"NO_PROXY",
+	"HTTP_PROXY",          // required by git over http(s)
+	"HTTPS_PROXY",         // required by git over http(s)
+	"NO_PROXY",            // required by git over http(s)
+	"SSH_AUTH_SOCK",       // required by git over ssh
+	"SSH_AGENT_PID",       // required by git over ssh
+	"SSH_ASKPASS",         // custom ssh askpass helper
+	"XDG_RUNTIME_DIR",     // required by ssh-agent
+	"USER",                // required by git
+	"HOME",                // required by git
+	"GIT_TERMINAL_PROMPT", // to disable git terminal prompts
+	"GIT_ASKPASS",         // custom git askpass helper
+	"GIT_SSH_COMMAND",     // to pass custom ssh options
+	"GIT_SSH",             // to pass custom ssh options (legacy)
+	"GH_TOKEN",            // GitHub token for GitHub CLI as credential helper
+	"GITHUB_TOKEN",        // GitHub token for GitHub CLI as credential helper
 }
 
 func defaultK6Output() string {

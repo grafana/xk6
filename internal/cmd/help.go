@@ -19,6 +19,9 @@ var (
 
 	//go:embed help/docker.md
 	dockerHelp string
+
+	//go:embed help/private.md
+	privateHelp string
 )
 
 func helpTopics() []*cobra.Command {
@@ -27,6 +30,7 @@ func helpTopics() []*cobra.Command {
 		helpTopic("devcontainers", devcontainersHelp),
 		helpTopic("docker", dockerHelp),
 		helpTopic("install", installHelp),
+		helpTopic("private", privateHelp),
 	}
 }
 

@@ -6,18 +6,15 @@ $defs:
       The result of the extension's k6 compliance checks.
     type: object
     required:
-      - grade
-      - level
+      - passed
       - timestamp
     properties:
-      grade:
-        $ref: "#/$defs/grade"
+      passed:
         description: |
-          The results of the checks are in the form of a grade.
-      level:
-        description: |
-          Compliance expressed as a percentage.
-        type: integer
+          The result of the check.
+
+          A true value of the passed property indicates a successful check, while a false value indicates a failure.
+        type: boolean
       timestamp:
         description: |
           Compliance check timestamp.
@@ -32,11 +29,6 @@ $defs:
         items:
           $ref: "#/$defs/check"
     additionalProperties: false
-  grade:
-    description: |
-      The results of the checks are in the form of a grade.
-    type: string
-    enum: ["A", "B", "C", "D", "E", "F", "G", "Z"]
   check:
     description: |
       The result of a particular inspection.

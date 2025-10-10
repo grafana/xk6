@@ -44,13 +44,12 @@ type Compliance struct {
 	//
 	Checks []Check `json:"checks,omitempty" yaml:"checks,omitempty" mapstructure:"checks,omitempty"`
 
-	// The results of the checks are in the form of a grade.
+	// The result of the check.
 	//
-	Grade Grade `json:"grade" yaml:"grade" mapstructure:"grade"`
-
-	// Compliance expressed as a percentage.
+	// A true value of the passed property indicates a successful check, while a false
+	// value indicates a failure.
 	//
-	Level int `json:"level" yaml:"level" mapstructure:"level"`
+	Passed bool `json:"passed" yaml:"passed" mapstructure:"passed"`
 
 	// Compliance check timestamp.
 	//
@@ -60,14 +59,3 @@ type Compliance struct {
 	//
 	Timestamp float64 `json:"timestamp" yaml:"timestamp" mapstructure:"timestamp"`
 }
-
-type Grade string
-
-const GradeA Grade = "A"
-const GradeB Grade = "B"
-const GradeC Grade = "C"
-const GradeD Grade = "D"
-const GradeE Grade = "E"
-const GradeF Grade = "F"
-const GradeG Grade = "G"
-const GradeZ Grade = "Z"

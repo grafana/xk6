@@ -1,1 +1,1 @@
-xk6 lint --passing D
+xk6 lint

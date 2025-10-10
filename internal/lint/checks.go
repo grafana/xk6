@@ -64,19 +64,14 @@ func checkDefinitions(official bool) []checkDefinition {
 	return defs
 }
 
-func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, int) {
+func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, bool) {
 	checkDefs := checkDefinitions(opts.Official)
 	results := make([]Check, 0, len(checkDefs))
 	passed := passedChecks(opts.Passed)
 
-	var (
-		total, sum float64
-		blocking   bool
-	)
+	pass := true
 
 	for _, checker := range checkDefs {
-		total += float64(checker.score)
-
 		var check Check
 
 		if c, found := passed[checker.id]; found {
@@ -89,22 +84,14 @@ func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, int) {
 			check.Details = res.details
 		}
 
-		if check.Passed {
-			sum += float64(checker.score)
-		} else {
-			blocking = blocking || (checker.score == 0)
+		if !check.Passed {
+			pass = false
 		}
 
 		results = append(results, check)
 	}
 
-	if blocking {
-		sum = 0
-	}
-
-	const hundredPercent = 100.0
-
-	return results, int((sum / total) * hundredPercent)
+	return results, pass
 }
 
 // ParseChecker parses checker name from string.

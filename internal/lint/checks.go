@@ -26,9 +26,8 @@ func checkError(err error) *checkResult {
 }
 
 type checkDefinition struct {
-	id    Checker
-	fn    checkFunc
-	score int
+	id Checker
+	fn checkFunc
 }
 
 //nolint:mnd
@@ -37,18 +36,18 @@ func checkDefinitions(official bool) []checkDefinition {
 	gitCheck := newGitChecker()
 
 	defs := []checkDefinition{
-		{id: CheckerSecurity, score: 0, fn: checkerSecurity},
-		{id: CheckerVulnerability, score: 0, fn: checkerVulnerability},
-		{id: CheckerModule, score: 2, fn: modCheck.hasGoModule},
-		{id: CheckerReplace, score: 2, fn: modCheck.hasNoReplace},
-		{id: CheckerReadme, score: 5, fn: checkerReadme},
-		{id: CheckerLicense, score: 5, fn: checkerLicense},
-		{id: CheckerGit, score: 1, fn: gitCheck.isWorkDir},
-		{id: CheckerVersions, score: 5, fn: gitCheck.hasVersions},
-		{id: CheckerBuild, score: 5, fn: modCheck.canBuild},
-		{id: CheckerSmoke, score: 2, fn: modCheck.smoke},
-		{id: CheckerExamples, score: 2, fn: modCheck.examples},
-		{id: CheckerTypes, score: 2, fn: modCheck.types},
+		{id: CheckerSecurity, fn: checkerSecurity},
+		{id: CheckerVulnerability, fn: checkerVulnerability},
+		{id: CheckerModule, fn: modCheck.hasGoModule},
+		{id: CheckerReplace, fn: modCheck.hasNoReplace},
+		{id: CheckerReadme, fn: checkerReadme},
+		{id: CheckerLicense, fn: checkerLicense},
+		{id: CheckerGit, fn: gitCheck.isWorkDir},
+		{id: CheckerVersions, fn: gitCheck.hasVersions},
+		{id: CheckerBuild, fn: modCheck.canBuild},
+		{id: CheckerSmoke, fn: modCheck.smoke},
+		{id: CheckerExamples, fn: modCheck.examples},
+		{id: CheckerTypes, fn: modCheck.types},
 	}
 
 	if !official {
@@ -56,7 +55,7 @@ func checkDefinitions(official bool) []checkDefinition {
 	}
 
 	extra := []checkDefinition{
-		{id: CheckerCodeowners, score: 2, fn: checkerCodeowners},
+		{id: CheckerCodeowners, fn: checkerCodeowners},
 	}
 
 	defs = append(defs, extra...)

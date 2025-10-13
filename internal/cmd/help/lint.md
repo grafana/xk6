@@ -2,33 +2,32 @@ Static analyzer for k6 extensions
 
 **Linter for k6 extensions**
 
-xk6 lint analyzes the source of the k6 extension and try to build k6 with the extension.
+xk6 lint analyzes the source code of a k6 extension and attempts to build k6 with it. It checks for compliance with k6 extension requirements using various built-in checkers.
 
-The contents of the source directory are used for analysis. If the directory is a git workdir, it also analyzes the git metadata. The analysis is completely local and does not use external APIs (e.g. repository manager API) or services.
+The analysis is local and uses the contents of the provided source directory. It also analyzes git metadata if the directory is a git workdir. No external APIs or services are used.
 
-Compliance with the requirements expected of k6 extensions is checked by various compliance checkers.
+Compliance is checked by the following individual checkers:
 
-- `module` - checks if there is a valid `go.mod`
-- `replace` - checks if there is no `replace` directive in `go.mod`
-- `readme` - checks if there is a readme file
-- `examples` - checks if there are files in the `examples` directory
-- `license` - checks whether there is an acceptable license
-  - `AGPL-3.0`
-  - `Apache-2.0`
-  - `BSD`
-  - `GPL-3.0`
-  - `LGPL-3.0`
-  - `MIT`
-- `git` - checks if the directory is git workdir
-- `versions` - checks for semantic versioning git tags
-- `build` - checks if the latest k6 version can be built with the extension
-- `smoke` - checks if the smoke test script exists and runs successfully (`smoke.js`, `smoke.ts`, `smoke.test.js` or `smoke.test.ts` in the `test`,`tests`, `examples` or the base directory)
-- `types` - checks if the TypeScript API declaration file exists (`index.d.ts` in the `docs`, `api-docs` or the base directory)
-- `codeowners` - checks if there is a CODEOWNERS file (for official extensions) (in the `.github` or `docs` or in the base directory)
+* `security` - Check for security issues (using the `gosec` tool)
+* `vulnerability` - Check for vulnerability issues (using the `govulncheck` tool)
+* `module`: Checks for a valid `go.mod` file.
+* `replace`: Ensures there are no `replace` directives in `go.mod`.
+* `readme`: Checks for the presence of a readme file.
+* `examples`: Verifies files exist in the `examples` directory.
+* `license`: Checks for an acceptable license, including: `MIT`, `Apache-2.0`, `GPL-3.0`, `AGPL-3.0`, `LGPL-3.0`, and `BSD`.
+* `git`: Confirms the source directory is a git workdir.
+* `versions`: Checks for semantic versioning git tags.
+* `build`: Attempts to build the extension with the latest k6 version.
+* `smoke`: Checks for and successfully runs a smoke test script (`smoke.js`, `smoke.ts`, `smoke.test.js`, or `smoke.test.ts` in `test`, `tests`, `examples`, or base directory).
+* `types`: Checks for the existence of a TypeScript API declaration file (`index.d.ts` in `docs`, `api-docs`, or base directory).
+* `codeowners`: Checks for a `CODEOWNERS` file in the `.github`, `docs`, or base directory (for official extensions).
 
-The result of the analysis is compliance expressed as a percentage (`0`-`100`). This value is created as a weighted, normalized value of the scores of each checker. A compliance grade is created from the percentage value (`A`-`F`).
+The overall result is the logical product of all individual checker results:
+
+- The run **passes** if and only if **all** individual checkers pass.
+- The run **fails** if **any** individual checker fails.
+
+If the run passes, the command is successful and exits with code `0`. If the run fails, it returns an exit code greater than `0`.
 
 By default, text output is generated. The `--json` flag can be used to generate the result in JSON format.
 
-If the grade is `C` or higher, the command is successful, otherwise it returns an exit code larger than `0`.
-This passing grade can be modified using the `--passing` flag.

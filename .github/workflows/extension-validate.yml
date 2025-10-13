@@ -26,11 +26,6 @@ on:
         description: The golangci-lint version to use for static analysis.
         required: true
         type: string
-      passing-grade:
-        description: Passing compliance grade
-        type: string
-        required: false
-        default: C
       public:
         description: Static content directory for GitHub Pages
         type: string
@@ -163,8 +158,6 @@ jobs:
 
       - name: Run xk6 lint
         shell: bash
-        env:
-          PASSING_GRADE: ${{ inputs.passing-grade }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -174,7 +167,7 @@ jobs:
           END
 
           set -e
-          xk6 lint --passing ${PASSING_GRADE} --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
+          xk6 lint --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
           echo "~~~" >> $GITHUB_STEP_SUMMARY
 
   lint:

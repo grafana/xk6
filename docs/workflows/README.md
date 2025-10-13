@@ -244,11 +244,6 @@ The **Extension Validate** ([`extension-validate.yml`](../../.github/workflows/e
         description: The golangci-lint version to use for static analysis.
         required: true
         type: string
-      passing-grade:
-        description: Passing compliance grade
-        type: string
-        required: false
-        default: C
       public:
         description: Static content directory for GitHub Pages
         type: string

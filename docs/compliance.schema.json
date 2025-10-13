@@ -6,18 +6,13 @@
       "description": "The result of the extension's k6 compliance checks.\n",
       "type": "object",
       "required": [
-        "grade",
-        "level",
+        "passed",
         "timestamp"
       ],
       "properties": {
-        "grade": {
-          "$ref": "#/$defs/grade",
-          "description": "The results of the checks are in the form of a grade.\n"
-        },
-        "level": {
-          "description": "Compliance expressed as a percentage.\n",
-          "type": "integer"
+        "passed": {
+          "description": "The result of the check.\n\nA true value of the passed property indicates a successful check, while a false value indicates a failure.\n",
+          "type": "boolean"
         },
         "timestamp": {
           "description": "Compliance check timestamp.\n\nThe timestamp property contains the start timestamp of the check in Unix time format (the number of non-leap seconds that have elapsed since 00:00:00 UTC on 1st January 1970).\n",
@@ -33,20 +28,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "grade": {
-      "description": "The results of the checks are in the form of a grade.\n",
-      "type": "string",
-      "enum": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "Z"
-      ]
     },
     "check": {
       "description": "The result of a particular inspection.\n",

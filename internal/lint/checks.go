@@ -26,9 +26,8 @@ func checkError(err error) *checkResult {
 }
 
 type checkDefinition struct {
-	id    Checker
-	fn    checkFunc
-	score int
+	id Checker
+	fn checkFunc
 }
 
 //nolint:mnd
@@ -37,18 +36,18 @@ func checkDefinitions(official bool) []checkDefinition {
 	gitCheck := newGitChecker()
 
 	defs := []checkDefinition{
-		{id: CheckerSecurity, score: 0, fn: checkerSecurity},
-		{id: CheckerVulnerability, score: 0, fn: checkerVulnerability},
-		{id: CheckerModule, score: 2, fn: modCheck.hasGoModule},
-		{id: CheckerReplace, score: 2, fn: modCheck.hasNoReplace},
-		{id: CheckerReadme, score: 5, fn: checkerReadme},
-		{id: CheckerLicense, score: 5, fn: checkerLicense},
-		{id: CheckerGit, score: 1, fn: gitCheck.isWorkDir},
-		{id: CheckerVersions, score: 5, fn: gitCheck.hasVersions},
-		{id: CheckerBuild, score: 5, fn: modCheck.canBuild},
-		{id: CheckerSmoke, score: 2, fn: modCheck.smoke},
-		{id: CheckerExamples, score: 2, fn: modCheck.examples},
-		{id: CheckerTypes, score: 2, fn: modCheck.types},
+		{id: CheckerSecurity, fn: checkerSecurity},
+		{id: CheckerVulnerability, fn: checkerVulnerability},
+		{id: CheckerModule, fn: modCheck.hasGoModule},
+		{id: CheckerReplace, fn: modCheck.hasNoReplace},
+		{id: CheckerReadme, fn: checkerReadme},
+		{id: CheckerLicense, fn: checkerLicense},
+		{id: CheckerGit, fn: gitCheck.isWorkDir},
+		{id: CheckerVersions, fn: gitCheck.hasVersions},
+		{id: CheckerBuild, fn: modCheck.canBuild},
+		{id: CheckerSmoke, fn: modCheck.smoke},
+		{id: CheckerExamples, fn: modCheck.examples},
+		{id: CheckerTypes, fn: modCheck.types},
 	}
 
 	if !official {
@@ -56,7 +55,7 @@ func checkDefinitions(official bool) []checkDefinition {
 	}
 
 	extra := []checkDefinition{
-		{id: CheckerCodeowners, score: 2, fn: checkerCodeowners},
+		{id: CheckerCodeowners, fn: checkerCodeowners},
 	}
 
 	defs = append(defs, extra...)
@@ -64,19 +63,14 @@ func checkDefinitions(official bool) []checkDefinition {
 	return defs
 }
 
-func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, int) {
+func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, bool) {
 	checkDefs := checkDefinitions(opts.Official)
 	results := make([]Check, 0, len(checkDefs))
 	passed := passedChecks(opts.Passed)
 
-	var (
-		total, sum float64
-		blocking   bool
-	)
+	pass := true
 
 	for _, checker := range checkDefs {
-		total += float64(checker.score)
-
 		var check Check
 
 		if c, found := passed[checker.id]; found {
@@ -89,22 +83,14 @@ func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, int) {
 			check.Details = res.details
 		}
 
-		if check.Passed {
-			sum += float64(checker.score)
-		} else {
-			blocking = blocking || (checker.score == 0)
+		if !check.Passed {
+			pass = false
 		}
 
 		results = append(results, check)
 	}
 
-	if blocking {
-		sum = 0
-	}
-
-	const hundredPercent = 100.0
-
-	return results, int((sum / total) * hundredPercent)
+	return results, pass
 }
 
 // ParseChecker parses checker name from string.

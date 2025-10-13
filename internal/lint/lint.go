@@ -11,8 +11,7 @@ func Lint(ctx context.Context, dir string, opts *Options) (*Compliance, error) {
 	c := new(Compliance)
 
 	c.Timestamp = float64(time.Now().Unix())
-	c.Checks, c.Level = runChecks(ctx, dir, opts)
-	c.Grade = gradeFor(c.Level)
+	c.Checks, c.Passed = runChecks(ctx, dir, opts)
 
 	return c, nil
 }

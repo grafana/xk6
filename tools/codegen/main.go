@@ -1,4 +1,6 @@
-// Package main is a tool to generate compliance preset files.
+// Package main is a tool to generate go source files and markdown documentation
+// for lint presets and checks based on the definitions in docs/presets.yml
+// and docs/checks.yml.
 package main
 
 import (

@@ -28,6 +28,10 @@ $defs:
         type: array
         items:
           $ref: "#/$defs/check"
+      preset:
+        description: |
+          The preset used for the compliance check.
+        $ref: "#/$defs/preset_definition"
     additionalProperties: false
   check:
     description: |
@@ -40,10 +44,10 @@ $defs:
     properties:
       id:
         description: |
-          The ID of the checker.
+          The ID of the check.
 
           It identifies the method of check, not the execution of the check.
-        $ref: "#/$defs/checker"
+        $ref: "#/$defs/check_id"
       passed:
         description: |
           The result of the check.
@@ -55,7 +59,11 @@ $defs:
           Textual explanation of the check result.
         type: string
         default: ""
-  checker:
+      definition:
+        description: |
+          The definition of the check that was performed.
+        $ref: "#/$defs/check_definition"
+  check_id:
     description: |
       The ID of the check.
 
@@ -75,3 +83,69 @@ $defs:
       - smoke
       - codeowners
       - types
+  check_definition:
+    description: |
+      The definition of a particular inspection.
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - description
+      - rationale
+      - resolution
+    properties:
+      id:
+        description: |
+          The ID of the check.
+
+          It identifies the method of check, not the execution of the check.
+        $ref: "#/$defs/check_id"
+      description:
+        description: |
+          A brief description of what the check inspects.
+        type: string
+      rationale:
+        description: |
+          An explanation of why the check is important.
+        type: string
+      resolution:
+        description: |
+          Guidance on how to resolve a failed check.
+        type: string
+  preset_definition:
+    description: |
+      The definition of a preset.
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - description
+      - checks
+    properties:
+      id:
+        description: |
+          The ID of the preset.
+        $ref: "#/$defs/preset_id"
+      description:
+        description: |
+          A brief description of what the preset represents.
+        type: string
+      checks:
+        description: |
+          The list of checks that are part of this preset.
+        type: array
+        items:
+          $ref: "#/$defs/check_id"
+  preset_id:
+    description: |
+      The ID of the preset.
+
+      It identifies the preset used for the compliance check.
+    type: string
+    enum:
+      - all
+      - loose
+      - strict
+      - private
+      - community
+      - official

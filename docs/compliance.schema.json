@@ -25,6 +25,10 @@
           "items": {
             "$ref": "#/$defs/check"
           }
+        },
+        "preset": {
+          "description": "The preset used for the compliance check.\n",
+          "$ref": "#/$defs/preset_definition"
         }
       },
       "additionalProperties": false
@@ -39,8 +43,8 @@
       ],
       "properties": {
         "id": {
-          "description": "The ID of the checker.\n\nIt identifies the method of check, not the execution of the check.\n",
-          "$ref": "#/$defs/checker"
+          "description": "The ID of the check.\n\nIt identifies the method of check, not the execution of the check.\n",
+          "$ref": "#/$defs/check_id"
         },
         "passed": {
           "description": "The result of the check.\n\nA true value of the passed property indicates a successful check, while a false value indicates a failure.\n",
@@ -50,10 +54,14 @@
           "description": "Textual explanation of the check result.\n",
           "type": "string",
           "default": ""
+        },
+        "definition": {
+          "description": "The definition of the check that was performed.\n",
+          "$ref": "#/$defs/check_definition"
         }
       }
     },
-    "checker": {
+    "check_id": {
       "description": "The ID of the check.\n\nIt identifies the method of check, not the execution of the check.\n",
       "type": "string",
       "enum": [
@@ -70,6 +78,74 @@
         "smoke",
         "codeowners",
         "types"
+      ]
+    },
+    "check_definition": {
+      "description": "The definition of a particular inspection.\n",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "rationale",
+        "resolution"
+      ],
+      "properties": {
+        "id": {
+          "description": "The ID of the check.\n\nIt identifies the method of check, not the execution of the check.\n",
+          "$ref": "#/$defs/check_id"
+        },
+        "description": {
+          "description": "A brief description of what the check inspects.\n",
+          "type": "string"
+        },
+        "rationale": {
+          "description": "An explanation of why the check is important.\n",
+          "type": "string"
+        },
+        "resolution": {
+          "description": "Guidance on how to resolve a failed check.\n",
+          "type": "string"
+        }
+      }
+    },
+    "preset_definition": {
+      "description": "The definition of a preset.\n",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "checks"
+      ],
+      "properties": {
+        "id": {
+          "description": "The ID of the preset.\n",
+          "$ref": "#/$defs/preset_id"
+        },
+        "description": {
+          "description": "A brief description of what the preset represents.\n",
+          "type": "string"
+        },
+        "checks": {
+          "description": "The list of checks that are part of this preset.\n",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/check_id"
+          }
+        }
+      }
+    },
+    "preset_id": {
+      "description": "The ID of the preset.\n\nIt identifies the preset used for the compliance check.\n",
+      "type": "string",
+      "enum": [
+        "all",
+        "loose",
+        "strict",
+        "private",
+        "community",
+        "official"
       ]
     }
   }

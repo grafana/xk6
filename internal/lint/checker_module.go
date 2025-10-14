@@ -137,10 +137,6 @@ func (mc *moduleChecker) smoke(ctx context.Context, dir string) *checkResult {
 var reIndexDTS = regexp.MustCompile("^index.d.ts$")
 
 func (mc *moduleChecker) types(_ context.Context, dir string) *checkResult {
-	if mc.exe == "" {
-		return checkFailed("can't build")
-	}
-
 	if !mc.js {
 		return checkPassed("skipped due to output extension")
 	}
@@ -162,10 +158,6 @@ func (mc *moduleChecker) types(_ context.Context, dir string) *checkResult {
 }
 
 func (mc *moduleChecker) examples(_ context.Context, dir string) *checkResult {
-	if mc.exe == "" {
-		return checkFailed("can't build")
-	}
-
 	if !mc.js {
 		return checkPassed("skipped due to output extension")
 	}

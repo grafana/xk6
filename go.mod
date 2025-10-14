@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/grafana/k6foundry v0.4.7
 	github.com/lmittmann/tint v1.1.2
 	github.com/mattn/go-colorable v0.1.14
@@ -17,10 +18,11 @@ require (
 	github.com/szkiba/docsme v0.2.0
 	github.com/szkiba/efa v0.1.0
 	golang.org/x/mod v0.29.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
+	dario.cat/mergo v1.0.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect

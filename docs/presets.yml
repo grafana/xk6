@@ -1,0 +1,87 @@
+- id: all
+  description: |
+    Comprehensive preset that includes every available check in the xk6 linting system. Serves as a complete reference for all possible compliance checks and provides maximum validation coverage for development and testing purposes.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - replace
+    - readme
+    - license
+    - git
+    - versions
+    - build
+    - smoke
+    - examples
+    - types
+    - codeowners
+
+- id: loose
+  description: |
+    Minimal preset focusing on essential quality and security compliance checks. Designed for development environments and initial extension development phases. Provides basic compliance requirements without restrictive validation that slows development cycles. This is the default preset.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - readme
+    - license
+    - git
+    - versions
+    - build
+
+- id: strict
+  description: |
+    Comprehensive preset for production-ready extensions, including all compliance checks except those reserved for official Grafana extensions (such as codeowners validation). Designed for third-party extensions that require high quality standards before release.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - replace
+    - readme
+    - license
+    - git
+    - versions
+    - build
+    - smoke
+    - examples
+    - types
+
+- id: private
+  description: |
+    Lightweight preset designed for private or internal extension development. Focuses on core security and functionality compliance while omitting documentation and public-facing requirements such as README formatting and licensing compliance.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - git
+
+- id: community
+  description: |
+    Balanced preset tailored for community-contributed extension development. Includes essential quality, security, and documentation compliance to ensure extensions meet community standards while remaining accessible to contributors.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - readme
+    - license
+    - git
+    - versions
+    - build
+
+- id: official
+  description: |
+    Most stringent preset for official Grafana-maintained extension development. Enforces the highest quality standards including code ownership compliance, comprehensive testing requirements, and complete documentation compliance.
+  checks:
+    - security
+    - vulnerability
+    - module
+    - replace
+    - readme
+    - license
+    - git
+    - versions
+    - build
+    - smoke
+    - examples
+    - types
+    - codeowners

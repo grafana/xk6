@@ -207,7 +207,7 @@ The **Extension Validate** ([`extension-validate.yml`](../../.github/workflows/e
 
 - **Smoke**: Run short Go tests (`-short` flag) on single platform and single go version. In case of an error, the workflow will stop with an error. The role of this job is to quickly stop the workflow in case of trivial test errors, preventing slower tests from running on multiple platforms using multiple go versions.
 
-- **Compliance**: Check the extension for compliance with best practices using the `xk6 lint` command. If the compliance level does not reach the value specified in the `passing-grade` input parameter (default `C`), the workflow will fail.
+- **Compliance**: Check the extension for compliance with best practices using the `xk6 lint` command. If the compliance check fail, the workflow will fail.
 
 - **Test**: Run Go tests on multiple platforms using multiple go versions. The execution will be done using a matrix strategy, the number of jobs run is the number of go versions multiplied by the number of platforms. The workflow run does not stop if the first job fails, all jobs in the matrix are executed. If any job fails, the workflow will stop with an error. A typical input contains two go versions and three platforms (`ubuntu-latest`, `windows-latest`, `macos-latest`) which is 6 jobs in the matrix.
 
@@ -258,10 +258,26 @@ The **Extension Validate** ([`extension-validate.yml`](../../.github/workflows/e
         description: The xk6 version to be used.
         required: true
         type: string
-      bats:
-        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
-        type: string
+      xk6-lint-preset:
+        description: The xk6 lint preset to be used.
         required: false
+        default: "loose"
+        type: string
+      xk6-lint-enable:
+        description: Additional xk6 lint checks to enable.
+        required: false
+        default: ""
+        type: string
+      xk6-lint-disable:
+        description: xk6 lint checks to disable.
+        required: false
+        default: "security,vulnerability" # disable because they are run in a separate job
+        type: string
+      xk6-lint-enable-only:
+        description: xk6 lint checks to enable exclusively (disables the preset).
+        required: false
+        default: ""
+        type: string
 ```
 
 ### Extension Release

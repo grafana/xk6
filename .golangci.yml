@@ -23,6 +23,8 @@ linters:
           allow:
             - $gostd
             - golang.org/x/mod
+            - golang.org/x/text/cases
+            - golang.org/x/text/language
             - github.com/stretchr/testify/require
             - github.com/spf13/cobra
             - github.com/spf13/pflag
@@ -38,6 +40,8 @@ linters:
             - github.com/chainguard-dev/git-urls
             - github.com/charmbracelet/huh
             - github.com/grafana/k6foundry
+            - gopkg.in/yaml.v3
+            - github.com/go-task/slim-sprig/v3
             - go.k6.io/xk6
   exclusions:
     paths:

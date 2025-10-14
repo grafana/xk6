@@ -1,0 +1,11 @@
+# Analyze current directory with default preset
+xk6 lint
+
+# Use strict preset for production validation
+xk6 lint --preset strict
+
+# Add smoke and examples checks to default preset
+xk6 lint --enable smoke,examples
+
+# Run only security checks
+xk6 lint --enable-only security,vulnerability  

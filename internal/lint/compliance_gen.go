@@ -4,15 +4,19 @@ package lint
 
 // The result of a particular inspection.
 type Check struct {
+	// The definition of the check that was performed.
+	//
+	Definition *CheckDefinition `json:"definition,omitempty" yaml:"definition,omitempty" mapstructure:"definition,omitempty"`
+
 	// Textual explanation of the check result.
 	//
 	Details string `json:"details,omitempty" yaml:"details,omitempty" mapstructure:"details,omitempty"`
 
-	// The ID of the checker.
+	// The ID of the check.
 	//
 	// It identifies the method of check, not the execution of the check.
 	//
-	ID Checker `json:"id" yaml:"id" mapstructure:"id"`
+	ID CheckID `json:"id" yaml:"id" mapstructure:"id"`
 
 	// The result of the check.
 	//
@@ -22,21 +26,42 @@ type Check struct {
 	Passed bool `json:"passed" yaml:"passed" mapstructure:"passed"`
 }
 
-type Checker string
+// The definition of a particular inspection.
+type CheckDefinition struct {
+	// A brief description of what the check inspects.
+	//
+	Description string `json:"description" yaml:"description" mapstructure:"description"`
 
-const CheckerBuild Checker = "build"
-const CheckerCodeowners Checker = "codeowners"
-const CheckerExamples Checker = "examples"
-const CheckerGit Checker = "git"
-const CheckerLicense Checker = "license"
-const CheckerModule Checker = "module"
-const CheckerReadme Checker = "readme"
-const CheckerReplace Checker = "replace"
-const CheckerSecurity Checker = "security"
-const CheckerSmoke Checker = "smoke"
-const CheckerTypes Checker = "types"
-const CheckerVersions Checker = "versions"
-const CheckerVulnerability Checker = "vulnerability"
+	// The ID of the check.
+	//
+	// It identifies the method of check, not the execution of the check.
+	//
+	ID CheckID `json:"id" yaml:"id" mapstructure:"id"`
+
+	// An explanation of why the check is important.
+	//
+	Rationale string `json:"rationale" yaml:"rationale" mapstructure:"rationale"`
+
+	// Guidance on how to resolve a failed check.
+	//
+	Resolution string `json:"resolution" yaml:"resolution" mapstructure:"resolution"`
+}
+
+type CheckID string
+
+const CheckIDBuild CheckID = "build"
+const CheckIDCodeowners CheckID = "codeowners"
+const CheckIDExamples CheckID = "examples"
+const CheckIDGit CheckID = "git"
+const CheckIDLicense CheckID = "license"
+const CheckIDModule CheckID = "module"
+const CheckIDReadme CheckID = "readme"
+const CheckIDReplace CheckID = "replace"
+const CheckIDSecurity CheckID = "security"
+const CheckIDSmoke CheckID = "smoke"
+const CheckIDTypes CheckID = "types"
+const CheckIDVersions CheckID = "versions"
+const CheckIDVulnerability CheckID = "vulnerability"
 
 // The result of the extension's k6 compliance checks.
 type Compliance struct {
@@ -51,6 +76,10 @@ type Compliance struct {
 	//
 	Passed bool `json:"passed" yaml:"passed" mapstructure:"passed"`
 
+	// The preset used for the compliance check.
+	//
+	Preset *PresetDefinition `json:"preset,omitempty" yaml:"preset,omitempty" mapstructure:"preset,omitempty"`
+
 	// Compliance check timestamp.
 	//
 	// The timestamp property contains the start timestamp of the check in Unix time
@@ -59,3 +88,27 @@ type Compliance struct {
 	//
 	Timestamp float64 `json:"timestamp" yaml:"timestamp" mapstructure:"timestamp"`
 }
+
+// The definition of a preset.
+type PresetDefinition struct {
+	// The list of checks that are part of this preset.
+	//
+	Checks []CheckID `json:"checks" yaml:"checks" mapstructure:"checks"`
+
+	// A brief description of what the preset represents.
+	//
+	Description string `json:"description" yaml:"description" mapstructure:"description"`
+
+	// The ID of the preset.
+	//
+	ID PresetID `json:"id" yaml:"id" mapstructure:"id"`
+}
+
+type PresetID string
+
+const PresetIDAll PresetID = "all"
+const PresetIDCommunity PresetID = "community"
+const PresetIDLoose PresetID = "loose"
+const PresetIDOfficial PresetID = "official"
+const PresetIDPrivate PresetID = "private"
+const PresetIDStrict PresetID = "strict"

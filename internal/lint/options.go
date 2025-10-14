@@ -2,19 +2,16 @@ package lint
 
 // Options contains settings that modify the linter's operation.
 type Options struct {
-	// Passed contains a list of checkers that have already been marked as successful.
-	Passed []Checker
+	// Preset is the ID of the preset to use.
+	Preset PresetID
 
-	// Official can be set true to enable extra checkers (like codeowners) for official extensions.
-	Official bool
-}
+	// Enable is a list of checkers to enable in addition to those in the preset.
+	Enable []CheckID
 
-func passedChecks(checkers []Checker) map[Checker]Check {
-	dict := make(map[Checker]Check, len(checkers))
+	// Disable is a list of checkers to disable from those in the preset.
+	Disable []CheckID
 
-	for _, checker := range checkers {
-		dict[checker] = Check{ID: checker, Passed: true, Details: "marked as passed because it is a requirement"}
-	}
-
-	return dict
+	// EnableOnly, if set, makes the linter run only the checks in this list,
+	// ignoring the preset and other Enabled/Disabled options.
+	EnableOnly []CheckID
 }

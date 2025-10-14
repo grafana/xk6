@@ -40,6 +40,27 @@ on:
         description: The xk6 version to be used.
         required: true
         type: string
+      xk6-lint-preset:
+        description: The xk6 lint preset to be used.
+        required: false
+        default: "loose"
+        type: string
+      xk6-lint-enable:
+        description: Additional xk6 lint checks to enable.
+        required: false
+        default: ""
+        type: string
+      xk6-lint-disable:
+        description: xk6 lint checks to disable.
+        required: false
+        default: "security,vulnerability" # disable because they are run in a separate job
+        type: string
+      xk6-lint-enable-only:
+        description: xk6 lint checks to enable exclusively (disables the preset).
+        required: false
+        default: ""
+        type: string
+      # #endregion inputs
       bats:
         description: The bats scripts to use for integration testing. Space-separated file names or patterns.
         type: string
@@ -90,6 +111,10 @@ jobs:
           PLATFORMS: ${{ join(fromJSON(inputs.platforms),' ') }}
           API_DOC: ${{ steps.configure.outputs.api-doc }}
           CODECOV: ${{ steps.configure.outputs.codecov }}
+          XK6_LINT_PRESET: ${{ inputs.xk6-lint-preset }}
+          XK6_LINT_ENABLE: ${{ inputs.xk6-lint-enable }}
+          XK6_LINT_DISABLE: ${{ inputs.xk6-lint-disable }}
+          XK6_LINT_ENABLE_ONLY: ${{ inputs.xk6-lint-enable-only }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -102,8 +127,23 @@ jobs:
           platforms for test    | ${PLATFORMS}
           golangci-lint version | ${GOLANGCI_LINT_VERSION}
           k6 versions for test  | ${K6_VERSIONS}
-
           END
+
+          if [ -n "${XK6_LINT_ENABLE_ONLY}" ]; then
+            echo "xk6 lint --enable-only| ${XK6_LINT_ENABLE_ONLY}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "xk6 lint --preset     | ${XK6_LINT_PRESET}" >> $GITHUB_STEP_SUMMARY
+
+            if [ -n "${XK6_LINT_ENABLE}" ]; then
+              echo "xk6 lint --enable     | ${XK6_LINT_ENABLE}" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [ -n "${XK6_LINT_DISABLE}" ]; then
+              echo "xk6 lint --disable    | ${XK6_LINT_DISABLE}" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -n "${API_DOC}" ]; then
             echo "API documentation will be generated." >> $GITHUB_STEP_SUMMARY
@@ -158,6 +198,11 @@ jobs:
 
       - name: Run xk6 lint
         shell: bash
+        env:
+          XK6_LINT_PRESET: ${{ inputs.xk6-lint-preset }}
+          XK6_LINT_ENABLE: ${{ inputs.xk6-lint-enable }}
+          XK6_LINT_DISABLE: ${{ inputs.xk6-lint-disable }}
+          XK6_LINT_ENABLE_ONLY: ${{ inputs.xk6-lint-enable-only }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -167,7 +212,7 @@ jobs:
           END
 
           set -e
-          xk6 lint --passed security,vulnerability | tee -a $GITHUB_STEP_SUMMARY
+          xk6 lint | tee -a $GITHUB_STEP_SUMMARY
           echo "~~~" >> $GITHUB_STEP_SUMMARY
 
   lint:

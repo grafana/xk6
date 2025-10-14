@@ -170,7 +170,7 @@ func (e *Efa) BindTo(namevar ...string) error {
 		}
 
 		value, found := e.lookup(envvar)
-		if !found {
+		if !found || len(value) == 0 {
 			continue
 		}
 

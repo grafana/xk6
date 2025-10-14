@@ -120,8 +120,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/szkiba/docsme v0.2.0 h1:uOs9roSuFwgYZLWP/yUvnnKnE568Uca6Y+djPz3fVw8=
 github.com/szkiba/docsme v0.2.0/go.mod h1:W15a+CxOsSxBsR8HEQ5oHkarf3Hyi6/VyKy4VxWHL64=
-github.com/szkiba/efa v0.1.0 h1:LV+r65apOJqN0GINgG8y787z+52Tv00YC6jvAo3HmXQ=
-github.com/szkiba/efa v0.1.0/go.mod h1:3Lh5EITe1U8flM3ek3k6SI4gmGyZRGePmP6Giv3QJUQ=
+github.com/szkiba/efa v0.1.1 h1:HvJIX3VGQh+YbbXdaMMJU41IzbrQ79gZ0gthgQsXf8A=
+github.com/szkiba/efa v0.1.1/go.mod h1:3Lh5EITe1U8flM3ek3k6SI4gmGyZRGePmP6Giv3QJUQ=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=

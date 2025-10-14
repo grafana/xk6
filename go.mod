@@ -16,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/szkiba/docsme v0.2.0
-	github.com/szkiba/efa v0.1.0
+	github.com/szkiba/efa v0.1.1
 	golang.org/x/mod v0.29.0
 	gopkg.in/yaml.v3 v3.0.1
 )

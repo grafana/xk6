@@ -214,7 +214,7 @@ github.com/spf13/pflag
 # github.com/szkiba/docsme v0.2.0
 ## explicit; go 1.23.0
 github.com/szkiba/docsme
-# github.com/szkiba/efa v0.1.0
+# github.com/szkiba/efa v0.1.1
 ## explicit; go 1.23.0
 github.com/szkiba/efa
 # github.com/xanzy/ssh-agent v0.3.3

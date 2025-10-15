@@ -29,6 +29,8 @@ var (
 
 	//go:embed help/presets.md
 	presetsHelp string
+
+	errLintingFailed = errors.New("linting failed")
 )
 
 func validPresetIDs() []string {
@@ -238,17 +240,30 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 		return err
 	}
 
+	if !compliance.Passed {
+		result = errLintingFailed
+	}
+
 	if opts.quiet {
+		return result
+	}
+
+	err = lintOutput(opts.json, compliance, output, opts.compact)
+	if err != nil {
+		return err
+	}
+
+	return result
+}
+
+func lintOutput(json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
+	if !json {
+		textOutput(compliance, output)
+
 		return nil
 	}
 
-	if opts.json {
-		return jsonOutput(compliance, output, opts.compact)
-	}
-
-	textOutput(compliance, output)
-
-	return nil
+	return jsonOutput(compliance, output, compact)
 }
 
 func jsonOutput(compliance any, output io.Writer, compact bool) error {

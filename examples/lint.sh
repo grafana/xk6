@@ -1,1 +1,1 @@
-xk6 lint
+xk6 lint --preset private

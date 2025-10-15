@@ -271,7 +271,9 @@ The **Extension Validate** ([`extension-validate.yml`](../../.github/workflows/e
       xk6-lint-disable:
         description: xk6 lint checks to disable.
         required: false
-        default: "security,vulnerability" # disable because they are run in a separate job
+        # disable security and vulnerability checks because they are run in a separate job
+        # disable versions check because versions will be created in the release workflow
+        default: "security,vulnerability,versions"
         type: string
       xk6-lint-enable-only:
         description: xk6 lint checks to enable exclusively (disables the preset).

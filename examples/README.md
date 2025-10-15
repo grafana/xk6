@@ -9,7 +9,7 @@ xk6 new -d "Experimenting with k6 extensions" example.com/user/xk6-demo
 ## Run the linter
 
 ```bash file=lint.sh
-xk6 lint
+xk6 lint --preset private
 ```
 
 ## Build k6 with extensions

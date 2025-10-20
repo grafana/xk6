@@ -11,6 +11,10 @@ func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, bool) {
 	funcs := checkFunctions()
 	// passed := passedChecks(opts.Passed)
 
+	ctx = withSpy(ctx, dir)
+
+	defer getSpy(ctx).cleanup()
+
 	pass := true
 
 	for _, checker := range checkers {
@@ -123,30 +127,27 @@ func checkDefinitions() map[CheckID]CheckDefinition {
 }
 
 func checkFunctions() map[CheckID]checkFunc {
-	modCheck := newModuleChecker()
-	gitCheck := newGitChecker()
-
 	defs := map[CheckID]checkFunc{
 		CheckIDSecurity:      checkerSecurity,
 		CheckIDVulnerability: checkerVulnerability,
-		CheckIDModule:        modCheck.hasGoModule,
-		CheckIDReplace:       modCheck.hasNoReplace,
+		CheckIDModule:        checkerModule,
+		CheckIDReplace:       checkerReplace,
 		CheckIDReadme:        checkerReadme,
 		CheckIDLicense:       checkerLicense,
-		CheckIDGit:           gitCheck.isWorkDir,
-		CheckIDVersions:      gitCheck.hasVersions,
-		CheckIDBuild:         modCheck.canBuild,
-		CheckIDSmoke:         modCheck.smoke,
-		CheckIDExamples:      modCheck.examples,
-		CheckIDTypes:         modCheck.types,
+		CheckIDGit:           checkerGit,
+		CheckIDVersions:      checkerVersions,
+		CheckIDBuild:         checkerBuild,
+		CheckIDSmoke:         checkerSmoke,
+		CheckIDExamples:      checkerExamples,
+		CheckIDTypes:         checkerTypes,
 		CheckIDCodeowners:    checkerCodeowners,
 	}
 
 	return defs
 }
 
-func checkFailed(details string) *checkResult {
-	return &checkResult{passed: false, details: details}
+func checkFailed(details string, args ...any) *checkResult {
+	return &checkResult{passed: false, details: fmt.Sprintf(details, args...)}
 }
 
 func checkPassed(details string, args ...any) *checkResult {

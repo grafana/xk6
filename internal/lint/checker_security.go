@@ -3,7 +3,6 @@ package lint
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os/exec"
 )
 
@@ -47,7 +46,7 @@ func checkerSecurity(ctx context.Context, dir string) *checkResult {
 	}
 
 	if out.Stats.Found != 0 {
-		return checkFailed(fmt.Sprintf("%d issue(s) found", out.Stats.Found))
+		return checkFailed("%d issue(s) found", out.Stats.Found)
 	}
 
 	return checkPassed("no issues found")

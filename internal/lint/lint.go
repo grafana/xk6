@@ -7,6 +7,7 @@ import (
 )
 
 // Lint checks the directory specified in the dir parameter as the k6 extension source directory.
+// The dir parameter must be an absolute path.
 func Lint(ctx context.Context, dir string, opts *Options) (*Compliance, error) {
 	c := new(Compliance)
 

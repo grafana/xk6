@@ -12,6 +12,12 @@ import (
 
 type stateKey struct{}
 
+// state caches computations during the linting process to avoid redundant work.
+// Design principles:
+//
+//   - checkers may use state but it's not required
+//   - checkers are read-only and never modify state
+//   - getter methods return cached values or compute, cache, and return new values
 type state struct {
 	dir string
 

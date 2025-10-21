@@ -12,7 +12,7 @@ import (
 var reSmoke = regexp.MustCompile(`(?i)^smoke(\.test)?\.(?:js|ts)`)
 
 func checkerSmoke(ctx context.Context, dir string) *checkResult {
-	s := getSpy(ctx)
+	s := getState(ctx)
 
 	exe, err := s.exePath(ctx)
 	if err != nil {

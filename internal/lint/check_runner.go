@@ -11,9 +11,8 @@ func runChecks(ctx context.Context, dir string, opts *Options) ([]Check, bool) {
 	funcs := checkFunctions()
 	// passed := passedChecks(opts.Passed)
 
-	ctx = withSpy(ctx, dir)
-
-	defer getSpy(ctx).cleanup()
+	ctx, cleanup := withState(ctx, dir)
+	defer cleanup()
 
 	pass := true
 

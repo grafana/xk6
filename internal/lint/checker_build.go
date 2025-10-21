@@ -5,7 +5,7 @@ import (
 )
 
 func checkerBuild(ctx context.Context, _ string) *checkResult {
-	s := getSpy(ctx)
+	s := getState(ctx)
 
 	modulePath, err := s.modulePath()
 	if err != nil {

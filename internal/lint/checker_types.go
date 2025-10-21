@@ -9,7 +9,7 @@ import (
 var reIndexDTS = regexp.MustCompile("^index.d.ts$")
 
 func checkerTypes(ctx context.Context, dir string) *checkResult {
-	s := getSpy(ctx)
+	s := getState(ctx)
 
 	js, err := s.isJS(ctx)
 	if err != nil {

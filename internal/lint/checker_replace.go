@@ -5,7 +5,7 @@ import (
 )
 
 func checkerReplace(ctx context.Context, _ string) *checkResult {
-	s := getSpy(ctx)
+	s := getState(ctx)
 
 	mod, err := s.moduleFile()
 	if err != nil {

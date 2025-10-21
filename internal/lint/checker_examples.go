@@ -9,7 +9,7 @@ import (
 )
 
 func checkerExamples(ctx context.Context, dir string) *checkResult {
-	s := getSpy(ctx)
+	s := getState(ctx)
 
 	js, err := s.isJS(ctx)
 	if err != nil {

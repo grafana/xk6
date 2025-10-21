@@ -10,9 +10,9 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-type spyKey struct{}
+type stateKey struct{}
 
-type spy struct {
+type state struct {
 	dir string
 
 	_moduleFileCached    *modfile.File
@@ -22,29 +22,31 @@ type spy struct {
 	_hasExtensionCached  *bool
 }
 
-func withSpy(ctx context.Context, dir string) context.Context {
-	return context.WithValue(ctx, spyKey{}, newSpy(dir))
+func withState(ctx context.Context, dir string) (context.Context, func()) {
+	state := newState(dir)
+
+	return context.WithValue(ctx, stateKey{}, state), state.cleanup
 }
 
-func getSpy(ctx context.Context) *spy {
-	v := ctx.Value(spyKey{})
+func getState(ctx context.Context) *state {
+	v := ctx.Value(stateKey{})
 	if v == nil {
-		panic("no spy found in context")
+		panic("no state found in context")
 	}
 
-	s, ok := v.(*spy)
+	s, ok := v.(*state)
 	if !ok {
-		panic("spy has wrong type")
+		panic("state has wrong type")
 	}
 
 	return s
 }
 
-func newSpy(dir string) *spy {
-	return &spy{dir: dir}
+func newState(dir string) *state {
+	return &state{dir: dir}
 }
 
-func (s *spy) moduleFile() (*modfile.File, error) {
+func (s *state) moduleFile() (*modfile.File, error) {
 	if s._moduleFileCached != nil {
 		return s._moduleFileCached, nil
 	}
@@ -66,7 +68,7 @@ func (s *spy) moduleFile() (*modfile.File, error) {
 	return mod, nil
 }
 
-func (s *spy) modulePath() (string, error) {
+func (s *state) modulePath() (string, error) {
 	mod, err := s.moduleFile()
 	if err != nil {
 		return "", err
@@ -75,7 +77,7 @@ func (s *spy) modulePath() (string, error) {
 	return mod.Module.Mod.Path, nil
 }
 
-func (s *spy) exePath(ctx context.Context) (string, error) {
+func (s *state) exePath(ctx context.Context) (string, error) {
 	if len(s._exePathCached) > 0 {
 		return s._exePathCached, nil
 	}
@@ -95,7 +97,7 @@ func (s *spy) exePath(ctx context.Context) (string, error) {
 	return s._exePathCached, nil
 }
 
-func (s *spy) versionOutput(ctx context.Context) ([]byte, error) {
+func (s *state) versionOutput(ctx context.Context) ([]byte, error) {
 	if s._versionOutputCached != nil {
 		return s._versionOutputCached, nil
 	}
@@ -115,7 +117,7 @@ func (s *spy) versionOutput(ctx context.Context) ([]byte, error) {
 	return s._versionOutputCached, nil
 }
 
-func (s *spy) hasExtension(ctx context.Context) (bool, error) {
+func (s *state) hasExtension(ctx context.Context) (bool, error) {
 	if s._hasExtensionCached != nil {
 		return *s._hasExtensionCached, nil
 	}
@@ -142,7 +144,7 @@ func (s *spy) hasExtension(ctx context.Context) (bool, error) {
 	return has, nil
 }
 
-func (s *spy) isJS(ctx context.Context) (bool, error) {
+func (s *state) isJS(ctx context.Context) (bool, error) {
 	if s._isJSCached != nil {
 		return *s._isJSCached, nil
 	}
@@ -182,7 +184,7 @@ func (s *spy) isJS(ctx context.Context) (bool, error) {
 	return js, nil
 }
 
-func (s *spy) cleanup() {
+func (s *state) cleanup() {
 	if len(s._exePathCached) > 0 {
 		_ = os.Remove(s._exePathCached)
 

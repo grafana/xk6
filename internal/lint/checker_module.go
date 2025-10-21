@@ -5,7 +5,7 @@ import (
 )
 
 func checkerModule(ctx context.Context, _ string) *checkResult {
-	file, err := getSpy(ctx).moduleFile()
+	file, err := getState(ctx).moduleFile()
 	if err != nil {
 		return checkError(err)
 	}

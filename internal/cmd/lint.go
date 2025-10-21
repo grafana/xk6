@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"github.com/szkiba/efa"
 	"go.k6.io/xk6/internal/lint"
 )
+
+const exitCodeLintingFailed = 2
 
 var (
 	//go:embed help/lint.md
@@ -147,7 +150,13 @@ func lintCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lintRunE(cmd.Context(), args, opts)
+			err := lintRunE(cmd.Context(), args, opts)
+			if errors.Is(err, errLintingFailed) {
+				slog.Error(errLintingFailed.Error())
+				os.Exit(exitCodeLintingFailed)
+			}
+
+			return err
 		},
 		DisableAutoGenTag: true,
 	}
@@ -246,30 +255,44 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 		return err
 	}
 
-	if !compliance.Passed {
-		result = errLintingFailed
-	}
-
-	if opts.quiet {
-		return result
-	}
-
-	err = lintOutput(opts.json, compliance, output, opts.compact)
+	err = lintOutput(opts.quiet, opts.json, compliance, output, opts.compact)
 	if err != nil {
 		return err
 	}
 
-	return result
-}
-
-func lintOutput(json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
-	if !json {
-		textOutput(compliance, output)
-
-		return nil
+	if !compliance.Passed {
+		return errLintingFailed
 	}
 
-	return jsonOutput(compliance, output, compact)
+	return nil
+}
+
+func lintOutput(quiet bool, json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
+	if json {
+		logOutput(compliance)
+
+		return jsonOutput(compliance, output, compact)
+	}
+
+	if quiet {
+		logOutput(compliance)
+	} else {
+		textOutput(compliance, output)
+	}
+
+	return nil
+}
+
+func logOutput(compliance *lint.Compliance) {
+	for _, check := range compliance.Checks {
+		if check.Passed {
+			slog.Info("Check passed", "check", check.ID, "details", check.Details)
+
+			continue
+		}
+
+		slog.Warn("Check failed", "check", check.ID, "details", check.Details, "resolution", check.Definition.Resolution)
+	}
 }
 
 func jsonOutput(compliance any, output io.Writer, compact bool) error {

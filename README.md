@@ -383,7 +383,8 @@ The analysis is performed locally using the source directory contents and Git me
 
 Exit Codes:
   - `0`   All checks passed
-  - `>0`  One or more checks failed
+  - `1`   Unexpected execution error
+  - `2`   One or more checks failed
 
 ## Usage
 

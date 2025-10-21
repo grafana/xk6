@@ -18,6 +18,8 @@ import (
 	"go.k6.io/xk6/internal/lint"
 )
 
+const exitCodeLintingFailed = 2
+
 var (
 	//go:embed help/lint.md
 	lintHelp string
@@ -147,7 +149,13 @@ func lintCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lintRunE(cmd.Context(), args, opts)
+			err := lintRunE(cmd.Context(), args, opts)
+			if errors.Is(err, errLintingFailed) {
+				slog.Error(errLintingFailed.Error())
+				os.Exit(exitCodeLintingFailed)
+			}
+
+			return err
 		},
 		DisableAutoGenTag: true,
 	}
@@ -241,7 +249,16 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 		return err
 	}
 
-	return lintOutput(opts.quiet, opts.json, compliance, output, opts.compact)
+	err = lintOutput(opts.quiet, opts.json, compliance, output, opts.compact)
+	if err != nil {
+		return err
+	}
+
+	if !compliance.Passed {
+		return errLintingFailed
+	}
+
+	return nil
 }
 
 func lintOutput(quiet bool, json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
@@ -255,10 +272,6 @@ func lintOutput(quiet bool, json bool, compliance *lint.Compliance, output io.Wr
 		logOutput(compliance)
 	} else {
 		textOutput(compliance, output)
-	}
-
-	if !compliance.Passed {
-		return errLintingFailed
 	}
 
 	return nil

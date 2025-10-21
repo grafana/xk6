@@ -12,6 +12,7 @@ func checkerBuild(ctx context.Context, _ string) *checkResult {
 		return checkError(err)
 	}
 
+	// Verify the extension builds successfully and is included in the k6 binary
 	has, err := s.hasExtension(ctx)
 	if err != nil {
 		return checkError(err)

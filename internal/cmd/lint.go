@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
@@ -189,7 +190,12 @@ func dirArg(args []string) (string, error) {
 
 		dir = cwd
 	} else {
-		dir = args[0]
+		abs, err := filepath.Abs(args[0])
+		if err != nil {
+			return "", err
+		}
+
+		dir = abs
 	}
 
 	info, err := os.Stat(dir)

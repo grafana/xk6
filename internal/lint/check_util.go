@@ -14,6 +14,35 @@ import (
 	"github.com/grafana/k6foundry"
 )
 
+func findFile(rex *regexp.Regexp, dirs ...string) (string, string, error) {
+	for idx, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if idx == 0 {
+				return "", "", err
+			}
+
+			continue
+		}
+
+		script := ""
+
+		for _, entry := range entries {
+			if rex.MatchString(entry.Name()) {
+				script = entry.Name()
+
+				break
+			}
+		}
+
+		if len(script) > 0 {
+			return filepath.Join(dir, script), script, nil
+		}
+	}
+
+	return "", "", nil
+}
+
 func build(ctx context.Context, module string, dir string) (string, error) {
 	exe, err := os.CreateTemp("", "k6-*.exe")
 	if err != nil {
@@ -73,33 +102,4 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 	}
 
 	return exe.Name(), nil
-}
-
-func findFile(rex *regexp.Regexp, dirs ...string) (string, string, error) {
-	for idx, dir := range dirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			if idx == 0 {
-				return "", "", err
-			}
-
-			continue
-		}
-
-		script := ""
-
-		for _, entry := range entries {
-			if rex.MatchString(entry.Name()) {
-				script = entry.Name()
-
-				break
-			}
-		}
-
-		if len(script) > 0 {
-			return filepath.Join(dir, script), script, nil
-		}
-	}
-
-	return "", "", nil
 }

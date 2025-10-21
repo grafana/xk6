@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -240,30 +241,39 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 		return err
 	}
 
-	if !compliance.Passed {
-		result = errLintingFailed
-	}
-
-	if opts.quiet {
-		return result
-	}
-
-	err = lintOutput(opts.json, compliance, output, opts.compact)
-	if err != nil {
-		return err
-	}
-
-	return result
+	return lintOutput(opts.quiet, opts.json, compliance, output, opts.compact)
 }
 
-func lintOutput(json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
-	if !json {
-		textOutput(compliance, output)
+func lintOutput(quiet bool, json bool, compliance *lint.Compliance, output io.Writer, compact bool) error {
+	if json {
+		logOutput(compliance)
 
-		return nil
+		return jsonOutput(compliance, output, compact)
 	}
 
-	return jsonOutput(compliance, output, compact)
+	if quiet {
+		logOutput(compliance)
+	} else {
+		textOutput(compliance, output)
+	}
+
+	if !compliance.Passed {
+		return errLintingFailed
+	}
+
+	return nil
+}
+
+func logOutput(compliance *lint.Compliance) {
+	for _, check := range compliance.Checks {
+		if check.Passed {
+			slog.Info("Check passed", "check", check.ID, "details", check.Details)
+
+			continue
+		}
+
+		slog.Warn("Check failed", "check", check.ID, "details", check.Details, "resolution", check.Definition.Resolution)
+	}
 }
 
 func jsonOutput(compliance any, output io.Writer, compact bool) error {

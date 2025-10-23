@@ -155,7 +155,7 @@ jobs:
 
       - name: Login to Docker Hub
         if: ${{ needs.config.outputs.docker-io == 'true' }}
-        uses: grafana/shared-workflows/actions/dockerhub-login@13fb504e3bfe323c1188bf244970d94b2d336e86 # dockerhub-login-v1.0.1
+        uses: grafana/shared-workflows/actions/dockerhub-login@c6d954f7cd9c0022018982e01268de6cb75b913c # dockerhub-login/v1.0.2
 
       - name: Login to GitHub Packages
         if: ${{ needs.config.outputs.ghcr-io == 'true' }}

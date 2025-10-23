@@ -79,7 +79,7 @@ jobs:
       api-doc: ${{steps.configure.outputs.api-doc}}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
       - name: Configure
@@ -161,7 +161,7 @@ jobs:
     needs: ["config"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
@@ -183,18 +183,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: ${{inputs.go-version}}
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@v1.0.0
+        uses: grafana/setup-xk6@1b678f776a14cf360de8791bd778f9dd49d8e2e4 # v1.0.0
         with:
           xk6-version: ${{ inputs.xk6-version }}
 
@@ -223,12 +223,12 @@ jobs:
     needs: ["security"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: "${{ inputs.go-version }}"
 
@@ -260,12 +260,12 @@ jobs:
     needs: ["security"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: "${{ inputs.go-version }}"
 
@@ -286,12 +286,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -313,13 +313,13 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -330,7 +330,7 @@ jobs:
           bats-version: "1.11.1"
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@v1.0.0
+        uses: grafana/setup-xk6@1b678f776a14cf360de8791bd778f9dd49d8e2e4 # v1.0.0
         with:
           xk6-version: ${{ inputs.xk6-version }}
 
@@ -373,12 +373,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: "${{inputs.go-version}}"
 
@@ -406,7 +406,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
@@ -434,17 +434,17 @@ jobs:
 
       - name: Setup Pages
         if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
       - name: Upload artifact
         if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: ${{runner.temp}}/htdocs
 
       - name: Deploy to GitHub Pages
         if: ${{ github.ref_name == 'main' || github.ref_name == 'master' }}
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
   devcontainer:
     name: DevContainer
@@ -458,7 +458,7 @@ jobs:
       GOLANGCI_LINT_VERSION: ""
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 

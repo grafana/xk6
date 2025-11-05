@@ -1,10 +1,9 @@
-ARG GO_VERSION=1.24.9
-ARG VARIANT=alpine3.22
+ARG GO_VERSION=1.24.9-alpine3.22
 ARG GOSEC_VERSION=2.22.10@sha256:c8852d609f9af551387555a81808a3bca8d172629b124fab0d83c937cabc2f3d
 
 FROM securego/gosec:${GOSEC_VERSION} AS gosec
 
-FROM golang:${GO_VERSION}-${VARIANT} AS builder
+FROM golang:${GO_VERSION} AS builder
 
 RUN apk update && apk add git
 
@@ -18,7 +17,7 @@ RUN CGO_ENABLED=0 go build -o xk6 -trimpath .
 RUN CGO_ENABLED=0 go build -o fixids -trimpath ./internal/fixids
 RUN GOBIN=/build go install -ldflags="-s -w" golang.org/x/vuln/cmd/govulncheck@v1.1.4
 
-FROM golang:${GO_VERSION}-${VARIANT}
+FROM golang:${GO_VERSION}
 
 RUN apk update && apk add git && \
     addgroup --gid 1000 xk6 && \

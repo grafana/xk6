@@ -53,7 +53,7 @@ jobs:
       goprivate: ${{steps.goprivate.outputs.goprivate}}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
       - name: Detect go module path
@@ -153,7 +153,7 @@ jobs:
     needs: ["config"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           persist-credentials: false
 
@@ -183,7 +183,7 @@ jobs:
       contents: read
     steps:
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
         with:
           go-version: ${{ inputs.go-version }}
 
@@ -194,7 +194,7 @@ jobs:
           bats-version: "1.11.1"
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@v1.0.0
+        uses: grafana/setup-xk6@1b678f776a14cf360de8791bd778f9dd49d8e2e4 # v1.0.0
         with:
           xk6-version: ${{ inputs.xk6-version }}
 

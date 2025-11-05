@@ -46,7 +46,7 @@ The following presets are available for use with the ` + "`" + `xk6 lint` + "`" 
 
 {{ range . -}}
 
-**` + "`" + `{{ .ID }}` + "`" + `**
+#### ` + "`" + `{{ .ID }}` + "`" + `
 
 {{ .Description | trim }}
 
@@ -112,7 +112,7 @@ const checksDocTemplate = `Available Checks
 The following checks are available for use with the ` + "`" + `xk6 lint` + "`" + ` command.
 
 {{ range . -}}
-**` + "`" + `{{ .ID }}` + "`" + `**
+#### ` + "`" + `{{ .ID }}` + "`" + `
 
 {{ .Description | trim }}
 

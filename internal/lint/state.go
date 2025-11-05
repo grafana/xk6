@@ -28,6 +28,15 @@ type state struct {
 	_hasExtensionCached  *bool
 }
 
+//nolint:gochecknoglobals
+var (
+	reExtension = regexp.MustCompile(
+		`  (?P<extModule>[^ ]+) (?P<extVersion>[^,]+), (?P<extImport>[^ ]+) \[(?P<extType>[^\]]+)\]`,
+	)
+	idxExtModule = reExtension.SubexpIndex("extModule")
+	idxExtType   = reExtension.SubexpIndex("extType")
+)
+
 func withState(ctx context.Context, dir string) (context.Context, func()) {
 	state := newState(dir)
 
@@ -128,26 +137,32 @@ func (s *state) hasExtension(ctx context.Context) (bool, error) {
 		return *s._hasExtensionCached, nil
 	}
 
-	mod, err := s.moduleFile()
-	if err != nil {
-		return false, err
-	}
-
 	out, err := s.versionOutput(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	rex, err := regexp.Compile("(?i)  " + mod.Module.Mod.String() + "[^,]+, [^ ]+ \\[(?P<type>[a-z]+)\\]")
-	if err != nil {
-		return false, err
-	}
+	module, _ := parseExtensionInfo(out)
 
-	has := rex.FindAllSubmatch(out, -1) != nil
+	// An extension is present if at least one module path is found in the version output.
+	// The reason for this weak check is that some extensions may registered by their parent
+	// extension (e.g., xk6-sql and xk6-sql-driver-* extensions), so the version output shows
+	// the parent module path rather than the actual extension module path.
+	// See: https://github.com/grafana/xk6/issues/327
+	has := len(module) > 0
 
 	s._hasExtensionCached = &has
 
 	return has, nil
+}
+
+func parseExtensionInfo(line []byte) (string, string) {
+	subs := reExtension.FindSubmatch(line)
+	if subs == nil {
+		return "", ""
+	}
+
+	return string(subs[idxExtModule]), string(subs[idxExtType])
 }
 
 func (s *state) isJS(ctx context.Context) (bool, error) {
@@ -155,35 +170,14 @@ func (s *state) isJS(ctx context.Context) (bool, error) {
 		return *s._isJSCached, nil
 	}
 
-	mod, err := s.moduleFile()
-	if err != nil {
-		return false, err
-	}
-
 	out, err := s.versionOutput(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	rex, err := regexp.Compile("(?i)  " + mod.Module.Mod.String() + "[^,]+, [^ ]+ \\[(?P<type>[a-z]+)\\]")
-	if err != nil {
-		return false, err
-	}
+	_, extType := parseExtensionInfo(out)
 
-	subs := rex.FindAllSubmatch(out, -1)
-	if subs == nil {
-		return false, nil
-	}
-
-	js := false
-
-	for _, one := range subs {
-		if string(one[rex.SubexpIndex("type")]) == "js" {
-			js = true
-
-			break
-		}
-	}
+	js := extType == "js"
 
 	s._isJSCached = &js
 

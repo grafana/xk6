@@ -413,7 +413,7 @@ xk6 lint --enable-only security,vulnerability
 
 The following checks are available for use with the `xk6 lint` command.
 
-**`security`**
+#### `security`
 
 Performs static security analysis on Go source code using the `gosec` tool to identify potential security vulnerabilities, insecure coding patterns, and compliance violations.
 
@@ -423,7 +423,7 @@ Resolution
 
 Install `gosec` with `go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest`, then run `gosec ./...` to scan your codebase. Address all HIGH and MEDIUM severity findings by following secure coding practices, input validation, and proper error handling. Consider adding `// #gosec` comments only for verified false positives with clear justification.
 
-**`vulnerability`**
+#### `vulnerability`
 
 Scans for known security vulnerabilities in Go modules and their dependencies using the official `govulncheck` tool from the Go security team.
 
@@ -433,7 +433,7 @@ Resolution
 
 Install `govulncheck` with `go install golang.org/x/vuln/cmd/govulncheck@latest`, then run `govulncheck ./...` to scan for vulnerabilities. Update vulnerable dependencies to patched versions using `go get -u package@version`. If no patch is available, consider alternative packages or implement additional security measures.
 
-**`module`**
+#### `module`
 
 Validates the presence and structure of a `go.mod` file, ensuring proper module declaration, Go version compatibility, and dependency specifications.
 
@@ -443,7 +443,7 @@ Resolution
 
 Create a `go.mod` file in the extension root using `go mod init github.com/your-org/your-extension`, ensuring the Go version is specified as `go 1.23` (or appropriate minimum version). Run `go mod tidy` to populate dependencies and remove unused ones, then verify the module path matches your repository structure.
 
-**`replace`**
+#### `replace`
 
 Detects and flags any `replace` directives in the `go.mod` file that could cause dependency resolution issues or prevent proper extension distribution.
 
@@ -453,7 +453,7 @@ Resolution
 
 Remove all `replace` directives from `go.mod`. If you need to use a fork or modified dependency, publish it as a proper Go module with a different import path. For local development, consider using `go work` workspaces instead of replace directives, or contribute fixes upstream to the original repository.
 
-**`readme`**
+#### `readme`
 
 Verifies the existence of a README file in standard formats (Markdown, text, AsciiDoc, etc.) that provides essential information about the extension.
 
@@ -463,7 +463,7 @@ Resolution
 
 Create a `README.md` file in the extension root directory containing extension description and purpose, installation instructions via xk6, and usage examples with sample k6 scripts. Include API documentation or links to detailed docs, contributing guidelines and development setup, and license information and acknowledgments.
 
-**`license`**
+#### `license`
 
 Validates that the extension includes a recognized open-source license file compatible with the k6 ecosystem and Go module distribution requirements.
 
@@ -473,7 +473,7 @@ Resolution
 
 Add a `LICENSE` file to the repository root with one of the approved licenses: MIT (recommended for maximum compatibility), Apache-2.0 (best for corporate environments), BSD-2-Clause or BSD-3-Clause, or GPL-3.0, LGPL-3.0, or AGPL-3.0 (for copyleft requirements).
 
-**`git`**
+#### `git`
 
 Verifies that the extension directory is a valid Git repository with proper version control initialization and configuration.
 
@@ -483,7 +483,7 @@ Resolution
 
 Initialize Git in the extension directory with `git init`, add a `.gitignore` file appropriate for the extension, then stage and commit all extension files using `git add . && git commit -m "Initial commit"`. Consider setting up a remote repository on GitHub, GitLab, or similar platform for collaboration and distribution.
 
-**`versions`**
+#### `versions`
 
 Validates the presence of proper semantic versioning Git tags following the vMAJOR.MINOR.PATCH format required by Go modules and xk6.
 
@@ -493,7 +493,7 @@ Resolution
 
 Create an initial release tag using `git tag v0.1.0 && git push origin v0.1.0`. For future releases, increment versions appropriately: PATCH (v1.0.1) for bug fixes with no API changes, MINOR (v1.1.0) for new features that are backward compatible, and MAJOR (v2.0.0) for breaking changes or API modifications. Always follow semantic versioning principles for predictable dependency management.
 
-**`build`**
+#### `build`
 
 Performs a complete build test of the extension using xk6 with the latest stable k6 version to verify compilation and linking compatibility.
 
@@ -503,7 +503,7 @@ Resolution
 
 Test the build locally using `xk6 build --with github.com/your-org/your-extension@latest`, then fix any compilation errors, missing imports, or API incompatibilities. Ensure your extension properly implements required k6 extension interfaces and update dependencies if needed using `go get -u && go mod tidy`.
 
-**`smoke`**
+#### `smoke`
 
 Locates and executes a smoke test script to verify basic extension functionality works correctly in a real k6 runtime environment.
 
@@ -513,7 +513,7 @@ Resolution
 
 Create a smoke test file as `smoke.js` or `smoke.ts` in root, `test/`, `tests/`, or `examples/` directory, including basic functionality tests that import the extension and call main functions. Ensure the test runs without errors when executed with your custom k6 build.
 
-**`examples`**
+#### `examples`
 
 Ensures the presence of an `examples/` directory containing practical k6 scripts that demonstrate the extension's functionality and usage patterns.
 
@@ -523,7 +523,7 @@ Resolution
 
 Create an `examples/` directory with multiple k6 JavaScript/TypeScript files including a basic usage example showing core functionality, advanced example demonstrating complex features, and integration examples with other k6 features. Include comments explaining key concepts and parameters. Add a README.md in examples/ explaining how to run each script.
 
-**`types`**
+#### `types`
 
 Validates the presence of TypeScript declaration files (`index.d.ts`) that define the extension's API surface and enable type-safe usage in TypeScript k6 scripts.
 
@@ -533,7 +533,7 @@ Resolution
 
 Create an `index.d.ts` file in the root, `docs/`, or `api-docs/` directory defining all exported functions, classes, and interfaces with parameter types and return types. Include JSDoc comments for function documentation and proper module declarations matching your extension's import path.
 
-**`codeowners`**
+#### `codeowners`
 
 Validates the existence of a `CODEOWNERS` file that defines maintainership responsibilities and automated review assignments for different parts of the codebase.
 
@@ -547,7 +547,7 @@ Create a `CODEOWNERS` file in `.github/`, `docs/`, or the repository root defini
 
 The following presets are available for use with the `xk6 lint` command.
 
-**`all`**
+#### `all`
 
 Comprehensive preset that includes every available check in the xk6 linting system. Serves as a complete reference for all possible compliance checks and provides maximum validation coverage for development and testing purposes.
 
@@ -566,7 +566,7 @@ Included Checks:
   - `types`
   - `codeowners`
 
-**`loose`**
+#### `loose`
 
 Minimal preset focusing on essential quality and security compliance checks. Designed for development environments and initial extension development phases. Provides basic compliance requirements without restrictive validation that slows development cycles. This is the default preset.
 
@@ -580,7 +580,7 @@ Included Checks:
   - `versions`
   - `build`
 
-**`strict`**
+#### `strict`
 
 Comprehensive preset for production-ready extensions, including all compliance checks except those reserved for official Grafana extensions (such as codeowners validation). Designed for third-party extensions that require high quality standards before release.
 
@@ -598,7 +598,7 @@ Included Checks:
   - `examples`
   - `types`
 
-**`private`**
+#### `private`
 
 Lightweight preset designed for private or internal extension development. Focuses on core security and functionality compliance while omitting documentation and public-facing requirements such as README formatting and licensing compliance.
 
@@ -608,7 +608,7 @@ Included Checks:
   - `module`
   - `git`
 
-**`community`**
+#### `community`
 
 Balanced preset tailored for community-contributed extension development. Includes essential quality, security, and documentation compliance to ensure extensions meet community standards while remaining accessible to contributors.
 
@@ -622,7 +622,7 @@ Included Checks:
   - `versions`
   - `build`
 
-**`official`**
+#### `official`
 
 Most stringent preset for official Grafana-maintained extension development. Enforces the highest quality standards including code ownership compliance, comprehensive testing requirements, and complete documentation compliance.
 

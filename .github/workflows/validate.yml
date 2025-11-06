@@ -25,22 +25,3 @@ jobs:
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: .github/validate.bats
       # #endregion inputs
-
-  zizmor:
-    name: zizmor
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-        with:
-          persist-credentials: false
-
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-        with:
-          enable-cache: false
-
-      - name: Run zizmor
-        run: uvx zizmor --format=github --config .github/zizmor.yml .github/workflows
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["schedule:weekly"],
+  "ignorePaths": ["**/vendor/**"],
+  "prConcurrentLimit": 20,
+  "packageRules": [
+    {
+      "description": "Update GitHub Actions workflow dependencies",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Update Docker base images daily",
+      "matchManagers": ["dockerfile"],
+      "extends": ["schedule:daily"]
+    },
+    {
+      "description": "Update Go modules with automatic tidying and import path updates",
+      "matchManagers": ["gomod"],
+      "enabled": true,
+      "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"]
+    },
+    {
+      "description": "Skip indirect Go dependency updates",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
+      "enabled": false
+    },
+    {
+      "description": "Skip Go runtime versions with zero patch number (allow 1.23.1 but skip 1.23.0)",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "allowedVersions": "/^(?:v)?\\d+\\.\\d+\\.[1-9]\\d*$/",
+      "extends": ["schedule:daily"]
+    },
+    {
+      "description": "Update k6 core and ecosystem packages daily",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": [
+        "/^go\\.k6\\.io\\/k6/",
+        "/^github\\.com\\/grafana\\/k6/"
+      ],
+      "groupName": "k6 ecosystem",
+      "extends": ["schedule:daily"]
+    },
+    {
+      "groupName": "golangx",
+      "description": "Group golang.org/x module updates into a single pull request (daily)",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^golang\\.org\\/x\\//"],
+      "extends": ["schedule:daily"]
+    },
+    {
+      "groupName": "googles",
+      "description": "Group google.golang.org module updates into a single pull request (daily)",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^google\\.golang\\.org\\//"],
+      "extends": ["schedule:daily"]
+    }
+  ]
+}

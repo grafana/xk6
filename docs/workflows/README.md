@@ -23,7 +23,7 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 **inputs**
 
 ```yaml file=../../.github/workflows/validate.yml region=inputs
-      go-version: "1.24.x"
+      go-version: "1.25.x"
       go-versions: '["1.24.x","1.25.x"]'
       golangci-lint-version: "v2.1.2"
       goreleaser-version: "2.8.2"
@@ -48,7 +48,7 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: "1.24.x"
+      go-version: "1.25.x"
       goreleaser-version: "2.8.2"
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: ./.github/release.bats

@@ -217,7 +217,7 @@ jobs:
           xk6 build -v --with ${MODULE_PATH}@${VERSION} ${WITH}
 
       - name: Integration Test
-        if: ${{ env.bats != '' && runner.os == 'Linux' }}
+        if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSION: ${{ inputs.k6-version }}
           K6: ${{env.DIST_DIR}}/k6

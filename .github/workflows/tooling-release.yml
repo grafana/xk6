@@ -139,7 +139,7 @@ jobs:
           args: release --clean --snapshot
 
       - name: Integration Test
-        if: ${{ env.bats != '' }}
+        if: ${{ inputs.bats != '' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
           BATS: ${{ inputs.bats }}

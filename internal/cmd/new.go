@@ -14,10 +14,10 @@ import (
 var newHelp string
 
 type newOptions struct {
+	scaffold.Sample
+
 	kind   string
 	parent string
-
-	scaffold.Sample
 }
 
 func newCmd() *cobra.Command {
@@ -60,7 +60,8 @@ func newRunE(ctx context.Context, opts *newOptions) error {
 		opts.Description, _ = getDescription(ctx, moduleToGitURL(opts.Module))
 	}
 
-	if err := scaffold.Scaffold(ctx, sam, &opts.Sample, opts.parent); err != nil {
+	err = scaffold.Scaffold(ctx, sam, &opts.Sample, opts.parent)
+	if err != nil {
 		return err
 	}
 

@@ -51,7 +51,8 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 
 	const exePerm = 0o700
 
-	if err = os.Chmod(exe.Name(), exePerm); err != nil {
+	err = os.Chmod(exe.Name(), exePerm)
+	if err != nil {
 		return "", err
 	}
 
@@ -92,12 +93,12 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 	}
 
 	_, result = foundry.Build(ctx, platform, "latest", []k6foundry.Module{{Path: module, ReplacePath: dir}}, nil, nil, exe)
-
 	if result != nil {
 		return "", result
 	}
 
-	if err = exe.Close(); err != nil {
+	err = exe.Close()
+	if err != nil {
 		return "", err
 	}
 

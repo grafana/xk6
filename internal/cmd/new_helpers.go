@@ -87,12 +87,12 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 		return "", nil
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "https://api.github.com/repos/"+owner+"/"+name, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/"+owner+"/"+name, nil)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -105,7 +105,8 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 
 	var body map[string]any
 
-	if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+	err = json.NewDecoder(res.Body).Decode(&body)
+	if err != nil {
 		return "", err
 	}
 

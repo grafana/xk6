@@ -40,7 +40,8 @@ func Scaffold(ctx context.Context, sample *Sample, actual *Sample, parentDir str
 		}
 	}
 
-	if err := cleanup(dir); err != nil {
+	err = cleanup(dir)
+	if err != nil {
 		return err
 	}
 
@@ -95,7 +96,8 @@ func checkout(repo *git.Repository, name plumbing.ReferenceName) error {
 func cleanup(dir string) error {
 	special := []string{".git", "CODEOWNERS", "renovate.json"}
 	for _, s := range special {
-		if err := os.RemoveAll(filepath.Join(dir, s)); err != nil {
+		err := os.RemoveAll(filepath.Join(dir, s))
+		if err != nil {
 			return err
 		}
 	}

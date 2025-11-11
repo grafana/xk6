@@ -37,7 +37,8 @@ func checkerSecurity(ctx context.Context, dir string) *checkResult {
 
 	var out gosecOut
 
-	if err := json.Unmarshal(data, &out); err != nil {
+	err = json.Unmarshal(data, &out)
+	if err != nil {
 		return checkError(err)
 	}
 

@@ -212,7 +212,8 @@ func buildK6(ctx context.Context, opts *buildOptions) (*k6foundry.BuildInfo, err
 		return nil, err
 	}
 
-	if err := out.Close(); err != nil {
+	err = out.Close()
+	if err != nil {
 		return nil, err
 	}
 

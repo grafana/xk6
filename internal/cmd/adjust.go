@@ -13,9 +13,10 @@ import (
 var adjustHelp string
 
 type adjustOptions struct {
+	scaffold.Sample
+
 	directory string
 	container bool
-	scaffold.Sample
 }
 
 func adjustCmd() *cobra.Command {
@@ -117,7 +118,8 @@ func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 		return nil
 	}
 
-	if err := scaffold.Adjust(opts.directory, sample, &opts.Sample); err != nil {
+	err = scaffold.Adjust(opts.directory, sample, &opts.Sample)
+	if err != nil {
 		return err
 	}
 

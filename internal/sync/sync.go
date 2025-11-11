@@ -94,12 +94,13 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 
 	slog.Debug("Updating go.mod")
 
-	cmd := exec.Command("go", patch...) // #nosec G204
+	cmd := exec.CommandContext(ctx, "go", patch...) // #nosec G204
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
+	err = cmd.Run()
+	if err != nil {
 		return nil, err
 	}
 

@@ -8,7 +8,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/\\.github/workflows/.+\\.yml$/"
+        "/\\.github/workflows/.+\\.yml$/",
+        "/docs/workflows/README\\.md/$"
       ],
       "matchStrings": [
         "golangci-lint-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
@@ -20,7 +21,8 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/\\.github/workflows/.+\\.yml$/"
+        "/\\.github/workflows/.+\\.yml$/",
+        "/docs/workflows/README\\.md/$"
       ],
       "matchStrings": [
         "goreleaser-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
@@ -104,7 +106,8 @@
         "goreleaser/goreleaser"
       ],
       "matchFileNames": [
-        ".github/workflows/**"
+        ".github/workflows/**",
+        "docs/workflows/README.md"
       ],
       "groupName": "workflow tooling",
       "extends": [

@@ -16,6 +16,9 @@ linters:
     # Except for general-purpose public APIs,
     # wrapping errors is more inconvenient and error prone than useful.
     - wrapcheck
+
+    # deprecated
+    - wsl
   settings:
     depguard:
       rules:

@@ -31,6 +31,16 @@
     },
     {
       "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": [
+        "bats-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bats-core/bats-core",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
       "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
       "matchStrings": [
         "\"golangciLintVersion\":\\s+\"(?<currentValue>[0-9.]+)\""
@@ -68,6 +78,16 @@
       "datasourceTemplate": "go",
       "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "ghcr\\.io/szkiba/devcontainer-features/bats:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bats-core/bats-core",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
@@ -99,7 +119,11 @@
     {
       "description": "Update devcontainer security tools (gosec, govulncheck)",
       "matchManagers": ["custom.regex"],
-      "matchDepNames": ["securego/gosec", "golang.org/x/vuln/cmd/govulncheck"],
+      "matchDepNames": [
+        "securego/gosec",
+        "golang.org/x/vuln/cmd/govulncheck",
+        "bats-core/bats-core"
+      ],
       "matchFileNames": [".devcontainer/**"],
       "groupName": "workflow tooling",
       "extends": ["schedule:weekly"]

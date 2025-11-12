@@ -42,24 +42,24 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XK6_VERSION: ${{ inputs.xk6-version }}
+          XK6_IT_VERSION: ${{ inputs.xk6-it-version }}
         run: |
           set -euo pipefail
 
-          if [ -z "${{ inputs.xk6-version }}" ] || [ "${{ inputs.xk6-version }}" == "latest" ]; then
+          if [ -z "${XK6_VERSION}" ] || [ "${XK6_VERSION}" == "latest" ]; then
             url=$(curl -s -I "https://github.com/grafana/xk6/releases/latest" | grep -i location)
             XK6_VERSION="${url##*v}"
             XK6_VERSION=${XK6_VERSION//[[:space:]]/}
           else
-            XK6_VERSION="${{ inputs.xk6-version }}"
             XK6_VERSION="${XK6_VERSION##*v}"
           fi
 
-          if [ -z "${{ inputs.xk6-it-version }}" ] || [ "${{ inputs.xk6-it-version }}" == "latest" ]; then
+          if [ -z "${XK6_IT_VERSION}" ] || [ "${XK6_IT_VERSION}" == "latest" ]; then
             url=$(curl -s -I "https://github.com/grafana/xk6-it/releases/latest" | grep -i location)
             XK6_IT_VERSION="${url##*v}"
             XK6_IT_VERSION=${XK6_IT_VERSION//[[:space:]]/}
           else
-            XK6_IT_VERSION="${{ inputs.xk6-it-version }}"
             XK6_IT_VERSION="${XK6_IT_VERSION##*v}"
           fi
 
@@ -181,6 +181,8 @@ jobs:
     name: Docker
     needs: ["config"]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       XK6_VERSION: ${{ needs.config.outputs.xk6-version }}
       XK6_IT_VERSION: ${{ needs.config.outputs.xk6-it-version }}

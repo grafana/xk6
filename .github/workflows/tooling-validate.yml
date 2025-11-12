@@ -304,7 +304,7 @@ jobs:
 
       - name: Config
         run: |
-          cat .devcontainer/devcontainer.json | jq -r '
+          cat .devcontainer/devcontainer.json | sed 's/^ *\/\/.*//' | jq -r '
             {
               GO_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["version"],
               GOLANGCI_LINT_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"],

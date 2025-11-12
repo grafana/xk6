@@ -33,6 +33,36 @@
       "customType": "regex",
       "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
       "matchStrings": [
+        "GORELEASER_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "goreleaser/goreleaser",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": [
+        "GOVULNCHECK_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": [
+        "GOSEC_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "securego/gosec",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": [
         "bats-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
       "datasourceTemplate": "github-releases",

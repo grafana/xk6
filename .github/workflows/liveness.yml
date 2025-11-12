@@ -1,0 +1,241 @@
+name: Liveness
+
+on:
+  # Allows the workflow to be called by release.yml
+  workflow_call:
+    inputs:
+      xk6-version:
+        required: true
+        type: string
+        description: "The xk6 release version to check (e.g., 1.2.5)"
+      xk6-it-version:
+        required: true
+        type: string
+        description: "The integration test suite version to use for checking (e.g., 1.1.1)"
+
+  # Allows manual triggering for ad-hoc checks
+  workflow_dispatch:
+    inputs:
+      xk6-version:
+        required: false
+        type: string
+        default: "latest"
+        description: "The xk6 release version to check (e.g., 1.2.5)"
+      xk6-it-version:
+        required: false
+        type: string
+        default: "submodule"
+        description: "The integration test suite version to use for checking (e.g., 1.1.1)"
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      xk6-version: ${{steps.configure.outputs.xk6-version}}
+      xk6-it-version: ${{steps.configure.outputs.xk6-it-version}}
+    permissions:
+      contents: read
+    steps:
+      - name: Configure
+        id: configure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XK6_VERSION: ${{ inputs.xk6-version }}
+          XK6_IT_VERSION: ${{ inputs.xk6-it-version }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${XK6_VERSION}" ] || [ "${XK6_VERSION}" == "latest" ]; then
+            url=$(curl -s -I "https://github.com/grafana/xk6/releases/latest" | grep -i location)
+            XK6_VERSION="${url##*v}"
+            XK6_VERSION=${XK6_VERSION//[[:space:]]/}
+          else
+            XK6_VERSION="${XK6_VERSION##*v}"
+          fi
+
+          if [ -z "${XK6_IT_VERSION}" ] || [ "${XK6_IT_VERSION}" == "latest" ]; then
+            url=$(curl -s -I "https://github.com/grafana/xk6-it/releases/latest" | grep -i location)
+            XK6_IT_VERSION="${url##*v}"
+            XK6_IT_VERSION=${XK6_IT_VERSION//[[:space:]]/}
+          else
+            XK6_IT_VERSION="${XK6_IT_VERSION##*v}"
+          fi
+
+          echo "xk6-version=$XK6_VERSION" >> $GITHUB_OUTPUT
+          echo "xk6-it-version=$XK6_IT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        shell: bash
+        env:
+          XK6_VERSION: ${{ steps.configure.outputs.xk6-version }}
+          XK6_IT_VERSION: ${{ steps.configure.outputs.xk6-it-version }}
+        run: |
+          set -euo pipefail
+
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Configuration
+
+          Name           | Description                        | Value
+          ---------------|------------------------------------|--------------------------------
+          xk6-version    | The xk6 release version to check   | ${XK6_VERSION}
+          xk6-it-version | The integration test suite version | ${XK6_IT_VERSION}
+          END
+
+  native:
+    name: Native (${{ matrix.os }})
+    needs: ["config"]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        os: [ubuntu, macos, windows]
+        include:
+          - os: ubuntu
+            runner: ubuntu-latest
+            platform: linux
+            arch: amd64
+            extension: tar.gz
+          - os: macos
+            runner: macos-latest
+            platform: darwin
+            arch: amd64
+            extension: tar.gz
+          - os: windows
+            runner: windows-latest
+            platform: windows
+            arch: amd64
+            extension: zip
+    env:
+      XK6_VERSION: ${{ needs.config.outputs.xk6-version }}
+      XK6_IT_VERSION: ${{ needs.config.outputs.xk6-it-version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          persist-credentials: false
+          submodules: true
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
+        with:
+          bats-version: "1.13.0"
+
+      - name: Change integration test artifact
+        if: ${{ needs.config.outputs.xk6-it-version != 'submodule' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="v${XK6_IT_VERSION##*v}"
+
+          echo "::notice::Checking out xk6-it tag: $TAG"
+
+          cd it
+          git checkout "$TAG"
+
+      - name: Download release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="v${XK6_VERSION##*v}"
+
+          PATTERN="xk6_*_${{ matrix.platform }}_${{ matrix.arch }}.${{ matrix.extension }}"
+
+          if [ "${{ matrix.extension }}" == "zip" ]; then
+            gh release download --repo grafana/xk6 --pattern "$PATTERN" -O xk6.zip $TAG
+            unzip -o xk6.zip xk6.exe
+            mv xk6.exe it/
+            VERSION_LINE=$(./it/xk6.exe version)
+          else
+            gh release download --repo grafana/xk6 --pattern "$PATTERN" -O - $TAG | tar -xzvf - xk6
+            mv xk6 it/
+            VERSION_LINE=$(./it/xk6 version)
+          fi
+
+          echo "::notice::Downloaded xk6 version: ${VERSION_LINE##xk6 version }"
+
+      - name: Run liveness tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Liveness Check (${{ matrix.os }})
+
+          xk6 version: $XK6_VERSION
+
+          END
+
+          bats --filter-tags xk6:liveness it/test | tee -a $GITHUB_STEP_SUMMARY
+
+  docker:
+    name: Docker
+    needs: ["config"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      XK6_VERSION: ${{ needs.config.outputs.xk6-version }}
+      XK6_IT_VERSION: ${{ needs.config.outputs.xk6-it-version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          persist-credentials: false
+          submodules: true
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
+        with:
+          bats-version: "1.13.0"
+
+      - name: Pull Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "::notice::Pulling Docker image: grafana/xk6:$XK6_VERSION"
+
+          docker pull grafana/xk6:$XK6_VERSION
+
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Liveness Check (docker)
+
+          xk6 version: $XK6_VERSION
+
+          END
+
+      - name: Change integration test artifact
+        if: ${{ needs.config.outputs.xk6-it-version != 'submodule' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="v${XK6_IT_VERSION##*v}"
+
+          echo "::notice::Checking out xk6-it tag: $TAG"
+
+          cd it
+          git checkout "$TAG"
+
+      - name: Run liveness tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          export XK6="docker run --rm -v $(pwd):/work -w /work grafana/xk6:$XK6_VERSION"
+
+          bats --filter-tags xk6:liveness it/test | tee -a $GITHUB_STEP_SUMMARY

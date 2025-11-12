@@ -23,3 +23,10 @@ jobs:
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: ./.github/release.bats
       # #endregion inputs
+  liveness:
+    name: Liveness
+    needs: ["release"]
+    uses: ./.github/workflows/liveness.yml
+    with:
+      xk6-version: "${{github.ref_name}}"
+      xk6-it-version: "submodule"

@@ -33,7 +33,11 @@ jobs:
       - name: Setup Bats
         uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
-          bats-version: "1.11.1"
+          bats-version: "1.13.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
 
       - name: Setup govulncheck
         env:

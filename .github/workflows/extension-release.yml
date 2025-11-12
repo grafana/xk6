@@ -191,7 +191,11 @@ jobs:
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
-          bats-version: "1.11.1"
+          bats-version: "1.13.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
         uses: grafana/setup-xk6@92356c2715efc0f13876e324b2b05d8ea26c4e59 # v1.1.0

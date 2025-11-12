@@ -24,6 +24,8 @@ jobs:
       bats: ./.github/release.bats
       # #endregion inputs
   liveness:
+    name: Liveness
+    needs: ["release"]
     uses: ./.github/workflows/liveness.yml
     with:
       xk6-version: "${{github.ref_name}}"

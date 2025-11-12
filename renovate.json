@@ -33,7 +33,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
       "matchStrings": [
-        "\"golangciLintVersion\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "\"golangciLintVersion\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "golangci/golangci-lint",
@@ -43,7 +43,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
       "matchStrings": [
-        "ghcr\\.io/guiyomh/features/goreleaser:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "ghcr\\.io/guiyomh/features/goreleaser:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "goreleaser/goreleaser",
@@ -53,7 +53,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
       "matchStrings": [
-        "ghcr\\.io/szkiba/devcontainer-features/gosec:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "ghcr\\.io/szkiba/devcontainer-features/gosec:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "securego/gosec",
@@ -63,7 +63,7 @@
       "customType": "regex",
       "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
       "matchStrings": [
-        "ghcr\\.io/szkiba/devcontainer-features/govulncheck:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "ghcr\\.io/szkiba/devcontainer-features/govulncheck:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
       "datasourceTemplate": "go",
       "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",

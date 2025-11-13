@@ -194,7 +194,7 @@ jobs:
           go-version: ${{inputs.go-version}}
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@92356c2715efc0f13876e324b2b05d8ea26c4e59 # v1.1.0
+        uses: grafana/setup-xk6@97b842b765bd3fea56db7195e98c5f61cab8fe46 # v1.1.1
         with:
           xk6-version: ${{ inputs.xk6-version }}
 
@@ -335,7 +335,7 @@ jobs:
 
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
-        uses: grafana/setup-xk6@92356c2715efc0f13876e324b2b05d8ea26c4e59 # v1.1.0
+        uses: grafana/setup-xk6@97b842b765bd3fea56db7195e98c5f61cab8fe46 # v1.1.1
         with:
           xk6-version: ${{ inputs.xk6-version }}
 

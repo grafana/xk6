@@ -27,6 +27,8 @@ jobs:
     name: Liveness
     needs: ["release"]
     uses: ./.github/workflows/liveness.yml
+    permissions:
+      contents: read
     with:
       xk6-version: "${{github.ref_name}}"
       xk6-it-version: "submodule"

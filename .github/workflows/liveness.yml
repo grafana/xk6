@@ -126,6 +126,10 @@ jobs:
         uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
           bats-version: "1.13.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
 
       - name: Change integration test artifact
         if: ${{ needs.config.outputs.xk6-it-version != 'submodule' }}
@@ -200,6 +204,10 @@ jobs:
         uses: bats-core/bats-action@42fcc8700f773c075a16a90eb11674c0318ad507 # 3.0.1
         with:
           bats-version: "1.13.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
 
       - name: Pull Docker image
         shell: bash

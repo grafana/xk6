@@ -1,8 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "ignorePaths": [
-    "**/vendor/**"
-  ],
+  "ignorePaths": ["**/vendor/**"],
   "prConcurrentLimit": 20,
   "customManagers": [
     {
@@ -33,23 +31,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/\\.devcontainer/devcontainer\\.json$/"
-      ],
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
       "matchStrings": [
-        "\"golangciLintVersion\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "golangci/golangci-lint",
-      "versioningTemplate": "semver"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/\\.devcontainer/devcontainer\\.json$/"
-      ],
-      "matchStrings": [
-        "ghcr\\.io/guiyomh/features/goreleaser:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "GORELEASER_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "goreleaser/goreleaser",
@@ -57,11 +41,19 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/\\.devcontainer/devcontainer\\.json$/"
-      ],
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
       "matchStrings": [
-        "ghcr\\.io/szkiba/devcontainer-features/gosec:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "GOVULNCHECK_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": [
+        "GOSEC_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "securego/gosec",
@@ -69,161 +61,146 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/\\.devcontainer/devcontainer\\.json$/"
-      ],
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
       "matchStrings": [
-        "ghcr\\.io/szkiba/devcontainer-features/govulncheck:[0-9]+\"[^}]*\"version\":\\s+[\"'](?<currentValue>v?[0-9.]+)[\"']"
+        "bats-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bats-core/bats-core",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "\"golangciLintVersion\":\\s+\"(?<currentValue>[0-9.]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "golangci/golangci-lint",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "ghcr\\.io/guiyomh/features/goreleaser:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "goreleaser/goreleaser",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "ghcr\\.io/szkiba/devcontainer-features/gosec:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "securego/gosec",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "ghcr\\.io/szkiba/devcontainer-features/govulncheck:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
       "datasourceTemplate": "go",
       "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "matchStrings": [
+        "ghcr\\.io/szkiba/devcontainer-features/bats:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bats-core/bats-core",
       "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
     {
       "description": "Update GitHub Actions workflow dependencies",
-      "matchManagers": [
-        "github-actions"
-      ]
+      "matchManagers": ["github-actions"]
     },
     {
       "description": "Update Docker base images",
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "extends": [
-        "schedule:daily"
-      ]
+      "matchManagers": ["dockerfile"],
+      "extends": ["schedule:daily"]
     },
     {
       "description": "Update workflow tooling versions (golangci-lint, goreleaser)",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchDepNames": [
-        "golangci/golangci-lint",
-        "goreleaser/goreleaser"
-      ],
-      "matchFileNames": [
-        ".github/workflows/**",
-        "docs/workflows/README.md"
-      ],
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["golangci/golangci-lint", "goreleaser/goreleaser"],
+      "matchFileNames": [".github/workflows/**", "docs/workflows/README.md"],
       "groupName": "workflow tooling",
-      "extends": [
-        "schedule:weekly"
-      ]
+      "extends": ["schedule:weekly"]
     },
     {
       "description": "Update devcontainer tooling versions (golangci-lint, goreleaser)",
-      "matchManagers": [
-        "custom.regex"
-      ],
-      "matchDepNames": [
-        "golangci/golangci-lint",
-        "goreleaser/goreleaser"
-      ],
-      "matchFileNames": [
-        ".devcontainer/**"
-      ],
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["golangci/golangci-lint", "goreleaser/goreleaser"],
+      "matchFileNames": [".devcontainer/**"],
       "groupName": "workflow tooling",
-      "extends": [
-        "schedule:weekly"
-      ]
+      "extends": ["schedule:weekly"]
     },
     {
       "description": "Update devcontainer security tools (gosec, govulncheck)",
-      "matchManagers": [
-        "custom.regex"
-      ],
+      "matchManagers": ["custom.regex"],
       "matchDepNames": [
         "securego/gosec",
-        "golang.org/x/vuln/cmd/govulncheck"
+        "golang.org/x/vuln/cmd/govulncheck",
+        "bats-core/bats-core"
       ],
-      "matchFileNames": [
-        ".devcontainer/**"
-      ],
+      "matchFileNames": [".devcontainer/**"],
       "groupName": "workflow tooling",
-      "extends": [
-        "schedule:weekly"
-      ]
+      "extends": ["schedule:weekly"]
     },
     {
       "description": "Update Go modules with automatic tidying and import path updates",
-      "matchManagers": [
-        "gomod"
-      ],
+      "matchManagers": ["gomod"],
       "enabled": true,
-      "postUpdateOptions": [
-        "gomodTidy",
-        "gomodUpdateImportPaths"
-      ],
-      "extends": [
-        "schedule:weekly"
-      ]
+      "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
+      "extends": ["schedule:weekly"]
     },
     {
       "description": "Skip indirect Go dependency updates",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchDepTypes": [
-        "indirect"
-      ],
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["indirect"],
       "enabled": false
     },
     {
       "description": "Skip Go runtime versions with zero patch number (allow 1.23.1 but skip 1.23.0)",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchPackageNames": [
-        "go"
-      ],
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go"],
       "allowedVersions": "/^(?:v)?\\d+\\.\\d+\\.[1-9]\\d*$/",
-      "extends": [
-        "schedule:daily"
-      ]
+      "extends": ["schedule:daily"]
     },
     {
       "description": "Update k6 core and ecosystem packages",
-      "matchManagers": [
-        "gomod"
-      ],
+      "matchManagers": ["gomod"],
       "matchPackageNames": [
         "/^go\\.k6\\.io\\/k6/",
         "/^github\\.com\\/grafana\\/k6/"
       ],
       "groupName": "k6 ecosystem",
-      "extends": [
-        "schedule:daily"
-      ]
+      "extends": ["schedule:daily"]
     },
     {
       "description": "Group golang.org/x module updates",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchPackageNames": [
-        "/^golang\\.org\\/x\\//"
-      ],
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^golang\\.org\\/x\\//"],
       "groupName": "golang.org/x packages",
-      "extends": [
-        "schedule:daily"
-      ]
+      "extends": ["schedule:daily"]
     },
     {
       "description": "Group google.golang.org module updates",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchPackageNames": [
-        "/^google\\.golang\\.org\\//"
-      ],
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^google\\.golang\\.org\\//"],
       "groupName": "google.golang.org packages",
-      "extends": [
-        "schedule:daily"
-      ]
+      "extends": ["schedule:daily"]
     }
   ]
 }

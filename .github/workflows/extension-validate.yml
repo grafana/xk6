@@ -189,7 +189,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: ${{inputs.go-version}}
 
@@ -228,7 +228,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: "${{ inputs.go-version }}"
 
@@ -265,7 +265,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: "${{ inputs.go-version }}"
 
@@ -291,7 +291,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -319,7 +319,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -383,7 +383,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6
         with:
           go-version: "${{inputs.go-version}}"
 

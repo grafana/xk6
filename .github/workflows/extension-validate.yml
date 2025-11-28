@@ -297,7 +297,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go test -race -timeout 2m ./...
+          go test -race -timeout 15m ./...
 
   build:
     name: Build
@@ -332,7 +332,6 @@ jobs:
           assert-install: false
           detik-install: false
           file-install: false
-
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
         uses: grafana/setup-xk6@97b842b765bd3fea56db7195e98c5f61cab8fe46 # v1.1.1

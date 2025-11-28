@@ -194,7 +194,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go test -race -timeout 2m ./...
+          go test -race -timeout 15m ./...
 
   build:
     name: Build

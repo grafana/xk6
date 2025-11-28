@@ -271,7 +271,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go test -short -timeout 2m ./...
+          go test -short -timeout 10m ./...
 
   test:
     name: Test

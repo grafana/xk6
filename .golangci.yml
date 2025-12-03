@@ -45,6 +45,8 @@ linters:
             - github.com/grafana/k6foundry
             - gopkg.in/yaml.v3
             - github.com/go-task/slim-sprig/v3
+            - github.com/goreleaser/fileglob
+            - github.com/ctrf-io/go-ctrf-json-reporter/ctrf
             - go.k6.io/xk6
   exclusions:
     paths:

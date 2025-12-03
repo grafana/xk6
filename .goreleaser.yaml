@@ -23,7 +23,7 @@ builds:
       - "-X {{.ModulePath}}/internal/cmd.binary={{.Binary}}"
     hooks:
       post:
-        - cp "{{ .Path }}" it/xk6
+        - '{{if and (eq .Runtime.Goos .Os) (eq .Runtime.Goarch .Arch) }}cp "{{ .Path }}" it/{{.Name}}{{else}}echo "{{.Os}}/{{.Arch}}: skip copying to it/{{.Name}}"{{end}}'
 
   - id: fixids
     binary: fixids

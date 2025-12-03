@@ -24,7 +24,7 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 
 ```yaml file=../../.github/workflows/validate.yml region=inputs
       go-version: "1.25.x"
-      go-versions: '["1.24.x","1.25.x"]'
+      go-versions: '["1.25.x"]'
       golangci-lint-version: "v2.6.1"
       goreleaser-version: "2.12.7"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'

@@ -1,0 +1,109 @@
+
+- name: Minimal valid report
+  report: |
+    {
+      "results": {
+        "tool": {
+          "name": "tool-name"
+        },
+        "summary": {
+          "tests": 15,
+          "passed": 5,
+          "failed": 4,
+          "pending": 3,
+          "skipped": 2,
+          "other": 1
+        },
+        "tests": [
+          {
+            "name": "test-name",
+            "status": "pass",
+            "duration": 1
+          }
+        ]
+      }
+    }
+
+- name: Missing results property
+  expected_errors:
+    - "missing property 'results'"
+  report: |
+    {}
+
+- name: Incomplete results property
+  expected_errors:
+    - "missing property 'results.tool'"
+    - "missing property 'results.summary'"
+    - "missing property 'results.tests'"
+  report: |
+    {
+      "results": {}
+    }
+
+- name: Missing tool name property
+  expected_errors:
+    - "missing property 'results.tool.name'"
+  report: |
+    {
+      "results": {
+        "tool": {}
+      }
+    }
+
+- name: Invalid summary properties
+  expected_errors:
+    - "invalid property 'results.summary.tests'"
+    - "invalid property 'results.summary.passed'"
+    - "invalid property 'results.summary.failed'"
+    - "invalid property 'results.summary.pending'"
+    - "invalid property 'results.summary.skipped'"
+    - "invalid property 'results.summary.other'"
+    - "invalid property 'results.summary.start'"
+    - "invalid property 'results.summary.stop'"
+    - "invalid property 'results.summary.suites'"
+  report: |
+    {
+      "results": {
+        "summary": {
+          "tests": -1,
+          "passed": -1,
+          "failed": -1,
+          "pending": -1,
+          "skipped": -1,
+          "other": -1,
+          "start": -1,
+          "stop": -1,
+          "suites": -1
+        }
+      }
+    }
+
+- name: Invalid summary timestamps
+  expected_errors:
+    - "invalid summary timestamps: start can't be greater than stop"
+  report: |
+    {
+      "results": {
+        "summary": {
+          "start": 5,
+          "stop": 4
+        }
+      }
+    }
+
+- name: Invalid summary counts
+  expected_errors:
+    - "invalid summary counts: tests (5) must be the sum of passed, failed, pending, skipped, and other (15)"
+  report: |
+    {
+      "results": {
+        "summary": {
+          "tests": 5,
+          "passed": 5,
+          "failed": 4,
+          "pending": 3,
+          "skipped": 2,
+          "other": 1
+        }
+      }
+    }

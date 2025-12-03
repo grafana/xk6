@@ -10,6 +10,7 @@
 - Create new extension skeleton (project scaffolding)
 - Build k6 with extensions
 - Run k6 with extensions
+- Run integration tests with extensions
 - Check the extension for compliance (lint)
 - Provide reusable GitHub workflows
 - Distribute xk6 as a Dev Container Feature
@@ -139,6 +140,7 @@ An alternative to using SSH is to leverage the **GitHub CLI** as a Git credentia
 * [xk6 build](#xk6-build)	 - Build a custom k6 executable
 * [xk6 run](#xk6-run)	 - Execute the run command with the custom k6
 * [xk6 lint](#xk6-lint)	 - Analyze k6 extension compliance
+* [xk6 test](#xk6-test)	 - Run integration tests with the custom k6
 * [xk6 sync](#xk6-sync)	 - Synchronize dependencies with k6
 
 ---
@@ -670,6 +672,129 @@ Included Checks:
   XK6_LINT_ENABLE           Enable additional checks (comma-separated list)
   XK6_LINT_DISABLE          Disable specific checks (comma-separated list)
   XK6_LINT_ENABLE_ONLY      Enable only specified checks, ignoring preset (comma-separated list)
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 test
+
+Run integration tests with the custom k6
+
+## Synopsis
+
+This command is useful for testing k6 extensions during development. It builds k6 with the extension once and runs multiple test scripts, reporting test results based on exit codes.
+
+Under the hood, the command builds a k6 executable into a temporary directory and executes each test script with it. The usual flags for the build command can be used.
+
+**Output Format**
+
+By default, test results are reported in TAP (Test Anything Protocol) format for easy parsing and integration with CI systems. Use the `--json` flag to generate a CTRF (Common Test Report Format) JSON file for structured test reporting.
+
+**Exit Codes**
+
+The command exits with:
+- `0` if all tests pass
+- `1` if a command error occurs (invalid arguments, build failure, etc.)
+- `2` if one or more tests fail
+
+**Test Scripts**
+
+One or more test file patterns must be specified as arguments. 
+
+A test passes if the k6 script exits with code 0, and fails otherwise. Tests can fail through:
+- Failed checks with threshold configurations
+- Calling the `test.fail()` API
+- Using k6 jslib testing/assertion frameworks
+- Any uncaught exception or k6-specific exit code (97-110)
+
+**Glob Patterns**
+
+Glob patterns are supported in filenames:
+- Asterisk wildcards (`*`)
+- Super-asterisk wildcards (`**`) for recursive directory matching
+- Single symbol wildcards (`?`)
+- Character list matchers with negation and ranges (`[abc]`, `[!abc]`, `[a-c]`)
+- Alternative matchers (`{a,b}`)
+- Nested globbing (`{a,[bc]}`)
+
+**Examples**
+
+    # Run a single test
+    xk6 test tests/integration.js
+
+    # Run multiple test files
+    xk6 test tests/test1.js tests/test2.js
+
+    # Use glob patterns (recursive)
+    xk6 test "tests/**/*.test.js"
+
+    # Multiple patterns
+    xk6 test "tests/**/*.test.js" "integration/**/*.spec.js"
+
+    # Generate CTRF JSON report
+    xk6 test --json --output report.json "tests/**/*.js"
+
+    # Verbose output for debugging
+    xk6 test --verbose tests/integration.js
+
+**Using Pre-built k6**
+
+The `--k6` flag allows testing with a pre-built k6 binary instead of building from source. This is useful when the Go toolchain is not available or when k6 doesn't need to be rebuilt.
+
+    # Use pre-built k6 binary
+    xk6 test --k6 /path/to/k6 tests/integration.js
+
+## Usage
+
+```bash
+xk6 test [flags] pattern
+```
+
+## Flags
+
+```
+      --with module[@version][=replacement]   Add one or more k6 extensions with Go module path
+      --replace module=replacement            Replace one or more Go modules
+  -k, --k6-version string                     The k6 version to use for build (default "latest")
+      --k6-repo string                        The k6 repository to use for the build (default "go.k6.io/k6")
+      --os string                             The target operating system (default "linux")
+      --arch string                           The target architecture (default "amd64")
+      --arm string                            The target ARM version
+      --skip-cleanup int[=1]                  Keep the temporary build directory
+      --race-detector int[=1]                 Enable/disable race detector
+      --cgo int[=1]                           Enable/disable cgo
+      --build-flags stringArray               Specify Go build flags (default [-trimpath,-ldflags=-s -w])
+      --k6 string                             Specify the k6 binary to use instead of building one
+  -o, --out string                            Write output to file instead of stdout
+      --json                                  Generate JSON output
+  -c, --compact                               Compact instead of pretty-printed JSON output
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## Environment
+
+```
+  K6_VERSION             The k6 version to use for build
+  XK6_K6_REPO            The k6 repository to use for the build
+  GOOS                   The target operating system
+  GOARCH                 The target architecture
+  GOARM                  The target ARM version
+  XK6_SKIP_CLEANUP       Keep the temporary build directory
+  XK6_RACE_DETECTOR      Enable/disable race detector
+  CGO_ENABLED            Enable/disable cgo
+  XK6_BUILD_FLAGS        Specify Go build flags
+  K6                     Specify the k6 binary to use instead of building one
 ```
 
 ## SEE ALSO

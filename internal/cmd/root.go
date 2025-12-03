@@ -95,7 +95,7 @@ func New(levelVar *slog.LevelVar) *cobra.Command {
 
 	root.MarkFlagsMutuallyExclusive("quiet", "verbose")
 
-	root.AddCommand(versionCmd(), newCmd(), buildCmd(), runCmd(), lintCmd(), syncCmd())
+	root.AddCommand(versionCmd(), newCmd(), buildCmd(), runCmd(), lintCmd(), testCmd(), syncCmd())
 	root.AddCommand(helpTopics()...)
 
 	cmd := adjustCmd()

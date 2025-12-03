@@ -3,14 +3,10 @@ package cmd
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"os"
 	"os/exec"
-	"path/filepath"
 
-	"github.com/grafana/k6foundry"
 	"github.com/spf13/cobra"
-	"golang.org/x/mod/modfile"
 )
 
 //go:embed help/run.md
@@ -39,36 +35,12 @@ func runCmd() *cobra.Command {
 }
 
 func runRunE(ctx context.Context, opts *buildOptions, args []string) error {
-	dir, err := os.MkdirTemp("", "xk6-run-*")
+	cleanup, err := buildK6OnTheFly(ctx, opts)
 	if err != nil {
 		return err
 	}
 
-	mfile, moddir, err := getModfile()
-	if err != nil {
-		return err
-	}
-
-	opts.extensions.modules = append(
-		opts.extensions.modules,
-		k6foundry.Module{Path: mfile.Module.Mod.Path, ReplacePath: moddir},
-	)
-
-	for _, rep := range mfile.Replace {
-		opts.replacements.modules = append(
-			opts.replacements.modules,
-			k6foundry.Module{Path: rep.Old.Path, ReplacePath: rep.New.Path},
-		)
-	}
-
-	opts.output = filepath.Join(dir, filepath.Base(defaultK6Output()))
-
-	defer os.RemoveAll(dir) //nolint:errcheck
-
-	_, err = buildK6(ctx, opts)
-	if err != nil {
-		return err
-	}
+	defer cleanup()
 
 	k6args := make([]string, len(args)+1)
 
@@ -89,46 +61,3 @@ func runRunE(ctx context.Context, opts *buildOptions, args []string) error {
 
 	return cmd.Wait()
 }
-
-func getModfile() (*modfile.File, string, error) {
-	filename, err := findModfile()
-	if err != nil {
-		return nil, "", err
-	}
-
-	if len(filename) == 0 {
-		return nil, "", errNoModfile
-	}
-
-	data, err := os.ReadFile(filepath.Clean(filename))
-	if err != nil {
-		return nil, "", err
-	}
-
-	mf, err := modfile.Parse(filename, data, nil)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return mf, filepath.Dir(filename), nil
-}
-
-func findModfile() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	for ; len(dir) != 1 || dir[0] != filepath.Separator; dir = filepath.Dir(dir) {
-		filename := filepath.Join(dir, "go.mod")
-
-		info, err := os.Stat(filename)
-		if err == nil && !info.IsDir() {
-			return filename, nil
-		}
-	}
-
-	return "", nil
-}
-
-var errNoModfile = errors.New("go.mod file not found in current directory or any parent directory")

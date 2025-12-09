@@ -62,7 +62,10 @@ on:
         required: false
         default: ""
         type: string
-      # #endregion inputs
+      xk6-test-pattern:
+        description: The k6 scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
       bats:
         description: The bats scripts to use for integration testing. Space-separated file names or patterns.
         type: string
@@ -117,6 +120,7 @@ jobs:
           XK6_LINT_ENABLE: ${{ inputs.xk6-lint-enable }}
           XK6_LINT_DISABLE: ${{ inputs.xk6-lint-disable }}
           XK6_LINT_ENABLE_ONLY: ${{ inputs.xk6-lint-enable-only }}
+          XK6_TEST_PATTERN: ${{ inputs.xk6-test-pattern }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -143,6 +147,10 @@ jobs:
             if [ -n "${XK6_LINT_DISABLE}" ]; then
               echo "xk6 lint --disable    | ${XK6_LINT_DISABLE}" >> $GITHUB_STEP_SUMMARY
             fi
+          fi
+
+          if [ -n "${XK6_TEST_PATTERN}" ]; then
+            echo "xk6 test            | ${XK6_TEST_PATTERN}" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -352,6 +360,22 @@ jobs:
         run: ./k6 version
 
       - name: Integration Test
+        if: ${{ inputs.xk6-test-pattern != '' }}
+        env:
+          K6_EXE: "${{github.workspace}}/k6"
+          XK6_TEST_PATTERN: ${{ inputs.xk6-test-pattern }}
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          set -e
+          xk6 test --k6 ${K6_EXE} ${XK6_TEST_PATTERN} | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Integration Test (bats)
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
@@ -361,7 +385,7 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ### Integration Test
+          ### Integration Test (bats)
 
           END
 

@@ -120,6 +120,7 @@ jobs:
           XK6_LINT_ENABLE: ${{ inputs.xk6-lint-enable }}
           XK6_LINT_DISABLE: ${{ inputs.xk6-lint-disable }}
           XK6_LINT_ENABLE_ONLY: ${{ inputs.xk6-lint-enable-only }}
+          XK6_TEST_PATTERN: ${{ inputs.xk6-test-pattern }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -146,6 +147,10 @@ jobs:
             if [ -n "${XK6_LINT_DISABLE}" ]; then
               echo "xk6 lint --disable    | ${XK6_LINT_DISABLE}" >> $GITHUB_STEP_SUMMARY
             fi
+          fi
+
+          if [ -n "${XK6_TEST_PATTERN}" ]; then
+            echo "xk6 test            | ${XK6_TEST_PATTERN}" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -368,7 +373,7 @@ jobs:
           END
 
           set -e
-          xk6 test --k6 ${K6_EXE} -v ${XK6_TEST_PATTERN} | tee -a $GITHUB_STEP_SUMMARY
+          xk6 test --k6 ${K6_EXE} ${XK6_TEST_PATTERN} | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Integration Test (bats)
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}

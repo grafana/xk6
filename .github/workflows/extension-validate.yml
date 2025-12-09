@@ -62,7 +62,10 @@ on:
         required: false
         default: ""
         type: string
-      # #endregion inputs
+      xk6-test-pattern:
+        description: The k6 scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
       bats:
         description: The bats scripts to use for integration testing. Space-separated file names or patterns.
         type: string
@@ -352,6 +355,22 @@ jobs:
         run: ./k6 version
 
       - name: Integration Test
+        if: ${{ inputs.xk6-test-pattern != '' }}
+        env:
+          K6_EXE: "${{github.workspace}}/k6"
+          XK6_TEST_PATTERN: ${{ inputs.xk6-test-pattern }}
+        shell: bash
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          set -e
+          xk6 test --k6 ${K6_EXE} -v ${XK6_TEST_PATTERN} | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Integration Test (bats)
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}
         env:
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
@@ -361,7 +380,7 @@ jobs:
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
-          ### Integration Test
+          ### Integration Test (bats)
 
           END
 

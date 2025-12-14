@@ -174,7 +174,7 @@ jobs:
           persist-credentials: false
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@6be2b51fd78feca86af91f5186b7964d76cb1256 # v2.22.10
+        uses: securego/gosec@424fc4cd9c82ea0fd6bee9cd49c2db2c3cc0c93f # v2.22.11
         with:
           args: ./...
 

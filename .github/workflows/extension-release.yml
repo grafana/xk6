@@ -113,7 +113,7 @@ jobs:
           fi
           echo "goprivate=${goprivate}" >> $GITHUB_OUTPUT
       - name: Upload Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: files
           path: |
@@ -238,7 +238,7 @@ jobs:
           bats $BATS | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Download Artifacts
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: ${{env.DIST_DIR}}
           name: files
@@ -255,7 +255,7 @@ jobs:
           fi
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           path: ${{env.DIST_DIR}}.*
           name: archive-${{matrix.os}}_${{matrix.arch}}
@@ -270,7 +270,7 @@ jobs:
       - config
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: dist
           merge-multiple: true

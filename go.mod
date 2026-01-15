@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/szkiba/docsme v0.2.0
 	github.com/szkiba/efa v0.1.1
-	golang.org/x/mod v0.30.0
+	golang.org/x/mod v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

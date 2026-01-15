@@ -52,7 +52,7 @@ func syncCmd() *cobra.Command {
 	flags.SortFlags = false
 
 	flags.StringVarP(&opts.k6version, "k6-version", "k", "",
-		"The k6 version to use for synchronization (default from go.mod)")
+		"The k6 version to use. If not specified, uses the version from go.mod")
 	flags.BoolVarP(&opts.dryRun, "dry-run", "n", false,
 		"Do not make any changes, only log them")
 	flags.StringVarP(&opts.out, "out", "o", "",

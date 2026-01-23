@@ -4,11 +4,40 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/grafana/k6foundry"
 	"golang.org/x/mod/modfile"
 )
+
+func runK6Command(ctx context.Context, opts *buildOptions, k6cmd string, args []string) error {
+	cleanup, err := buildK6OnTheFly(ctx, opts)
+	if err != nil {
+		return err
+	}
+
+	defer cleanup()
+
+	k6args := make([]string, len(args)+1)
+
+	k6args[0] = k6cmd
+
+	copy(k6args[1:], args)
+
+	cmd := exec.CommandContext(ctx, opts.output, k6args...) // #nosec G204
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Wait()
+}
 
 func buildK6OnTheFly(ctx context.Context, opts *buildOptions) (func(), error) {
 	dir, err := os.MkdirTemp("", "xk6-build-*")

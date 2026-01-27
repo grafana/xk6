@@ -25,8 +25,8 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 ```yaml file=../../.github/workflows/validate.yml region=inputs
       go-version: "1.25.x"
       go-versions: '["1.25.x"]'
-      golangci-lint-version: "v2.6.1"
-      goreleaser-version: "2.12.7"
+      golangci-lint-version: "v2.8.0"
+      goreleaser-version: "2.13.3"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: .github/validate.bats
@@ -48,8 +48,8 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: "1.25.x"
-      goreleaser-version: "2.12.7"
+      go-version: "1.25.5"
+      goreleaser-version: "2.13.3"
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: ./.github/release.bats
 ```
@@ -280,6 +280,14 @@ The **Extension Validate** ([`extension-validate.yml`](../../.github/workflows/e
         required: false
         default: ""
         type: string
+      xk6-test-pattern:
+        description: The k6 scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
+      bats:
+        description: The bats scripts to use for integration testing. Space-separated file names or patterns.
+        type: string
+        required: false
 ```
 
 ### Extension Release

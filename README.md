@@ -139,6 +139,7 @@ An alternative to using SSH is to leverage the **GitHub CLI** as a Git credentia
 * [xk6 new](#xk6-new)	 - Create a new k6 extension
 * [xk6 build](#xk6-build)	 - Build a custom k6 executable
 * [xk6 run](#xk6-run)	 - Execute the run command with the custom k6
+* [xk6 x](#xk6-x)	 - Execute a k6 subcommand provided by the current directory's extension
 * [xk6 lint](#xk6-lint)	 - Analyze k6 extension compliance
 * [xk6 test](#xk6-test)	 - Run integration tests with the custom k6
 * [xk6 sync](#xk6-sync)	 - Synchronize dependencies with k6
@@ -325,6 +326,68 @@ Two dashes are used to indicate that the following flags are no longer the flags
 
 ```bash
 xk6 run [flags] [--] [k6-flags] script
+```
+
+## Flags
+
+```
+      --with module[@version][=replacement]   Add one or more k6 extensions with Go module path
+      --replace module=replacement            Replace one or more Go modules
+  -k, --k6-version string                     The k6 version to use for build (default "latest")
+      --k6-repo string                        The k6 repository to use for the build (default "go.k6.io/k6")
+      --os string                             The target operating system (default "linux")
+      --arch string                           The target architecture (default "amd64")
+      --arm string                            The target ARM version
+      --skip-cleanup int[=1]                  Keep the temporary build directory
+      --race-detector int[=1]                 Enable/disable race detector
+      --cgo int[=1]                           Enable/disable cgo
+      --build-flags stringArray               Specify Go build flags (default [-trimpath,-ldflags=-s -w])
+```
+
+## Global Flags
+
+```
+  -h, --help      Help about any command 
+  -q, --quiet     Suppress output
+  -v, --verbose   Verbose output
+```
+
+## Environment
+
+```
+  K6_VERSION             The k6 version to use for build
+  XK6_K6_REPO            The k6 repository to use for the build
+  GOOS                   The target operating system
+  GOARCH                 The target architecture
+  GOARM                  The target ARM version
+  XK6_SKIP_CLEANUP       Keep the temporary build directory
+  XK6_RACE_DETECTOR      Enable/disable race detector
+  CGO_ENABLED            Enable/disable cgo
+  XK6_BUILD_FLAGS        Specify Go build flags
+```
+
+## SEE ALSO
+
+* [xk6](#xk6)	 - k6 extension development toolbox
+
+---
+
+# xk6 x
+
+Execute a k6 subcommand provided by the current directory's extension
+
+## Synopsis
+
+This command is useful when developing k6 subcommand extensions. After modifying the extension source code in the current directory, you can execute the subcommand directly without manually building the k6 executable.
+
+Under the hood, xk6 builds a temporary k6 executable with your extensions and runs it with the provided arguments. All standard build command flags are supported.
+
+Use two dashes (`--`) to separate xk6 flags from k6 subcommand flags.
+
+## Usage
+
+```bash
+xk6 x [flags] [--] [k6-flags] [subcommand] [subcommand-flags]
 ```
 
 ## Flags
@@ -815,6 +878,8 @@ The purpose of this subcommand is to avoid dependency conflicts when building th
 
 It is recommended to keep dependencies in common with k6 core in the same version k6 core uses. This guarantees binary compatibility of the JS runtime, and ensures uses will not have to face unforeseen build-time errors when compiling several extensions together with xk6.
 
+By default, `xk6 sync` uses the k6 version specified in `go.mod`. This allows using any version supported by the `go get` command, including branch names like `master`. The `-k` or `--k6-version` flag can override this to sync with a specific k6 version. In this case only immutable versions can be used and `latest` which refers to latest immutable version.
+
 ## Usage
 
 ```bash
@@ -824,7 +889,7 @@ xk6 sync [flags]
 ## Flags
 
 ```
-  -k, --k6-version string   The k6 version to use for synchronization (default from go.mod)
+  -k, --k6-version string   The k6 version to use. If not specified, uses the version from go.mod
   -n, --dry-run             Do not make any changes, only log them
   -o, --out string          Write output to file instead of stdout
       --json                Generate JSON output

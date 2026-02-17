@@ -11,9 +11,12 @@ import (
 // If the type hint is empty, it infers the type from the module path.
 func LookupSample(modulePath string, typeHint string) (*Sample, error) {
 	if len(typeHint) == 0 {
-		if base := path.Base(modulePath); strings.HasPrefix(base, prefixOutput) {
+		switch base := path.Base(modulePath); {
+		case strings.HasPrefix(base, prefixSubcommand):
+			typeHint = typeSubcommand
+		case strings.HasPrefix(base, prefixOutput):
 			typeHint = typeOutput
-		} else {
+		default:
 			typeHint = typeJavaScript
 		}
 	}
@@ -30,6 +33,8 @@ func IsSample(module string) (bool, *Sample) {
 		atype = typeJavaScript
 	case moduleOutput:
 		atype = typeOutput
+	case moduleSubcommand:
+		atype = typeSubcommand
 	default:
 		return false, nil
 	}
@@ -63,8 +68,11 @@ func (s *Sample) pkg() string {
 	return strings.ReplaceAll(
 		strings.TrimPrefix(
 			strings.TrimPrefix(
-				s.name(),
-				prefixOutput,
+				strings.TrimPrefix(
+					s.name(),
+					prefixOutput,
+				),
+				prefixSubcommand,
 			),
 			prefixJavaScript,
 		),
@@ -91,6 +99,8 @@ func lookupByType(atype string) (*Sample, error) {
 	switch strings.ToLower(atype) {
 	case typeOutput:
 		sample = &Sample{Module: moduleOutput, Description: descriptionOutput}
+	case typeSubcommand:
+		sample = &Sample{Module: moduleSubcommand, Description: descriptionSubcommand}
 	case typeJavaScript:
 		sample = &Sample{Module: moduleJavaScript, Description: descriptionJavaScript}
 	default:
@@ -109,13 +119,17 @@ var ErrUnknownType = errors.New("unknown type")
 const (
 	typeJavaScript = "javascript"
 	typeOutput     = "output"
+	typeSubcommand = "subcommand"
 
 	prefixJavaScript = "xk6-"
 	prefixOutput     = "xk6-output-"
+	prefixSubcommand = "xk6-subcommand-"
 
 	moduleJavaScript = "github.com/grafana/xk6-example"
 	moduleOutput     = "github.com/grafana/xk6-output-example"
+	moduleSubcommand = "github.com/grafana/xk6-subcommand-example"
 
 	descriptionJavaScript = "Example k6 extension"
 	descriptionOutput     = "Example k6 output extension"
+	descriptionSubcommand = "Example k6 subcommand extension"
 )

@@ -42,7 +42,7 @@ func newCmd() *cobra.Command {
 
 	flags.SortFlags = false
 
-	flags.StringVarP(&opts.kind, "type", "t", "", "The type of template to use (javascript or output)")
+	flags.StringVarP(&opts.kind, "type", "t", "", "The type of template to use (javascript, output, subcommand)")
 	flags.StringVarP(&opts.Description, "description", "d", "", "A short, on-sentence description of the extension")
 	flags.StringVarP(&opts.Package, "package", "p", "", "The go package name for the extension")
 	flags.StringVarP(&opts.parent, "parent-dir", "C", ".", "The parent directory")

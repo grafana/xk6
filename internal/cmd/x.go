@@ -6,18 +6,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed help/run.md
-var runHelp string
+//go:embed help/x.md
+var xHelp string
 
-func runCmd() *cobra.Command {
+func xCmd() *cobra.Command {
 	opts := newBuildOptions()
 
 	cmd := &cobra.Command{
-		Use:   "run [flags] [--] [k6-flags] script",
-		Short: shortHelp(runHelp),
-		Long:  runHelp,
+		Use:   "x [flags] [--] [k6-flags] [subcommand] [subcommand-flags]",
+		Short: shortHelp(xHelp),
+		Long:  xHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runK6Command(cmd.Context(), opts, "run", args)
+			return runK6Command(cmd.Context(), opts, "x", args)
 		},
 		DisableAutoGenTag: true,
 	}

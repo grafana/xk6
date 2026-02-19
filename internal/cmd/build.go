@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"go.k6.io/xk6/internal/sync"
@@ -38,6 +39,9 @@ func buildCmd() *cobra.Command {
 			}
 
 			opts.outputChanged = cmd.Flags().Lookup("output").Changed
+			if !opts.outputChanged && opts.os == "windows" && !strings.HasSuffix(opts.output, ".exe") {
+				opts.output += ".exe"
+			}
 
 			return buildRunE(cmd.Context(), opts)
 		},

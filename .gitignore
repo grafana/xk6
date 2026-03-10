@@ -9,3 +9,6 @@ k6.exe
 
 # grafana/shared-workflows
 /_shared-workflows*
+
+# Temporary plans and working files
+/.github/plans/

@@ -106,25 +106,36 @@ func cleanup(dir string) error {
 }
 
 func customize(dir string, replacer *strings.Replacer) error {
-	special := []string{filepath.Join(dir, ".git"), filepath.Join(dir, "LICENSE")}
+	special := []string{".git", "LICENSE"}
 
-	return filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+	// Use os.Root to prevent path traversal vulnerabilities
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = root.Close()
+	}()
+
+	return fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if info.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
 
+		// Skip special files
 		for _, s := range special {
 			if strings.HasPrefix(path, s) {
-				// Skip special files
 				return nil
 			}
 		}
 
-		data, err := os.ReadFile(filepath.Clean(path))
+		// Read and write files using root-scoped API
+		data, err := root.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -133,7 +144,12 @@ func customize(dir string, replacer *strings.Replacer) error {
 		output := replacer.Replace(input)
 
 		if input != output {
-			return os.WriteFile(path, []byte(output), info.Mode())
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+
+			return root.WriteFile(path, []byte(output), info.Mode())
 		}
 
 		return nil

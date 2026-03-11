@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
-          go-version: "1.25.x"
+          go-version: "1.25.8"
           cache: false
 
       - name: GoReleaser build
@@ -49,7 +49,7 @@ jobs:
 
       - name: Setup gosec
         env:
-          GOSEC_VERSION: v2.23.0
+          GOSEC_VERSION: v2.24.6
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
 

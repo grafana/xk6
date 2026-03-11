@@ -17,8 +17,8 @@ jobs:
     uses: ./.github/workflows/tooling-validate.yml
     with:
       # #region inputs
-      go-version: "1.25.x"
-      go-versions: '["1.25.x"]'
+      go-version: "1.25.8"
+      go-versions: '["1.25.8"]'
       golangci-lint-version: "v2.8.0"
       goreleaser-version: "2.13.3"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'

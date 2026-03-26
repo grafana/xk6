@@ -1,23 +1,61 @@
-ARG GO_VERSION=1.25.8-alpine3.23@sha256:8e02eb337d9e0ea459e041f1ee5eece41cbb61f1d83e7d883a3e2fb4862063fa
-ARG GOSEC_VERSION=2.24.6@sha256:2cf71ea78210c496c65e3a987576a9c8317b68e20f2960520b3f6f8f9f539be5
+# Base image pinned to Chainguard's latest-dev stream to ensure zero CVEs.
+# Note: This specific digest resolves to Go 1.26.x
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:48d00bf10c30e94baf401fbf935fac1c9deb51c6e4f9645350509deca3e1b4f8
 
-FROM securego/gosec:${GOSEC_VERSION} AS gosec
+# Define global build arguments for the tools to install from source
+ARG GOSEC_VERSION=v2.25.0
+ARG GOVULNCHECK_VERSION=v1.1.4
 
-FROM golang:${GO_VERSION} AS builder
+# ==========================================
+# STAGE 1: Builder (for govulncheck and gosec)
+# ==========================================
+FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS builder
 
-RUN apk update && apk add git
+# Pull global ARGs into this stage's scope
+ARG GOSEC_VERSION
+ARG GOVULNCHECK_VERSION
+
+# Docker automatically injects these during multi-platform builds
+ARG TARGETOS
+ARG TARGETARCH
+
+# Chainguard runs as 'nonroot'; switch to root to install packages
+USER root
+RUN apk update && apk add --no-cache git
 
 WORKDIR /build
 
-RUN GOBIN=/build go install -ldflags="-s -w" golang.org/x/vuln/cmd/govulncheck@v1.1.4
+ENV GOSEC_VERSION=${GOSEC_VERSION} \
+    GOVULNCHECK_VERSION=${GOVULNCHECK_VERSION} \
+    CGO_ENABLED=0 \
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH}
 
-FROM golang:${GO_VERSION}
+# Build both security tools directly from source
 
-RUN apk update && apk add git && \
-    addgroup --gid 1000 xk6 && \
-    adduser --uid 1000 --ingroup xk6 --disabled-password --gecos "" xk6
+# 1. Install without GOBIN because cross-compilation can cause issues with the Go toolchain's handling of the GOPATH/bin directory.
+#    Instead, we'll find the binaries in their default location after installation.
+RUN go install -ldflags="-s -w" golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}
+RUN go install -ldflags="-s -w" github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
 
-COPY --from=gosec /bin/gosec /usr/local/bin/gosec
+# 2. Fish the compiled binaries out of the GOPATH and move them to our /build folder
+RUN find $(go env GOPATH)/bin -type f -exec mv {} /build/ \;
+
+# ==========================================
+# STAGE 2: Final Runtime
+# ==========================================
+FROM ${GO_IMAGE}
+
+# Switch to root to configure the OS packages and users
+USER root
+
+# Install git and build-base (C compiler for CGO support), then create the xk6 user
+RUN apk update && apk add --no-cache git build-base && \
+    addgroup -g 1000 xk6 && \
+    adduser -u 1000 -G xk6 -D -g "" xk6
+
+# Copy compiled binaries and scripts from the builder stage with explicit permissions
+COPY --from=builder --chown=root:root --chmod=755 /build/gosec /usr/local/bin/
 COPY --from=builder --chown=root:root --chmod=755 /build/govulncheck /usr/local/bin/
 COPY --chown=root:root --chmod=4755 fixids /usr/local/bin/
 COPY --chown=xk6:xk6 --chmod=755 xk6 /usr/local/bin/
@@ -25,6 +63,8 @@ COPY --chown=root:root --chmod=755 docker-entrypoint.sh /usr/local/bin/entrypoin
 
 WORKDIR /xk6
 RUN chown xk6:xk6 /xk6
+
+# Drop privileges to the non-root xk6 user
 USER xk6
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

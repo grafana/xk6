@@ -22,9 +22,9 @@ func checkerExamples(ctx context.Context, dir string) *checkResult {
 
 	dir = filepath.Join(dir, "examples")
 
-	info, err := os.Stat(dir)
+	info, err := os.Stat(dir) //nolint:forbidigo
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, os.ErrNotExist) { //nolint:forbidigo
 			return checkFailed("missing `examples` directory")
 		}
 

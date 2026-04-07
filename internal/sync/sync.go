@@ -96,8 +96,8 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 
 	cmd := exec.CommandContext(ctx, "go", patch...) // #nosec G204
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = opts.Stdout
+	cmd.Stderr = opts.Stderr
 
 	err = cmd.Run()
 	if err != nil {
@@ -156,7 +156,7 @@ func getK6Version(ctx context.Context, opts *Options, mf *modfile.File) (string,
 func loadModfile(dir string) (*modfile.File, error) {
 	filename := filepath.Join(dir, modFile)
 
-	data, err := os.ReadFile(filepath.Clean(filename))
+	data, err := os.ReadFile(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func findRequire(mf *modfile.File, module string) (string, bool) {
 }
 
 func goproxy() string {
-	proxy := os.Getenv("GOPROXY")
+	proxy := os.Getenv("GOPROXY") //nolint:forbidigo
 	if len(proxy) == 0 {
 		return defaultGoProxy
 	}
@@ -239,7 +239,7 @@ func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

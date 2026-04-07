@@ -5,8 +5,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -43,7 +43,7 @@ func buildCmd() *cobra.Command {
 				opts.output += ".exe"
 			}
 
-			return buildRunE(cmd.Context(), opts)
+			return buildRunE(cmd.Context(), cmd.OutOrStdout(), opts)
 		},
 		DisableAutoGenTag: true,
 	}
@@ -59,7 +59,7 @@ func buildCmd() *cobra.Command {
 	return cmd
 }
 
-func buildRunE(ctx context.Context, opts *buildOptions) error {
+func buildRunE(ctx context.Context, stdout io.Writer, opts *buildOptions) error {
 	info, err := buildK6(ctx, opts)
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func buildRunE(ctx context.Context, opts *buildOptions) error {
 	}
 
 	if !opts.outputChanged {
-		buildCompatMessage(opts.output)
+		buildCompatMessage(stdout, opts.output)
 	}
 
 	return nil
@@ -100,8 +100,8 @@ xk6 has now produced a new k6 binary which may be different than the command on 
 Be sure to run '%v run <SCRIPT_NAME>' from the '%v' directory.
 `
 
-func buildCompatMessage(exe string) {
+func buildCompatMessage(stdout io.Writer, exe string) {
 	abs, _ := filepath.Abs(exe)
 
-	_, _ = fmt.Fprintf(os.Stdout, buildCompatMessageFmt, exe, filepath.Dir(abs))
+	_, _ = fmt.Fprintf(stdout, buildCompatMessageFmt, exe, filepath.Dir(abs))
 }

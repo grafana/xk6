@@ -117,7 +117,7 @@ func buildCommonFlags(flags *pflag.FlagSet, opts *buildOptions) error {
 // copyNonGoEnv copies non-Go environment variables that might be needed for the build.
 func copyNonGoEnv(env map[string]string) {
 	for _, key := range nonGoEnvToCopy {
-		if val, ok := os.LookupEnv(key); ok {
+		if val, ok := os.LookupEnv(key); ok { //nolint:forbidigo
 			env[key] = val
 		}
 	}
@@ -171,8 +171,8 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {
-		fopts.Stdout = os.Stdout
-		fopts.Stderr = os.Stderr
+		fopts.Stdout = os.Stdout //nolint:forbidigo
+		fopts.Stderr = os.Stderr //nolint:forbidigo
 	}
 
 	return k6foundry.NewNativeFoundry(ctx, fopts)
@@ -186,7 +186,7 @@ func buildK6(ctx context.Context, opts *buildOptions) (*k6foundry.BuildInfo, err
 
 	const outFilePerm = 0o777
 
-	out, err := os.OpenFile(opts.output, os.O_WRONLY|os.O_CREATE, outFilePerm) // #nosec G302 G304
+	out, err := os.OpenFile(opts.output, os.O_WRONLY|os.O_CREATE, outFilePerm) //nolint:forbidigo // #nosec G302 G304
 	if err != nil {
 		return nil, err
 	}

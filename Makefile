@@ -70,9 +70,16 @@ it:
 		bats -r .;\
 	)
 
+# Download linter config from main k6 repository if not present
+.PHONY: linter-config
+linter-config:
+	@(\
+		test -s .golangci.yml || (echo "No linter config, downloading from main k6 repository..." && curl --silent --show-error --fail --no-location https://raw.githubusercontent.com/grafana/k6/master/.golangci.yml --output .golangci.yml);\
+	)
+
 # Run the linter
 .PHONY: lint
-lint: 
+lint: linter-config
 	@(\
 		golangci-lint run ./...;\
 	)

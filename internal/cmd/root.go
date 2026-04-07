@@ -36,7 +36,7 @@ func Execute() {
 	if err != nil {
 		slog.Error(err.Error())
 		cancel()
-		os.Exit(1) //nolint:gocritic
+		os.Exit(1) //nolint:gocritic,forbidigo
 	}
 }
 
@@ -132,12 +132,12 @@ func getVersion() string {
 func initLogging() *slog.LevelVar {
 	levelVar := new(slog.LevelVar)
 
-	w := os.Stderr
+	w := os.Stderr //nolint:forbidigo
 
 	term := isatty.IsTerminal(w.Fd())
 
 	topts := &tint.Options{
-		NoColor:    !term || os.Getenv("NO_COLOR") == "true",
+		NoColor:    !term || os.Getenv("NO_COLOR") == "true", //nolint:forbidigo
 		TimeFormat: time.RFC3339,
 		Level:      levelVar,
 	}

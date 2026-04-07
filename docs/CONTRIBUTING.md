@@ -115,12 +115,16 @@ make makefile
 
 The [golangci-lint] tool is used for static analysis of the source code. It is advisable to run it before committing the changes.
 
+The linter configuration is taken from the main [k6 repository]. If no local `.golangci.yml` is found, it is downloaded automatically.
+
 ```bash
+test -s .golangci.yml || (echo "No linter config, downloading from main k6 repository..." && curl --silent --show-error --fail --no-location https://raw.githubusercontent.com/grafana/k6/master/.golangci.yml --output .golangci.yml)
 golangci-lint run ./...
 ```
 
 [lint]: <#lint---run-the-linter>
 [golangci-lint]: https://github.com/golangci/golangci-lint
+[k6 repository]: https://github.com/grafana/k6
 
 ### security - Run security and vulnerability checks
 

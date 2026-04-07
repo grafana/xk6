@@ -47,7 +47,7 @@ func checkerSmoke(ctx context.Context, dir string) *checkResult {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, string(out))
+		fmt.Fprintln(os.Stderr, string(out)) //nolint:forbidigo
 
 		return checkError(err)
 	}

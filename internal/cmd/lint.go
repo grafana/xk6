@@ -153,7 +153,7 @@ func lintCmd() *cobra.Command {
 			err := lintRunE(cmd.Context(), args, opts)
 			if errors.Is(err, errLintingFailed) {
 				slog.Error(errLintingFailed.Error())
-				os.Exit(exitCodeLintingFailed)
+				os.Exit(exitCodeLintingFailed) //nolint:forbidigo
 			}
 
 			return err
@@ -192,7 +192,7 @@ func dirArg(args []string) (string, error) {
 	var dir string
 
 	if len(args) == 0 {
-		cwd, err := os.Getwd()
+		cwd, err := os.Getwd() //nolint:forbidigo
 		if err != nil {
 			return "", err
 		}
@@ -207,7 +207,7 @@ func dirArg(args []string) (string, error) {
 		dir = abs
 	}
 
-	info, err := os.Stat(dir)
+	info, err := os.Stat(dir) //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}
@@ -228,7 +228,7 @@ func lintRunE(ctx context.Context, args []string, opts *options) (result error) 
 	output := colorable.NewColorableStdout()
 
 	if len(opts.out) > 0 {
-		file, err := os.Create(opts.out)
+		file, err := os.Create(opts.out) //nolint:forbidigo
 		if err != nil {
 			return err
 		}

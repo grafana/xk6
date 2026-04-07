@@ -1,5 +1,6 @@
 //go:build linux
 
+// Package main provides the fixids utility for fixing UID/GID mappings in containers.
 package main
 
 import (
@@ -19,10 +20,12 @@ import (
 
 const ranFile = "/var/run/fixids.ran"
 
-var logger = log.New(os.Stderr, "", 0)
-var quietFlag = flag.Bool("q", false, "quiet mode")
+var (
+	logger    = log.New(os.Stderr, "", 0)           //nolint:forbidigo,gochecknoglobals
+	quietFlag = flag.Bool("q", false, "quiet mode") //nolint:gochecknoglobals
+)
 
-func main() {
+func main() { //nolint:gocognit,cyclop,funlen
 	runtime.GOMAXPROCS(1)
 	logger.SetPrefix("fixids: ")
 	flag.Parse()
@@ -34,19 +37,19 @@ func main() {
 	}
 
 	// detect what user we are running as
-	runtimeUIDInt := os.Getuid()
+	runtimeUIDInt := os.Getuid() //nolint:forbidigo
 	runtimeUID := strconv.Itoa(runtimeUIDInt)
-	runtimeGIDInt := os.Getgid()
+	runtimeGIDInt := os.Getgid() //nolint:forbidigo
 	runtimeGID := strconv.Itoa(runtimeGIDInt)
 
 	// only run once on the system
-	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
+	if _, err := os.Stat(ranFile); !os.IsNotExist(err) { //nolint:forbidigo
 		logInfo("already ran on this system; will not attempt to change UID/GID")
 		exitOrExec(runtimeUID, runtimeUIDInt, runtimeGIDInt, -1, argsWithoutProg)
 	}
 
 	// check that script is running as root
-	if os.Geteuid() != 0 {
+	if os.Geteuid() != 0 { //nolint:forbidigo
 		logger.Fatalln(`fixids is not running as root, ensure that the following criteria are met:
         - fixids binary is owned by root: 'chown root:root /path/to/fixids'
         - fixids binary has the setuid bit: 'chmod u+s /path/to/fixids'
@@ -91,7 +94,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	cwd, err := os.Getwd()
+	cwd, err := os.Getwd() //nolint:forbidigo
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -161,8 +164,7 @@ func main() {
 	}
 
 	// search entire filesystem and chown containerUID:containerGID to runtimeUID:runtimeGID
-	if needChown {
-
+	if needChown { //nolint:nestif
 		// process /proc/mounts
 		mounts, err := parseProcMounts()
 		if err != nil {
@@ -173,8 +175,7 @@ func main() {
 		var mountpoint string
 
 		// this function is called for every file visited
-		visit := func(filePath string, fileInfo os.FileInfo, err error) error {
-
+		visit := func(filePath string, fileInfo os.FileInfo, err error) error { //nolint:forbidigo
 			// an error to lstat or filepath.readDirNames
 			// see https://github.com/boxboat/fixids/issues/4
 			if err != nil {
@@ -216,7 +217,7 @@ func main() {
 
 		for _, path := range paths {
 			// stat the path to ensure it exists
-			_, err := os.Stat(path)
+			_, err := os.Stat(path) //nolint:forbidigo
 			if err != nil {
 				logInfo("error accessing path: " + path)
 				logInfo(err)
@@ -230,26 +231,25 @@ func main() {
 				logInfo(err)
 			}
 		}
-
 	}
 
 	// mark the script as ran
-	err = os.WriteFile(ranFile, []byte{}, 0644) // #nosec G306
+	err = os.WriteFile(ranFile, []byte{}, 0o644) //nolint:forbidigo // #nosec G306
 	if err != nil {
 		logger.Fatalln(err)
 	}
 
 	// if the existing HOME directory is "/", change it to the user's home directory
-	existingHomeDir := os.Getenv("HOME")
-	if existingHomeDir == "/" {
+	existingHomeDir := os.Getenv("HOME") //nolint:forbidigo
+	if existingHomeDir == "/" {          //nolint:nestif
 		homeDir, homeDirErr := findHomeDir(runtimeUID)
 		if homeDirErr == nil && homeDir != "" && homeDir != "/" {
 			if len(argsWithoutProg) > 0 {
-				if err := os.Setenv("HOME", homeDir); err != nil {
+				if err := os.Setenv("HOME", homeDir); err != nil { //nolint:forbidigo
 					logger.Fatalln(err)
 				}
 			} else {
-				fmt.Println(`export HOME="` + strings.Replace(homeDir, `"`, `\"`, -1) + `"`)
+				fmt.Println(`export HOME="` + strings.ReplaceAll(homeDir, `"`, `\"`) + `"`)
 			}
 		}
 	}
@@ -265,15 +265,17 @@ func main() {
 	exitOrExec(runtimeUID, runtimeUIDInt, runtimeGIDInt, oldGIDInt, argsWithoutProg)
 }
 
-func logInfo(v ...interface{}) {
+func logInfo(v ...any) {
 	if !*quietFlag {
 		logger.Println(v...)
 	}
 }
 
 // oldGIDInt should be -1 if the GID was not changed
+//
+//nolint:gocognit
 func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, argsWithoutProg []string) {
-	if len(argsWithoutProg) > 0 {
+	if len(argsWithoutProg) > 0 { //nolint:nestif
 		// exec mode - de-escalate privileges and exec new process
 		binary, err := exec.LookPath(argsWithoutProg[0])
 		if err != nil {
@@ -307,10 +309,10 @@ func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, 
 			}
 
 			// add all GIDs to a map
-			allGIDs := append(existingGIDs, primaryGID)
-			allGIDs = append(allGIDs, supplementaryGIDs...)
+			existingGIDs = append(existingGIDs, primaryGID)
+			existingGIDs = append(existingGIDs, supplementaryGIDs...)
 			gidMap := make(map[int]struct{})
-			for _, gid := range allGIDs {
+			for _, gid := range existingGIDs {
 				gidMap[gid] = struct{}{}
 			}
 
@@ -342,7 +344,7 @@ func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, 
 		}
 
 		// exec new process
-		env := os.Environ()
+		env := os.Environ()                              //nolint:forbidigo
 		err = syscall.Exec(binary, argsWithoutProg, env) // #nosec G204
 		if err != nil {
 			logger.Fatalln(err)
@@ -350,15 +352,15 @@ func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, 
 	}
 
 	// nothing to exec; exit the program
-	os.Exit(0)
+	os.Exit(0) //nolint:forbidigo
 }
 
 func searchColonDelimitedFile(filePath string, search string, searchOffset int, returnOffset int) (string, error) {
-	file, err := os.Open(filepath.Clean(filePath))
+	file, err := os.Open(filepath.Clean(filePath)) //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -407,7 +409,7 @@ func findGroup(gid string) (string, error) {
 
 func findUserSupplementaryGIDs(user string) ([]int, error) {
 	// group:pass:gid:users
-	file, err := os.Open("/etc/group")
+	file, err := os.Open("/etc/group") //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}
@@ -443,12 +445,12 @@ func findUserSupplementaryGIDs(user string) ([]int, error) {
 
 func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, newGID string) error {
 	// user:pass:uid:gid:comment:home dir:shell
-	file, err := os.Open("/etc/passwd")
+	file, err := os.Open("/etc/passwd") //nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
-	newLines := ""
+	var newLines strings.Builder
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cols := strings.Split(scanner.Text(), ":")
@@ -461,7 +463,7 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 		if oldGID != "" && newGID != "" && cols[3] == oldGID {
 			cols[3] = newGID
 		}
-		newLines += strings.Join(cols, ":") + "\n"
+		newLines.WriteString(strings.Join(cols, ":") + "\n")
 	}
 
 	if err := file.Close(); err != nil {
@@ -472,7 +474,7 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 		return err
 	}
 
-	err = os.WriteFile("/etc/passwd", []byte(newLines), 0644) // #nosec G306
+	err = os.WriteFile("/etc/passwd", []byte(newLines.String()), 0o644) //nolint:forbidigo // #nosec G306
 	if err != nil {
 		return err
 	}
@@ -482,12 +484,12 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 
 func updateEtcGroup(group string, oldGID string, newGID string) error {
 	// group:pass:gid:users
-	file, err := os.Open("/etc/group")
+	file, err := os.Open("/etc/group") //nolint:forbidigo
 	if err != nil {
 		return err
 	}
 
-	newLines := ""
+	var newLines strings.Builder
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cols := strings.Split(scanner.Text(), ":")
@@ -497,7 +499,7 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 		if oldGID != "" && newGID != "" && cols[0] == group && cols[2] == oldGID {
 			cols[2] = newGID
 		}
-		newLines += strings.Join(cols, ":") + "\n"
+		newLines.WriteString(strings.Join(cols, ":") + "\n")
 	}
 
 	if err := file.Close(); err != nil {
@@ -508,7 +510,7 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 		return err
 	}
 
-	err = os.WriteFile("/etc/group", []byte(newLines), 0644) // #nosec G306
+	err = os.WriteFile("/etc/group", []byte(newLines.String()), 0o644) //nolint:forbidigo // #nosec G306
 	if err != nil {
 		return err
 	}
@@ -519,7 +521,7 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 func parseProcMounts() (map[string]bool, error) {
 	// device mountpoint type options dump fsck
 	// spaces appear as \040
-	file, err := os.Open("/proc/mounts")
+	file, err := os.Open("/proc/mounts") //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +531,7 @@ func parseProcMounts() (map[string]bool, error) {
 	for scanner.Scan() {
 		cols := strings.Fields(scanner.Text())
 		if len(cols) >= 2 {
-			mounts[filepath.Clean(strings.Replace(cols[1], "\\040", " ", -1))] = true
+			mounts[filepath.Clean(strings.ReplaceAll(cols[1], "\\040", " "))] = true
 		}
 	}
 

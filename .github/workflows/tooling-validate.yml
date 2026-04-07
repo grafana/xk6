@@ -22,10 +22,6 @@ on:
         description: Platforms to be used to run the tests. JSON string array (e.g. ["ubuntu-latest","macos-latest"])
         required: true
         type: string
-      golangci-lint-version:
-        description: The golangci-lint version to use for static analysis.
-        required: true
-        type: string
       goreleaser-version:
         description: The version of GoReleaser to use for builds and releases.
         required: true
@@ -136,20 +132,8 @@ jobs:
           test -z "$(go mod tidy && git status go.* --porcelain)"
           go mod verify
 
-      - name: Run minimal golangci-lint ${{ inputs.golangci-lint-version }}
-        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') == ''}}
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
-        with:
-          version: "${{ inputs.golangci-lint-version }}"
-          args: --timeout=30m --no-config
-
-      - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
-        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
-        with:
-          version: "${{ inputs.golangci-lint-version }}"
-          only-new-issues: true
-          args: --timeout=30m
+      - name: Run golangci-lint with k6 ruleset
+        uses: grafana/k6/.github/actions/lint@master
 
   smoke:
     name: Smoke

@@ -16,7 +16,7 @@ import (
 
 func findFile(rex *regexp.Regexp, dirs ...string) (string, string, error) {
 	for idx, dir := range dirs {
-		entries, err := os.ReadDir(dir)
+		entries, err := os.ReadDir(dir) //nolint:forbidigo
 		if err != nil {
 			if idx == 0 {
 				return "", "", err
@@ -44,14 +44,14 @@ func findFile(rex *regexp.Regexp, dirs ...string) (string, string, error) {
 }
 
 func build(ctx context.Context, module string, dir string) (string, error) {
-	exe, err := os.CreateTemp("", "k6-*.exe")
+	exe, err := os.CreateTemp("", "k6-*.exe") //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}
 
 	const exePerm = 0o700
 
-	err = os.Chmod(exe.Name(), exePerm)
+	err = os.Chmod(exe.Name(), exePerm) //nolint:forbidigo // #nosec G302
 	if err != nil {
 		return "", err
 	}
@@ -62,8 +62,8 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 
 	defer func() {
 		if result != nil {
-			_, _ = io.Copy(os.Stderr, &out)
-			fmt.Fprintln(os.Stderr)
+			_, _ = io.Copy(os.Stderr, &out) //nolint:forbidigo
+			fmt.Fprintln(os.Stderr)         //nolint:forbidigo
 		}
 	}()
 

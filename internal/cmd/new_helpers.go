@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -100,7 +101,7 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusOK {
-		return "", os.ErrNotExist //nolint:forbidigo
+		return "", fs.ErrNotExist
 	}
 
 	var body map[string]any

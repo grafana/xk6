@@ -51,7 +51,7 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 
 	const exePerm = 0o700
 
-	err = os.Chmod(exe.Name(), exePerm) /* #nosec G302 G703 */ //nolint:forbidigo,gosec
+	err = os.Chmod(exe.Name(), exePerm) /* #nosec G302 G703 */ //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}

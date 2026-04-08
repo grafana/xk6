@@ -186,7 +186,7 @@ func buildK6(ctx context.Context, opts *buildOptions) (*k6foundry.BuildInfo, err
 
 	const outFilePerm = 0o777
 
-	out, err := os.OpenFile(opts.output, os.O_WRONLY|os.O_CREATE, outFilePerm) //nolint:forbidigo // #nosec G302 G304
+	out, err := os.OpenFile(opts.output, os.O_WRONLY|os.O_CREATE, outFilePerm) /* #nosec G302 G304 */ //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}

@@ -234,7 +234,7 @@ func main() { //nolint:gocognit,cyclop,funlen
 	}
 
 	// mark the script as ran
-	err = os.WriteFile(ranFile, []byte{}, 0o644) //nolint:forbidigo // #nosec G306
+	err = os.WriteFile(ranFile, []byte{}, 0o644) /* #nosec G306 */ //nolint:forbidigo
 	if err != nil {
 		logger.Fatalln(err)
 	}
@@ -474,7 +474,7 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 		return err
 	}
 
-	err = os.WriteFile("/etc/passwd", []byte(newLines.String()), 0o644) //nolint:forbidigo // #nosec G306
+	err = os.WriteFile("/etc/passwd", []byte(newLines.String()), 0o644) /* #nosec G306 */ //nolint:forbidigo
 	if err != nil {
 		return err
 	}
@@ -510,7 +510,7 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 		return err
 	}
 
-	err = os.WriteFile("/etc/group", []byte(newLines.String()), 0o644) //nolint:forbidigo // #nosec G306
+	err = os.WriteFile("/etc/group", []byte(newLines.String()), 0o644) /* #nosec G306 */ //nolint:forbidigo
 	if err != nil {
 		return err
 	}

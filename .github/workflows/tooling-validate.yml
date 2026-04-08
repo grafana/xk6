@@ -63,7 +63,6 @@ jobs:
         env:
           GO_VERSION: ${{inputs.go-version}}
           GO_VERSIONS: ${{ join(fromJSON(inputs.go-versions),' ') }}
-          GOLANGCI_LINT_VERSION: ${{inputs.golangci-lint-version}}
           GORELEASER_VERSION: ${{inputs.goreleaser-version}}
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
           PLATFORMS: ${{ join(fromJSON(inputs.platforms),' ') }}
@@ -78,7 +77,6 @@ jobs:
           go version for build  | ${GO_VERSION}
           go versions for test  | ${GO_VERSIONS}
           platforms for test    | ${PLATFORMS}
-          golangci-lint version | ${GOLANGCI_LINT_VERSION}
           GoReleaser version    | ${GORELEASER_VERSION}
           k6 versions for test  | ${K6_VERSIONS}
 
@@ -278,7 +276,6 @@ jobs:
       fail-fast: false
     env:
       GO_VERSION: ""
-      GOLANGCI_LINT_VERSION: ""
       GORELEASER_VERSION: ""
     steps:
       - name: Checkout code
@@ -291,7 +288,6 @@ jobs:
           cat .devcontainer/devcontainer.json | sed 's/^ *\/\/.*//' | jq -r '
             {
               GO_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["version"],
-              GOLANGCI_LINT_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"],
               GORELEASER_VERSION: .features["ghcr.io/guiyomh/features/goreleaser:0"]["version"]
             } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
 
@@ -302,16 +298,6 @@ jobs:
         run: |
           if [ ! "${{env.GO_VERSION}}" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
             echo "::error::Mismatched go versions in devcontainers.json and workflow input"
-            exit 1
-          fi
-
-      - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
-        shell: bash
-        env:
-          INPUT_GOLANGCI_LINT_VERSION: ${{ inputs.golangci-lint-version }}
-        run: |
-          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${INPUT_GOLANGCI_LINT_VERSION}|sed -e 's/v//g')" ]; then
-            echo "::error::Mismatched golangci-lint versions in devcontainers.json and workflow input"
             exit 1
           fi
 

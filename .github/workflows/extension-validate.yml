@@ -200,6 +200,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{inputs.go-version}}
+          check-latest: true
 
       - name: Setup xk6 ${{ inputs.xk6-version }}
         uses: grafana/setup-xk6@97b842b765bd3fea56db7195e98c5f61cab8fe46 # v1.1.1
@@ -239,6 +240,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: "${{ inputs.go-version }}"
+          check-latest: true
 
       - name: Check module dependencies
         shell: bash
@@ -276,6 +278,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: "${{ inputs.go-version }}"
+          check-latest: true
 
       - name: Run tests
         run: |
@@ -302,6 +305,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: true
 
       - name: Run tests
         run: |
@@ -330,6 +334,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: true
 
       - name: Setup Bats
         if: ${{ inputs.bats != '' && runner.os == 'Linux' }}

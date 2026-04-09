@@ -509,7 +509,7 @@ jobs:
         env:
           INPUT_GO_VERSION: ${{inputs.go-version}}
         run: |
-          if [ ! "${{env.GO_VERSION}}" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
+          if [ ! "$(echo ${{env.GO_VERSION}}|sed -e 's/\.x//g')" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
             echo "::error::Mismatched go versions in devcontainers.json and workflow input"
             exit 1
           fi

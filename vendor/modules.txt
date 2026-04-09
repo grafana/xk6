@@ -170,8 +170,8 @@ github.com/google/uuid
 # github.com/goreleaser/fileglob v1.4.0
 ## explicit; go 1.25
 github.com/goreleaser/fileglob
-# github.com/grafana/k6foundry v0.4.7
-## explicit; go 1.22.2
+# github.com/grafana/k6foundry v0.5.1
+## explicit; go 1.25.0
 github.com/grafana/k6foundry
 # github.com/hhatto/gorst v0.0.0-20181029133204-ca9f730cac5b
 ## explicit
@@ -260,8 +260,8 @@ golang.org/x/crypto/ssh/knownhosts
 # golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 ## explicit; go 1.20
 golang.org/x/exp/rand
-# golang.org/x/mod v0.32.0
-## explicit; go 1.24.0
+# golang.org/x/mod v0.34.0
+## explicit; go 1.25.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
 golang.org/x/mod/module

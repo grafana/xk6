@@ -1,17 +1,23 @@
 work_dir = $(shell pwd)
-golangci_version = $(shell head -n 1 .golangci.yml | tr -d '\# ')
+GOLANGCI_CONFIG ?= .golangci.yml
 
-all: build
+all: lint test
 
-.PHONY: build
-build:
-	go build -o build/k6foundry ./cmd/k6foundry
+## linter-config: Checks if the linter config exists, if not, downloads it from the main k6 repository.
+.PHONY: linter-config
+linter-config:
+	test -s "${GOLANGCI_CONFIG}" || (echo "No linter config, downloading from main k6 repository..." && curl --silent --show-error --fail --no-location https://raw.githubusercontent.com/grafana/k6/master/.golangci.yml --output "${GOLANGCI_CONFIG}")
 
-# Running with -buildvcs=false works around the issue of `go list all` failing when git, which runs as root inside
-# the container, refuses to operate on the disruptor source tree as it is not owned by the same user (root).
+## check-linter-version: Checks if the linter version is the same as the one specified in the linter config.
+.PHONY: check-linter-version
+check-linter-version:
+	(golangci-lint version | grep "version $(shell head -n 1 .golangci.yml | tr -d '\# ')") || echo "Your installation of golangci-lint is different from the one that is specified in k6's linter config (there it's $(shell head -n 1 .golangci.yml | tr -d '\# ')). Results could be different in the CI."
+
+## lint: Runs the linters.
 .PHONY: lint
-lint:
-	docker run --rm -v $(work_dir):/src -w /src -e GOFLAGS=-buildvcs=false golangci/golangci-lint:$(golangci_version) golangci-lint run
+lint: linter-config check-linter-version
+	echo "Running linters..."
+	golangci-lint run ./...
 
 .PHONY: test
 test:

@@ -157,7 +157,7 @@ func (e goEnv) close(ctx context.Context) error {
 }
 
 func (e goEnv) runGo(ctx context.Context, timeout time.Duration, args ...string) error {
-	cmd := exec.Command("go", args...)
+	cmd := exec.CommandContext(ctx, "go", args...) //nolint:gosec
 
 	cmd.Env = e.env
 	cmd.Dir = e.workDir
@@ -286,9 +286,9 @@ func (e goEnv) clean(ctx context.Context) error {
 	return err
 }
 
-func (e goEnv) modVersion(_ context.Context, mod string) (string, error) {
+func (e goEnv) modVersion(ctx context.Context, mod string) (string, error) {
 	// can't use runGo because we need the output
-	cmd := exec.Command("go", "list", "-f", "{{.Version}} {{.Replace}}", "-m", mod)
+	cmd := exec.CommandContext(ctx, "go", "list", "-f", "{{.Version}} {{.Replace}}", "-m", mod) //nolint:gosec
 	cmd.Env = e.env
 	cmd.Dir = e.workDir
 	out, err := cmd.CombinedOutput()
@@ -308,10 +308,30 @@ func (e goEnv) modVersion(_ context.Context, mod string) (string, error) {
 	return version, nil
 }
 
+// listModules returns the paths of all modules in the current module graph.
+func (e goEnv) listModules(ctx context.Context) ([]string, error) {
+	// can't use runGo because we need the output
+	cmd := exec.CommandContext(ctx, "go", "list", "-m", "-f", "{{.Path}}", "all")
+	cmd.Env = e.env
+	cmd.Dir = e.workDir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("listing modules: %w", err)
+	}
+
+	var modules []string
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+		if line != "" {
+			modules = append(modules, line)
+		}
+	}
+	return modules, nil
+}
+
 func mapToSlice(m map[string]string) []string {
-	s := []string{}
+	s := make([]string, 0, len(m))
 	for k, v := range m {
-		s = append(s, fmt.Sprintf("%s=%s", k, v))
+		s = append(s, k+"="+v)
 	}
 
 	return s
@@ -323,7 +343,7 @@ func goVersion() (string, bool) {
 		return "", false
 	}
 
-	out, err := exec.Command(cmd, "version").Output() //nolint:gosec
+	out, err := exec.Command(cmd, "version").Output() //nolint:gosec,noctx
 	if err != nil {
 		return "", false
 	}
@@ -342,7 +362,7 @@ func getGoEnv() (map[string]string, error) {
 		return nil, fmt.Errorf("getting go binary %w", err)
 	}
 
-	out, err := exec.Command(cmd, "env", "-json").Output() //nolint:gosec
+	out, err := exec.Command(cmd, "env", "-json").Output() //nolint:gosec,noctx
 	if err != nil {
 		return nil, fmt.Errorf("getting go env %w", err)
 	}
@@ -363,7 +383,7 @@ func hasGit() bool {
 		return false
 	}
 
-	_, err = exec.Command(cmd, "version").Output() //nolint:gosec
+	_, err = exec.Command(cmd, "version").Output() //nolint:gosec,noctx
 
 	return err == nil
 }

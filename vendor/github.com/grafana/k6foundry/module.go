@@ -3,7 +3,6 @@ package k6foundry
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -13,9 +12,37 @@ import (
 
 var (
 	moduleVersionRegexp = regexp.MustCompile(`.+/v(\d+)$`)
+	majorVersionRegexp  = regexp.MustCompile(`^v[0-9]+$`)
 
 	ErrInvalidDependencyFormat = errors.New("invalid dependency format") //nolint:revive
 )
+
+const k6BaseModulePath = "go.k6.io/k6"
+
+// k6ModulePath returns the correct Go module path for k6 given a version and an optional major override.
+// For semver versions (e.g. "v2.0.0"), the major is derived from the version.
+// For non-semver versions ("latest", commit SHAs), majorOverride (e.g. "v2") is used when provided.
+// If neither applies, the base path "go.k6.io/k6" is returned.
+func k6ModulePath(version, majorOverride string) (string, error) {
+	if semver.IsValid(version) {
+		return versionedPath(k6BaseModulePath, version)
+	}
+
+	if majorOverride == "" {
+		return k6BaseModulePath, nil
+	}
+
+	if !majorVersionRegexp.MatchString(majorOverride) {
+		return "", fmt.Errorf("%w: invalid major version %q (expected format: vN)", ErrInvalidDependencyFormat, majorOverride)
+	}
+
+	switch majorOverride {
+	case "v0", "v1":
+		return k6BaseModulePath, nil
+	default:
+		return k6BaseModulePath + "/" + majorOverride, nil
+	}
+}
 
 // Module reference a go module and its version
 type Module struct {
@@ -147,7 +174,7 @@ func versionedPath(path string, version string) (string, error) {
 
 	// if the module path has a major version at the end, check for inconsistencies
 	if moduleVersionRegexp.MatchString(path) {
-		modPathVer := filepath.Base(path)
+		modPathVer := path[strings.LastIndex(path, "/")+1:]
 		if modPathVer != major {
 			return "", fmt.Errorf("invalid version for versioned path %q: %q", path, version)
 		}
@@ -159,6 +186,6 @@ func versionedPath(path string, version string) (string, error) {
 	case "v0", "v1":
 		return path, nil
 	default:
-		return filepath.Join(path, major), nil
+		return path + "/" + major, nil
 	}
 }

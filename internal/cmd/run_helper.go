@@ -27,9 +27,9 @@ func runK6Command(ctx context.Context, opts *buildOptions, k6cmd string, args []
 
 	cmd := exec.CommandContext(ctx, opts.output, k6args...) // #nosec G204
 
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin   //nolint:forbidigo
+	cmd.Stdout = os.Stdout //nolint:forbidigo
+	cmd.Stderr = os.Stderr //nolint:forbidigo
 
 	err = cmd.Start()
 	if err != nil {
@@ -40,7 +40,7 @@ func runK6Command(ctx context.Context, opts *buildOptions, k6cmd string, args []
 }
 
 func buildK6OnTheFly(ctx context.Context, opts *buildOptions) (func(), error) {
-	dir, err := os.MkdirTemp("", "xk6-build-*")
+	dir, err := os.MkdirTemp("", "xk6-build-*") //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func buildK6OnTheFly(ctx context.Context, opts *buildOptions) (func(), error) {
 	}
 
 	return func() {
-		_ = os.RemoveAll(dir)
+		_ = os.RemoveAll(dir) //nolint:forbidigo
 	}, nil
 }
 
@@ -84,7 +84,7 @@ func getModfile() (*modfile.File, string, error) {
 		return nil, "", errNoModfile
 	}
 
-	data, err := os.ReadFile(filepath.Clean(filename))
+	data, err := os.ReadFile(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
 		return nil, "", err
 	}
@@ -98,7 +98,7 @@ func getModfile() (*modfile.File, string, error) {
 }
 
 func findModfile() (string, error) {
-	dir, err := os.Getwd()
+	dir, err := os.Getwd() //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +106,7 @@ func findModfile() (string, error) {
 	for ; len(dir) != 1 || dir[0] != filepath.Separator; dir = filepath.Dir(dir) {
 		filename := filepath.Join(dir, "go.mod")
 
-		info, err := os.Stat(filename)
+		info, err := os.Stat(filename) //nolint:forbidigo
 		if err == nil && !info.IsDir() {
 			return filename, nil
 		}

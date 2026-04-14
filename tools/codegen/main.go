@@ -19,7 +19,7 @@ func readDefinitions() ([]lint.PresetDefinition, []lint.CheckDefinition, error) 
 		checks  []lint.CheckDefinition
 	)
 
-	data, err := os.ReadFile("docs/presets.yml")
+	data, err := os.ReadFile("docs/presets.yml") //nolint:forbidigo
 	if err != nil {
 		return nil, nil, err
 	}
@@ -29,7 +29,7 @@ func readDefinitions() ([]lint.PresetDefinition, []lint.CheckDefinition, error) 
 		return nil, nil, err
 	}
 
-	data, err = os.ReadFile("docs/checks.yml")
+	data, err = os.ReadFile("docs/checks.yml") //nolint:forbidigo
 	if err != nil {
 		return nil, nil, err
 	}
@@ -176,7 +176,7 @@ func generate(data any, tmpl string, filename string) error {
 		return err
 	}
 
-	f, err := os.Create(filepath.Clean(filename))
+	f, err := os.Create(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
 		return err
 	}

@@ -22,10 +22,6 @@ on:
         description: Platforms to be used to run the tests. JSON string array (e.g. ["ubuntu-latest","macos-latest"])
         required: true
         type: string
-      golangci-lint-version:
-        description: The golangci-lint version to use for static analysis.
-        required: true
-        type: string
       goreleaser-version:
         description: The version of GoReleaser to use for builds and releases.
         required: true
@@ -67,7 +63,6 @@ jobs:
         env:
           GO_VERSION: ${{inputs.go-version}}
           GO_VERSIONS: ${{ join(fromJSON(inputs.go-versions),' ') }}
-          GOLANGCI_LINT_VERSION: ${{inputs.golangci-lint-version}}
           GORELEASER_VERSION: ${{inputs.goreleaser-version}}
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
           PLATFORMS: ${{ join(fromJSON(inputs.platforms),' ') }}
@@ -82,7 +77,6 @@ jobs:
           go version for build  | ${GO_VERSION}
           go versions for test  | ${GO_VERSIONS}
           platforms for test    | ${PLATFORMS}
-          golangci-lint version | ${GOLANGCI_LINT_VERSION}
           GoReleaser version    | ${GORELEASER_VERSION}
           k6 versions for test  | ${K6_VERSIONS}
 
@@ -117,7 +111,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    needs: ["security"]
+    needs: ["config"]
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -128,6 +122,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: "${{ inputs.go-version }}"
+          check-latest: true
 
       - name: Check module dependencies
         shell: bash
@@ -136,25 +131,13 @@ jobs:
           test -z "$(go mod tidy && git status go.* --porcelain)"
           go mod verify
 
-      - name: Run minimal golangci-lint ${{ inputs.golangci-lint-version }}
-        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') == ''}}
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
-        with:
-          version: "${{ inputs.golangci-lint-version }}"
-          args: --timeout=30m --no-config
-
-      - name: Run configured golangci-lint ${{ inputs.golangci-lint-version }}
-        if: ${{ hashFiles('.golangci.yml','.golangci.yaml','.golangci.toml','.golangci.json') != ''}}
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
-        with:
-          version: "${{ inputs.golangci-lint-version }}"
-          only-new-issues: true
-          args: --timeout=30m
+      - name: Run golangci-lint with k6 ruleset
+        uses: grafana/k6/.github/actions/lint@master
 
   smoke:
     name: Smoke
     runs-on: ubuntu-latest
-    needs: ["security"]
+    needs: ["config"]
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -165,6 +148,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: "${{ inputs.go-version }}"
+          check-latest: true
 
       - name: Run tests
         run: |
@@ -191,6 +175,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: true
 
       - name: Run tests
         run: |
@@ -218,6 +203,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: ${{ matrix.go-version }}
+          check-latest: true
           cache: false
 
       - name: Setup Bats
@@ -272,6 +258,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
           go-version: "${{inputs.go-version}}"
+          check-latest: true
 
       - name: Test
         run: go test -count 1 -coverprofile=coverage.txt ./...
@@ -294,7 +281,6 @@ jobs:
       fail-fast: false
     env:
       GO_VERSION: ""
-      GOLANGCI_LINT_VERSION: ""
       GORELEASER_VERSION: ""
     steps:
       - name: Checkout code
@@ -307,7 +293,6 @@ jobs:
           cat .devcontainer/devcontainer.json | sed 's/^ *\/\/.*//' | jq -r '
             {
               GO_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["version"],
-              GOLANGCI_LINT_VERSION: .features["ghcr.io/devcontainers/features/go:1"]["golangciLintVersion"],
               GORELEASER_VERSION: .features["ghcr.io/guiyomh/features/goreleaser:0"]["version"]
             } | to_entries | map("\(.key)=\(.value|tostring)")|.[]' >> "$GITHUB_ENV"
 
@@ -316,18 +301,8 @@ jobs:
         env:
           INPUT_GO_VERSION: ${{ inputs.go-version }}
         run: |
-          if [ ! "${{env.GO_VERSION}}" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
+          if [ ! "$(echo ${{env.GO_VERSION}}|sed -e 's/\.x//g')" == "$(echo ${INPUT_GO_VERSION}|sed -e 's/\.x//g')" ]; then
             echo "::error::Mismatched go versions in devcontainers.json and workflow input"
-            exit 1
-          fi
-
-      - name: Check golangci-lint version ${{inputs.golangci-lint-version}}
-        shell: bash
-        env:
-          INPUT_GOLANGCI_LINT_VERSION: ${{ inputs.golangci-lint-version }}
-        run: |
-          if [ ! "${{env.GOLANGCI_LINT_VERSION}}" == "$(echo ${INPUT_GOLANGCI_LINT_VERSION}|sed -e 's/v//g')" ]; then
-            echo "::error::Mismatched golangci-lint versions in devcontainers.json and workflow input"
             exit 1
           fi
 

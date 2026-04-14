@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -18,7 +19,7 @@ import (
 func getModulePath(dir string) (string, error) {
 	filename := filepath.Join(dir, "go.mod")
 
-	content, err := os.ReadFile(filepath.Clean(filename))
+	content, err := os.ReadFile(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +93,7 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 		return "", err
 	}
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
@@ -100,7 +101,7 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 	defer res.Body.Close() //nolint:errcheck
 
 	if res.StatusCode != http.StatusOK {
-		return "", os.ErrNotExist
+		return "", fs.ErrNotExist
 	}
 
 	var body map[string]any

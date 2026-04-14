@@ -96,7 +96,7 @@ func checkout(repo *git.Repository, name plumbing.ReferenceName) error {
 func cleanup(dir string) error {
 	special := []string{".git", "CODEOWNERS", "renovate.json"}
 	for _, s := range special {
-		err := os.RemoveAll(filepath.Join(dir, s))
+		err := os.RemoveAll(filepath.Join(dir, s)) //nolint:forbidigo
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func customize(dir string, replacer *strings.Replacer) error {
 	special := []string{".git", "LICENSE"}
 
 	// Use os.Root to prevent path traversal vulnerabilities
-	root, err := os.OpenRoot(dir)
+	root, err := os.OpenRoot(dir) //nolint:forbidigo
 	if err != nil {
 		return err
 	}

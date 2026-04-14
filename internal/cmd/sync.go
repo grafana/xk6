@@ -40,7 +40,7 @@ func syncCmd() *cobra.Command {
 			opts.quiet = cmd.Flags().Lookup("quiet").Changed
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return syncRunE(cmd.Context(), opts)
+			return syncRunE(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), opts)
 		},
 		DisableAutoGenTag: true,
 	}
@@ -67,10 +67,12 @@ func syncCmd() *cobra.Command {
 	return cmd
 }
 
-func syncRunE(ctx context.Context, opts *syncOptions) (problem error) {
+func syncRunE(ctx context.Context, stdout, stderr io.Writer, opts *syncOptions) (problem error) {
 	result, err := sync.Sync(ctx, ".", &sync.Options{
 		DryRun:    opts.dryRun,
 		K6Version: opts.k6version,
+		Stdout:    stdout,
+		Stderr:    stderr,
 	})
 	if err != nil {
 		return err
@@ -79,7 +81,7 @@ func syncRunE(ctx context.Context, opts *syncOptions) (problem error) {
 	output := colorable.NewColorableStdout()
 
 	if len(opts.out) > 0 {
-		file, err := os.Create(opts.out)
+		file, err := os.Create(opts.out) //nolint:forbidigo
 		if err != nil {
 			return err
 		}

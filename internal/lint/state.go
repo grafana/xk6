@@ -68,7 +68,7 @@ func (s *state) moduleFile() (*modfile.File, error) {
 
 	filename := filepath.Join(s.dir, "go.mod")
 
-	data, err := os.ReadFile(filepath.Clean(filename))
+	data, err := os.ReadFile(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s *state) isJS(ctx context.Context) (bool, error) {
 
 func (s *state) cleanup() {
 	if len(s._exePathCached) > 0 {
-		_ = os.Remove(s._exePathCached)
+		_ = os.Remove(s._exePathCached) //nolint:forbidigo
 
 		s._exePathCached = ""
 	}

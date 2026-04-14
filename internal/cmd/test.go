@@ -64,7 +64,7 @@ func testCmd() *cobra.Command {
 			err := runTestE(cmd.Context(), opts, args)
 			if errors.Is(err, errTestFailed) {
 				slog.Error(errTestFailed.Error())
-				os.Exit(exitCodeTestFailed)
+				os.Exit(exitCodeTestFailed) //nolint:forbidigo
 			}
 
 			return err
@@ -94,7 +94,7 @@ func runTestE(ctx context.Context, opts *testOptions, args []string) (result err
 	output := colorable.NewColorableStdout()
 
 	if len(opts.out) > 0 {
-		file, err := os.Create(opts.out)
+		file, err := os.Create(opts.out) //nolint:forbidigo
 		if err != nil {
 			return err
 		}

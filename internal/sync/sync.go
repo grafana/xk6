@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
@@ -22,7 +23,6 @@ const (
 	defaultGoProxy = "https://proxy.golang.org"
 	k6BaseModule   = "go.k6.io/k6"
 	modFile        = "go.mod"
-	latest         = "latest"
 )
 
 var errHTTP = errors.New("HTTP error")
@@ -109,11 +109,6 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 	return result, nil
 }
 
-// GetLatestK6Version retrieves the latest version of k6 (v1) from the Go proxy.
-func GetLatestK6Version(ctx context.Context) (string, error) {
-	return getLatestVersion(ctx, k6BaseModule)
-}
-
 // GetLatestK6VersionFor retrieves the latest version of the given k6 module path from the Go proxy.
 // Use this for k6 major versions beyond v1 (e.g. "go.k6.io/k6/v2").
 func GetLatestK6VersionFor(ctx context.Context, modulePath string) (string, error) {
@@ -176,6 +171,10 @@ func getVersionInfo(ctx context.Context, pkg, version string) (*versionInfo, err
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %s, url: /%s/@v/%s.info", errHTTP, resp.Status, pkg, version)
+	}
 
 	var info versionInfo
 
@@ -372,7 +371,12 @@ func diffRequires(extModfile, k6Modfile *modfile.File) []*Change {
 // and falls back to opts.K6Version if set, or the overall latest version otherwise.
 func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modulePath, version string, err error) {
 	if len(opts.K6Version) > 0 {
-		return k6BaseModule, opts.K6Version, nil
+		path, err := ResolveK6ModuleForVersion(ctx, opts.K6Version)
+		if err != nil {
+			return "", "", err
+		}
+
+		return path, opts.K6Version, nil
 	}
 
 	if path, ver, found := findK6Require(mf); found {
@@ -396,26 +400,6 @@ func findK6Require(mf *modfile.File) (path, version string, found bool) {
 	return "", "", false
 }
 
-func getK6Version(ctx context.Context, opts *Options, mf *modfile.File) (string, error) {
-	k6Version := opts.K6Version
-	if len(k6Version) == 0 {
-		var found bool
-
-		_, k6Version, found = findK6Require(mf)
-		if !found {
-			slog.Info("k6 not found in go.mod, using latest version")
-
-			k6Version = latest
-		}
-	}
-
-	if k6Version == latest {
-		return getLatestVersion(ctx, k6BaseModule)
-	}
-
-	return k6Version, nil
-}
-
 func loadModfile(dir string) (*modfile.File, error) {
 	filename := filepath.Join(dir, modFile)
 
@@ -430,16 +414,6 @@ func loadModfile(dir string) (*modfile.File, error) {
 	}
 
 	return file, nil
-}
-
-func findRequire(mf *modfile.File, module string) (string, bool) {
-	for _, r := range mf.Require {
-		if r.Mod.Path == module {
-			return r.Mod.Version, true
-		}
-	}
-
-	return "", false
 }
 
 func goproxy() string {
@@ -460,6 +434,10 @@ func getModule(ctx context.Context, pkg string, version string) (*modfile.File, 
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %s, url: /%s/@v/%s.mod", errHTTP, resp.Status, pkg, version)
+	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -484,6 +462,10 @@ func getLatestVersion(ctx context.Context, pkg string) (string, error) {
 		_ = resp.Body.Close()
 	}()
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%w: %s, url: /%s/@latest", errHTTP, resp.Status, pkg)
+	}
+
 	latest := struct {
 		Version string `json:"version"`
 	}{}
@@ -496,29 +478,58 @@ func getLatestVersion(ctx context.Context, pkg string) (string, error) {
 	return latest.Version, nil
 }
 
+// goProxyGet fetches a URL from the Go module proxy and returns the response.
+// It retries on network errors and 5xx responses (up to 3 attempts, with 1s/2s backoff).
+// Responses with non-5xx status codes (including 404) are returned as-is; callers
+// are responsible for checking resp.StatusCode and closing resp.Body.
 func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 	fullURL := goproxy() + url
 
 	slog.Debug("Go proxy request", "url", fullURL)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
-	if err != nil {
-		return nil, err
+	const maxAttempts = 3
+
+	var lastErr error
+
+	for attempt := range maxAttempts {
+		if attempt > 0 {
+			delay := time.Duration(1<<(attempt-1)) * time.Second // 1s, 2s
+			t := time.NewTimer(delay)
+			select {
+			case <-t.C:
+			case <-ctx.Done():
+				t.Stop()
+				return nil, ctx.Err()
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+		if err != nil {
+			return nil, err // malformed request, no point retrying
+		}
+
+		resp, err := http.DefaultClient.Do(req) //nolint:gosec
+		if err != nil {
+			slog.Debug("Go proxy request failed", "url", fullURL, "attempt", attempt+1, "error", err)
+			lastErr = err
+
+			continue
+		}
+
+		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode)
+
+		// Retry on server-side errors; return everything else to the caller for status checking.
+		if resp.StatusCode >= 500 {
+			slog.Debug("Go proxy server error, will retry", "url", fullURL, "attempt", attempt+1, "status", resp.StatusCode)
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+			lastErr = fmt.Errorf("%w: %s, url: %s", errHTTP, resp.Status, url)
+
+			continue
+		}
+
+		return resp, nil
 	}
 
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec
-	if err != nil {
-		slog.Debug("Go proxy request failed", "url", fullURL, "error", err)
-
-		return nil, err
-	}
-
-	//nolint:gosec // URL is constructed from GOPROXY env var and internal paths, not user input
-	slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %s, url: %s", errHTTP, resp.Status, url)
-	}
-
-	return resp, nil
+	return nil, lastErr
 }

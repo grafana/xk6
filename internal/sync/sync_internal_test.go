@@ -513,7 +513,7 @@ func TestProbeK6ModuleForVersion_V2SHABaseNotFound(t *testing.T) {
 func TestGoProxyGet_RetriesOn5xx(t *testing.T) {
 	var attempts atomic.Int32
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		n := attempts.Add(1)
 		if n < 3 {
 			http.Error(w, "server error", http.StatusInternalServerError)
@@ -542,14 +542,18 @@ func TestGoProxyGet_RetriesOn5xx(t *testing.T) {
 func TestGoProxyGet_ExhaustsRetries(t *testing.T) {
 	var attempts atomic.Int32
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		attempts.Add(1)
 		http.Error(w, "server error", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	_, err := goProxyGet(t.Context(), "/go.k6.io/k6/@latest")
+	resp, err := goProxyGet(t.Context(), "/go.k6.io/k6/@latest")
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+
 	if err == nil {
 		t.Fatal("expected error after exhausting retries")
 	}

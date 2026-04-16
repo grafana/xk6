@@ -516,11 +516,12 @@ func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 			continue
 		}
 
-		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode)
+		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode) //nolint:gosec
 
 		// Retry on server-side errors; return everything else to the caller for status checking.
 		if resp.StatusCode >= 500 {
-			slog.Debug("Go proxy server error, will retry", "url", fullURL, "attempt", attempt+1, "status", resp.StatusCode)
+			slog.Debug("Go proxy server error, will retry", //nolint:gosec
+				"url", fullURL, "attempt", attempt+1, "status", resp.StatusCode)
 			_, _ = io.Copy(io.Discard, resp.Body)
 			_ = resp.Body.Close()
 			lastErr = fmt.Errorf("%w: %s, url: %s", errHTTP, resp.Status, url)

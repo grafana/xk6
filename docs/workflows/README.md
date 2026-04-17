@@ -23,9 +23,8 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 **inputs**
 
 ```yaml file=../../.github/workflows/validate.yml region=inputs
-      go-version: "1.25.x"
-      go-versions: '["1.25.x"]'
-      golangci-lint-version: "v2.8.0"
+      go-version: "1.26.x"
+      go-versions: '["1.25.x","1.26.x"]'
       goreleaser-version: "2.13.3"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
       k6-versions: '["v1.2.3","v1.0.0"]'
@@ -48,7 +47,7 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: "1.25.5"
+      go-version: "1.25.x"
       goreleaser-version: "2.13.3"
       k6-versions: '["v1.2.3","v1.0.0"]'
       bats: ./.github/release.bats
@@ -116,10 +115,6 @@ The **Tooling Validate** ([`tooling-validate.yml`](../../.github/workflows/tooli
         type: string
       platforms:
         description: Platforms to be used to run the tests. JSON string array (e.g. ["ubuntu-latest","macos-latest"])
-        required: true
-        type: string
-      golangci-lint-version:
-        description: The golangci-lint version to use for static analysis.
         required: true
         type: string
       goreleaser-version:

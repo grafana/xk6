@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/k6foundry"
 	"github.com/spf13/pflag"
 	"github.com/szkiba/efa"
+	"go.k6.io/xk6/internal/sync"
 )
 
 type buildOptions struct {
@@ -166,7 +167,12 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 		Logger:      logger,
 	}
 
-	if opts.k6repo != defaultK6Repo { // only set if different from default: k6foundry workaround
+	// If k6repo is a versioned k6 module path (e.g. go.k6.io/k6/v2), extract the major
+	// version so k6foundry can resolve the correct module path for non-semver versions
+	// such as "latest". For actual forks (e.g. github.com/myfork/k6), set K6Repo instead.
+	if strings.HasPrefix(opts.k6repo, defaultK6Repo+"/v") {
+		fopts.K6MajorVersion = opts.k6repo[len(defaultK6Repo+"/"):]
+	} else if opts.k6repo != defaultK6Repo {
 		fopts.K6Repo = opts.k6repo
 	}
 
@@ -178,7 +184,23 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 	return k6foundry.NewNativeFoundry(ctx, fopts)
 }
 
+// findK6ModVersion looks up the k6 module (any major version) in the given ModVersions map.
+// It returns the module path, version, and whether it was found.
+func findK6ModVersion(modVersions map[string]string) (path, version string, found bool) {
+	for k, v := range modVersions {
+		if k == defaultK6Repo || strings.HasPrefix(k, defaultK6Repo+"/v") {
+			return k, v, true
+		}
+	}
+
+	return "", "", false
+}
+
 func buildK6(ctx context.Context, opts *buildOptions) (*k6foundry.BuildInfo, error) {
+	// When using the default k6 repo, resolve the correct module path so that
+	// v2+ releases are handled without requiring --k6-repo.
+	resolveK6Repo(ctx, opts)
+
 	foundry, err := newFoundry(ctx, opts)
 	if err != nil {
 		return nil, err
@@ -258,6 +280,62 @@ func (m *modules) Set(val string) error {
 	m.modules = append(m.modules, mod)
 
 	return nil
+}
+
+// resolveK6Repo sets opts.k6repo (and opts.k6version when appropriate) to the
+// correct k6 module path when the user has not overridden --k6-repo. This
+// ensures that v2+ releases are used without requiring an explicit flag.
+func resolveK6Repo(ctx context.Context, opts *buildOptions) {
+	if opts.k6repo != defaultK6Repo {
+		slog.Debug("Using explicit k6 repo, skipping auto-resolution", "repo", opts.k6repo)
+		return
+	}
+
+	if opts.k6version == defaultK6Version {
+		slog.Debug("Resolving k6 module from extension dependencies (version: latest)")
+
+		// No explicit version: inspect extension dependencies first, then
+		// fall back to the overall latest across all major versions.
+		path, version, err := sync.ResolveK6ModuleForExtensions(ctx, extensionModules(opts))
+		if err != nil {
+			slog.Warn("Failed to resolve k6 module from extensions, using default", "error", err)
+			return
+		}
+
+		slog.Debug("Resolved k6 module", "repo", path, "version", version)
+
+		opts.k6repo = path
+		opts.k6version = version
+
+		return
+	}
+
+	slog.Debug("Resolving k6 module path for explicit version", "version", opts.k6version)
+
+	// Explicit version (semver, SHA, branch name): detect the module path from
+	// the version itself so that e.g. a v2 SHA resolves to go.k6.io/k6/v2.
+	path, err := sync.ResolveK6ModuleForVersion(ctx, opts.k6version)
+	if err != nil {
+		slog.Warn("Failed to resolve k6 module for version, using default", "error", err)
+		return
+	}
+
+	slog.Debug("Resolved k6 module path", "repo", path, "version", opts.k6version)
+
+	opts.k6repo = path
+}
+
+func extensionModules(opts *buildOptions) []sync.ExtensionModule {
+	exts := make([]sync.ExtensionModule, 0, len(opts.extensions.modules))
+	for _, m := range opts.extensions.modules {
+		exts = append(exts, sync.ExtensionModule{
+			Path:      m.Path,
+			Version:   m.Version,
+			LocalPath: m.ReplacePath,
+		})
+	}
+
+	return exts
 }
 
 func (m *modules) Type() string {

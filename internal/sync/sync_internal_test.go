@@ -251,18 +251,15 @@ func TestResolveK6Module_ExplicitV2Version(t *testing.T) {
 	}
 }
 
-func TestResolveK6Module_ExplicitV2SHA(t *testing.T) {
+func TestResolveK6Module_ExplicitV1SHA(t *testing.T) {
+	// A SHA from the v1 module: base .info succeeds → return baseModule directly.
 	const sha = "def9876543210"
-	const pseudo = "v1.7.1-0.20260401000000-def9876543210"
-
-	k6v2 := k6BaseModule + "/v2"
+	const pseudo = "v0.55.1-0.20260401000000-def9876543210"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case fmt.Sprintf("/%s/@v/%s.info", k6BaseModule, sha):
 			_, _ = fmt.Fprint(w, modInfo(pseudo))
-		case fmt.Sprintf("/%s/@v/%s.mod", k6BaseModule, pseudo):
-			_, _ = fmt.Fprint(w, modFileBody(k6v2))
 		default:
 			http.NotFound(w, r)
 		}
@@ -278,8 +275,8 @@ func TestResolveK6Module_ExplicitV2SHA(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if path != k6v2 {
-		t.Errorf("expected path %s, got %s", k6v2, path)
+	if path != k6BaseModule {
+		t.Errorf("expected path %s, got %s", k6BaseModule, path)
 	}
 
 	if version != sha {
@@ -417,11 +414,6 @@ func modInfo(version string) string {
 	return fmt.Sprintf(`{"Version":%q,"Time":"2026-04-01T00:00:00Z"}`, version)
 }
 
-// modFile returns a minimal go.mod body declaring the given module path.
-func modFileBody(modulePath string) string {
-	return fmt.Sprintf("module %s\n\ngo 1.21\n", modulePath)
-}
-
 func TestProbeK6ModuleForVersion_V1SHA(t *testing.T) {
 	const sha = "abc1234567890"
 	const pseudo = "v0.55.1-0.20260401000000-abc1234567890"
@@ -430,9 +422,8 @@ func TestProbeK6ModuleForVersion_V1SHA(t *testing.T) {
 		switch r.URL.Path {
 		case fmt.Sprintf("/%s/@v/%s.info", k6BaseModule, sha):
 			_, _ = fmt.Fprint(w, modInfo(pseudo))
-		case fmt.Sprintf("/%s/@v/%s.mod", k6BaseModule, pseudo):
-			_, _ = fmt.Fprint(w, modFileBody(k6BaseModule))
 		default:
+			// No .mod request should occur: base .info success → return baseModule directly.
 			http.NotFound(w, r)
 		}
 	}))
@@ -449,21 +440,28 @@ func TestProbeK6ModuleForVersion_V1SHA(t *testing.T) {
 	}
 }
 
-func TestProbeK6ModuleForVersion_V2SHA(t *testing.T) {
-	// The proxy serves the SHA under the base module but the go.mod inside
-	// declares go.k6.io/k6/v2 — this is the authoritative path.
-	const sha = "def9876543210"
-	const pseudo = "v1.7.1-0.20260401000000-def9876543210"
+func TestProbeK6ModuleForVersion_V2SHABaseNotFound(t *testing.T) {
+	// The base module returns 404 for the SHA; v2 has it.
+	// Short-circuit: once .info succeeds for a versioned path (/v2), we return
+	// that path directly without fetching .mod.  The mock fails the test if
+	// .mod is requested to prove the short-circuit is active.
+	const sha = "aabbccddeeff"
+	const pseudo = "v2.0.1-0.20260401000000-aabbccddeeff"
 
 	k6v2 := k6BaseModule + "/v2"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case fmt.Sprintf("/%s/@v/%s.info", k6BaseModule, sha):
+		case fmt.Sprintf("/%s/@v/%s.info", k6v2, sha):
 			_, _ = fmt.Fprint(w, modInfo(pseudo))
-		case fmt.Sprintf("/%s/@v/%s.mod", k6BaseModule, pseudo):
-			_, _ = fmt.Fprint(w, modFileBody(k6v2))
 		default:
+			// base .info and anything else (including v2 .mod) should be 404.
+			// Using 404 (not 500) ensures the retry logic is not triggered for
+			// the base module probe; 500 would cause 3 retries and a 3s delay.
+			//
+			// .mod for v2 should NOT be fetched due to the short-circuit, so any
+			// test that receives a .mod request will see a 404 and surface the bug
+			// as an unexpected HTTP error in the caller.
 			http.NotFound(w, r)
 		}
 	}))
@@ -480,20 +478,50 @@ func TestProbeK6ModuleForVersion_V2SHA(t *testing.T) {
 	}
 }
 
-func TestProbeK6ModuleForVersion_V2SHABaseNotFound(t *testing.T) {
-	// The base module returns 404 for the SHA; only v2 has it.
-	const sha = "aabbccddeeff"
-	const pseudo = "v2.0.1-0.20260401000000-aabbccddeeff"
+func TestProbeModuleVersionForBase_LokiV3RealProxy(t *testing.T) {
+	t.Parallel()
+
+	// Real-world case: the base module (github.com/grafana/loki) returns 404 for
+	// SHA ac49d8321e968014b983053a3f3db3fcdba36f34; the fallback loop finds it at v3.
+	const (
+		base = "github.com/grafana/loki"
+		sha  = "ac49d8321e968014b983053a3f3db3fcdba36f34"
+	)
+
+	path, err := probeModuleVersionForBase(t.Context(), base, sha)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if want := base + "/v3"; path != want {
+		t.Errorf("expected %s, got %s", want, path)
+	}
+}
+
+func TestProbeK6ModuleForVersion_V3SHASkipsV2(t *testing.T) {
+	// v2 exists (/@latest returns a version) but does not contain the SHA;
+	// the SHA is in v3.  The loop must continue past v2's 404 to find v3.
+	//
+	// Request sequence:
+	//   base/.info  → 404
+	//   v2/.info    → 404
+	//   v2/@latest  → 200 (v2 exists → consecutiveAbsent stays 0, keep probing)
+	//   v3/.info    → 200 (found; short-circuit, no .mod)
+	const sha = "ccddee112233"
+	const v3pseudo = "v3.1.0-0.20260401000000-ccddee112233"
 
 	k6v2 := k6BaseModule + "/v2"
+	k6v3 := k6BaseModule + "/v3"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case fmt.Sprintf("/%s/@v/%s.info", k6v2, sha):
-			_, _ = fmt.Fprint(w, modInfo(pseudo))
-		case fmt.Sprintf("/%s/@v/%s.mod", k6v2, pseudo):
-			_, _ = fmt.Fprint(w, modFileBody(k6v2))
+		case fmt.Sprintf("/%s/@latest", k6v2):
+			_, _ = fmt.Fprintf(w, `{"version":"v2.0.0"}`)
+		case fmt.Sprintf("/%s/@v/%s.info", k6v3, sha):
+			_, _ = fmt.Fprint(w, modInfo(v3pseudo))
 		default:
+			// base .info, v2 .info, and anything else → 404.
+			// .mod for v3 should NOT be requested (short-circuit).
 			http.NotFound(w, r)
 		}
 	}))
@@ -505,8 +533,63 @@ func TestProbeK6ModuleForVersion_V2SHABaseNotFound(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if path != k6v2 {
-		t.Errorf("expected %s, got %s", k6v2, path)
+	if path != k6v3 {
+		t.Errorf("expected %s, got %s", k6v3, path)
+	}
+}
+
+func TestProbeK6ModuleForVersion_V3SHAAbsentV2(t *testing.T) {
+	// v2 does not exist at the proxy (/@latest → 404) — the module went v1 → v3
+	// directly, as loki does.  The loop must tolerate one absent major and keep
+	// probing: consecutiveAbsent reaches 1 after v2, then v3 is found.
+	//
+	// Request sequence:
+	//   base/.info  → 404
+	//   v2/.info    → 404
+	//   v2/@latest  → 404 (v2 absent → consecutiveAbsent=1, < maxConsecutiveAbsent=2)
+	//   v3/.info    → 200 (found; short-circuit, no .mod)
+	const sha = "aabb11223344"
+	const v3pseudo = "v3.2.0-0.20260401000000-aabb11223344"
+
+	k6v3 := k6BaseModule + "/v3"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case fmt.Sprintf("/%s/@v/%s.info", k6v3, sha):
+			_, _ = fmt.Fprint(w, modInfo(v3pseudo))
+		default:
+			// base .info, v2 .info, v2 @latest → 404 (v2 does not exist).
+			// .mod for v3 should NOT be requested (short-circuit).
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("GOPROXY", srv.URL)
+
+	path, err := probeK6ModuleForVersion(t.Context(), sha)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if path != k6v3 {
+		t.Errorf("expected %s, got %s", k6v3, path)
+	}
+}
+
+func TestProbeK6ModuleForVersion_UnknownSHA(t *testing.T) {
+	// The SHA does not exist anywhere; the proxy returns 404 for every probe.
+	// The loop must terminate after maxConsecutiveAbsent major versions are not found.
+	const sha = "000000000000000000000000000000000000"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.NotFound(w, nil)
+	}))
+	defer srv.Close()
+	t.Setenv("GOPROXY", srv.URL)
+
+	_, err := probeK6ModuleForVersion(t.Context(), sha)
+	if err == nil {
+		t.Fatal("expected error for unknown SHA, got nil")
 	}
 }
 
@@ -605,14 +688,15 @@ func TestGetLatestVersion_404(t *testing.T) {
 	}
 }
 
-func TestGetVersionInfo_404(t *testing.T) {
+func TestProbeVersionInfo_PlainNotFound(t *testing.T) {
+	// A 404 response → errHTTP.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}))
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	_, err := getVersionInfo(t.Context(), "go.k6.io/k6/v2", "abc1234")
+	_, err := probeVersionInfo(t.Context(), "go.k6.io/k6/v2", "abc1234")
 	if err == nil {
 		t.Fatal("expected error on 404, got nil")
 	}

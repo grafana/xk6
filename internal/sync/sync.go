@@ -158,14 +158,12 @@ type versionInfo struct {
 	Time    string `json:"Time"`    // RFC 3339 commit timestamp
 }
 
-// getVersionInfo resolves an arbitrary version reference (SHA, branch name,
-// semver tag, or pseudo-version) to a canonical version via the proxy's
-// /@v/<version>.info endpoint. The .info endpoint is the only proxy endpoint
-// that accepts non-canonical version strings such as raw commit SHAs.
-func getVersionInfo(ctx context.Context, pkg, version string) (*versionInfo, error) {
+// probeVersionInfo calls /@v/<version>.info for pkg.
+// On 200 it returns the canonical version string. Any non-200 response is an error.
+func probeVersionInfo(ctx context.Context, pkg, version string) (string, error) {
 	resp, err := goProxyGet(ctx, fmt.Sprintf("/%s/@v/%s.info", pkg, version))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	defer func() {
@@ -173,81 +171,86 @@ func getVersionInfo(ctx context.Context, pkg, version string) (*versionInfo, err
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %s, url: /%s/@v/%s.info", errHTTP, resp.Status, pkg, version)
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return "", fmt.Errorf("%w: %s, url: /%s/@v/%s.info", errHTTP, resp.Status, pkg, version)
 	}
 
 	var info versionInfo
-
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &info, nil
+	return info.Version, nil
 }
 
 // probeK6ModuleForVersion asks the Go proxy which k6 major-version module
 // contains the given version string (SHA, branch name, or pseudo-version).
-//
-// Per the Go module proxy protocol, only the .info endpoint accepts arbitrary
-// version references such as commit SHAs. The .mod endpoint requires a
-// canonical version (semver tag or pseudo-version). So we do a two-step
-// lookup: .info first to resolve the canonical version, then .mod to read the
-// module declaration and determine the correct major-version module path.
-//
-// The base module (go.k6.io/k6) is tried first because the proxy can serve
-// a go.mod for a v2 commit under the v1 module path, and the module
-// declaration inside that go.mod is authoritative. If the base module returns
-// a 404 for the given reference, v2, v3, … are probed in order.
+// It delegates to probeModuleVersionForBase using the k6 base module path.
 func probeK6ModuleForVersion(ctx context.Context, version string) (string, error) {
-	slog.Debug("Non-canonical version, resolving via .info then .mod", "version", version)
-
-	if path, ok := probeModuleForVersion(ctx, k6BaseModule, version); ok {
-		return path, nil
-	}
-
-	slog.Debug("Base module probe failed, trying major versions")
-
-	for major := 2; ; major++ {
-		modPath := fmt.Sprintf("%s/v%d", k6BaseModule, major)
-
-		path, ok := probeModuleForVersion(ctx, modPath, version)
-		if !ok {
-			// Probe failed; subsequent major versions won't have this reference either.
-			break
-		}
-
-		// SA4004: intentional — if v2 has the reference we return; if not we break.
-		// Higher majors share the same VCS history so won't have it either.
-		return path, nil //nolint:staticcheck
-	}
-
-	return "", fmt.Errorf("could not find k6 major version for version %q", version)
+	return probeModuleVersionForBase(ctx, k6BaseModule, version)
 }
 
-// probeModuleForVersion resolves version against modPath using .info then .mod.
-// Returns the declared module path and true on success, or "", false on any error.
+// probeModuleVersionForBase asks the Go proxy which major-version of the given
+// base module contains the version string (SHA, branch name, or pseudo-version).
+// It first probes the base module, then iterates v2, v3, … until found or until
+// two consecutive major versions do not exist in the registry.
+func probeModuleVersionForBase(ctx context.Context, baseModule, version string) (string, error) {
+	slog.Debug("Non-canonical version, resolving via .info", "version", version)
+
+	_, baseErr := probeVersionInfo(ctx, baseModule, version)
+	if baseErr == nil {
+		// The proxy enforces that module path in go.mod matches the requested path,
+		// so a 200 here guarantees this commit belongs to baseModule.
+		return baseModule, nil
+	}
+
+	slog.Debug("Base module .info probe failed, falling through to loop", "base", baseModule, "error", baseErr)
+
+	// Fallback loop: iterate v2, v3, … when the base module does not contain the version.
+	slog.Debug("Iterating major versions", "base", baseModule)
+
+	const maxConsecutiveAbsent = 2
+
+	consecutiveAbsent := 0
+
+	for major := 2; ; major++ {
+		modPath := fmt.Sprintf("%s/v%d", baseModule, major)
+
+		if path, ok := probeModuleForVersion(ctx, modPath, version); ok {
+			return path, nil
+		}
+
+		if _, err := getLatestVersion(ctx, modPath); err != nil {
+			consecutiveAbsent++
+			slog.Debug("Major version does not exist", "module", modPath, "consecutiveAbsent", consecutiveAbsent)
+
+			if consecutiveAbsent >= maxConsecutiveAbsent {
+				slog.Debug("Stopping probe after consecutive absent majors", "base", baseModule)
+				break
+			}
+		} else {
+			consecutiveAbsent = 0
+			slog.Debug("Major version exists but does not contain SHA, trying next", "module", modPath)
+		}
+	}
+
+	return "", fmt.Errorf("could not find major version module for %q at version %q", baseModule, version)
+}
+
+// probeModuleForVersion is used by the fallback loop in probeModuleVersionForBase.
+// Returns the module path and true if the version is found under modPath, false otherwise.
 func probeModuleForVersion(ctx context.Context, modPath, version string) (string, bool) {
 	slog.Debug("Probing module for version", "module", modPath, "version", version)
 
-	info, err := getVersionInfo(ctx, modPath, version)
+	canonical, err := probeVersionInfo(ctx, modPath, version)
 	if err != nil {
 		slog.Debug("Module .info probe failed", "module", modPath, "version", version, "error", err)
-
 		return "", false
 	}
 
-	slog.Debug("Resolved canonical version via .info", "module", modPath, "canonical", info.Version)
+	slog.Debug("Resolved canonical version via .info", "module", modPath, "canonical", canonical)
 
-	mf, err := getModule(ctx, modPath, info.Version)
-	if err != nil || mf.Module == nil {
-		slog.Debug("Module .mod fetch failed", "module", modPath, "version", info.Version, "error", err)
-
-		return "", false
-	}
-
-	slog.Debug("Resolved k6 module path from go.mod declaration", "declared", mf.Module.Mod.Path)
-
-	return mf.Module.Mod.Path, true
+	return modPath, true
 }
 
 // ExtensionModule describes a k6 extension for the purpose of k6 module resolution.

@@ -71,8 +71,9 @@ func buildRunE(ctx context.Context, stdout io.Writer, opts *buildOptions) error 
 		slog.Warn(w.Message)
 	}
 
-	k6modPath, k6ver, k6found := findK6ModVersion(info.ModVersions)
-	if k6found {
+	k6modPath := info.K6ModPath
+	k6ver := info.ModVersions[k6modPath]
+	if k6modPath != "" {
 		delete(info.ModVersions, k6modPath)
 		slog.Info("added", "module", k6modPath, "version", k6ver)
 	}
@@ -81,7 +82,7 @@ func buildRunE(ctx context.Context, stdout io.Writer, opts *buildOptions) error 
 		slog.Info("added", "module", name, "version", version)
 	}
 
-	if k6found {
+	if k6modPath != "" {
 		slog.Info("A new binary has been built based on k6", "version", k6ver)
 	}
 

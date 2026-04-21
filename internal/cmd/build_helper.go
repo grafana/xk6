@@ -187,18 +187,6 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 	return k6foundry.NewNativeFoundry(ctx, fopts)
 }
 
-// findK6ModVersion looks up the k6 module (any major version) in the given ModVersions map.
-// It returns the module path, version, and whether it was found.
-func findK6ModVersion(modVersions map[string]string) (path, version string, found bool) {
-	for k, v := range modVersions {
-		if k == defaultK6Repo || strings.HasPrefix(k, defaultK6Repo+"/v") {
-			return k, v, true
-		}
-	}
-
-	return "", "", false
-}
-
 func buildK6(ctx context.Context, opts *buildOptions) (*k6foundry.BuildInfo, error) {
 	// When using the default k6 repo, resolve the correct module path so that
 	// v2+ releases are handled without requiring --k6-repo.

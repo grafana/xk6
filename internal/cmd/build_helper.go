@@ -65,6 +65,9 @@ var nonGoEnvToCopy = []string{ //nolint:gochecknoglobals
 	"GIT_SSH",             // to pass custom ssh options (legacy)
 	"GH_TOKEN",            // GitHub token for GitHub CLI as credential helper
 	"GITHUB_TOKEN",        // GitHub token for GitHub CLI as credential helper
+	"TMPDIR",              // required by git for temporary files
+	"TEMP",                // required by git for temporary files on Windows
+	"TMP",                 // required by git for temporary files on Windows
 }
 
 func defaultK6Output() string {

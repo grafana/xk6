@@ -67,21 +67,26 @@ func buildRunE(ctx context.Context, stdout io.Writer, opts *buildOptions) error 
 
 	slog.Info("Successful build", "platform", info.Platform)
 
-	k6ver, ok := info.ModVersions[opts.k6repo]
-	if ok {
-		delete(info.ModVersions, opts.k6repo)
-		slog.Info("added", "module", opts.k6repo, "version", k6ver)
+	for _, w := range info.Warnings {
+		slog.Warn(w.Message)
+	}
+
+	k6modPath := info.K6ModPath
+	k6ver := info.ModVersions[k6modPath]
+	if k6modPath != "" {
+		delete(info.ModVersions, k6modPath)
+		slog.Info("added", "module", k6modPath, "version", k6ver)
 	}
 
 	for name, version := range info.ModVersions {
 		slog.Info("added", "module", name, "version", version)
 	}
 
-	if ok {
+	if k6modPath != "" {
 		slog.Info("A new binary has been built based on k6", "version", k6ver)
 	}
 
-	k6latest, err := sync.GetLatestK6Version(ctx)
+	k6latest, err := sync.GetLatestK6VersionFor(ctx, k6modPath)
 	if err == nil && k6ver != k6latest {
 		slog.Warn("Newer k6 version available", "actual", k6ver, "latest", k6latest)
 	} else if err != nil {

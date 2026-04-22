@@ -12,15 +12,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/semver"
 )
 
 const (
 	defaultGoProxy = "https://proxy.golang.org"
-	k6Module       = "go.k6.io/k6"
+	k6BaseModule   = "go.k6.io/k6"
 	modFile        = "go.mod"
-	latest         = "latest"
 )
 
 var errHTTP = errors.New("HTTP error")
@@ -52,14 +54,14 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 		return nil, err
 	}
 
-	k6Version, err := getK6Version(ctx, opts, extModfile)
+	k6ModulePath, k6Version, err := resolveK6Module(ctx, opts, extModfile)
 	if err != nil {
 		return nil, err
 	}
 
-	slog.Debug("Target k6", "version", k6Version)
+	slog.Debug("Target k6", "module", k6ModulePath, "version", k6Version)
 
-	k6Modfile, err := getModule(ctx, k6Module, k6Version)
+	k6Modfile, err := getModule(ctx, k6ModulePath, k6Version)
 	if err != nil {
 		return nil, err
 	}
@@ -107,9 +109,243 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 	return result, nil
 }
 
-// GetLatestK6Version retrieves the latest version of k6 from the Go proxy.
-func GetLatestK6Version(ctx context.Context) (string, error) {
-	return getLatestVersion(ctx, k6Module)
+// GetLatestK6VersionFor retrieves the latest version of the given k6 module path from the Go proxy.
+// Use this for k6 major versions beyond v1 (e.g. "go.k6.io/k6/v2").
+func GetLatestK6VersionFor(ctx context.Context, modulePath string) (string, error) {
+	return getLatestVersion(ctx, modulePath)
+}
+
+// GetOverallLatestK6Version returns the module path and version of the highest
+// published k6 release across all major versions. It starts with go.k6.io/k6
+// and probes go.k6.io/k6/v2, go.k6.io/k6/v3, ... until a major is not found.
+func GetOverallLatestK6Version(ctx context.Context) (modulePath, version string, err error) {
+	return getOverallLatestK6Version(ctx)
+}
+
+// ResolveK6ModuleForVersion determines the k6 module path for an explicit version
+// string (semver tag, pseudo-version, SHA, or branch name).
+//
+// For clean release tags (e.g. "v2.0.0") the major version is inferred directly.
+// For everything else (SHAs, pseudo-versions, branch names) the Go proxy is
+// queried: the declared module path inside the fetched go.mod is returned, so
+// a SHA that belongs to a v2 commit will correctly yield "go.k6.io/k6/v2".
+func ResolveK6ModuleForVersion(ctx context.Context, version string) (string, error) {
+	// Clean release tags: derive the module path from the major version suffix.
+	if semver.IsValid(version) && semver.Prerelease(version) == "" {
+		path := k6ModulePathForSemver(version)
+		slog.Debug("Inferred k6 module path from semver", "version", version, "path", path)
+
+		return path, nil
+	}
+
+	slog.Debug("Non-semver version, probing Go proxy to find k6 module path", "version", version)
+
+	return probeK6ModuleForVersion(ctx, version)
+}
+
+func k6ModulePathForSemver(version string) string {
+	major := semver.Major(version) // e.g. "v0", "v1", "v2"
+	if major == "v0" || major == "v1" {
+		return k6BaseModule
+	}
+
+	return k6BaseModule + "/" + major
+}
+
+// versionInfo is the JSON response from the Go proxy /@v/<version>.info endpoint.
+type versionInfo struct {
+	Version string `json:"Version"` // canonical version (semver or pseudo-version)
+	Time    string `json:"Time"`    // RFC 3339 commit timestamp
+}
+
+// probeVersionInfo calls /@v/<version>.info for pkg.
+// On 200 it returns the canonical version string. Any non-200 response is an error.
+func probeVersionInfo(ctx context.Context, pkg, version string) (string, error) {
+	resp, err := goProxyGet(ctx, fmt.Sprintf("/%s/@v/%s.info", pkg, version))
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return "", fmt.Errorf("%w: %s, url: /%s/@v/%s.info", errHTTP, resp.Status, pkg, version)
+	}
+
+	var info versionInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return "", err
+	}
+
+	return info.Version, nil
+}
+
+// probeK6ModuleForVersion asks the Go proxy which k6 major-version module
+// contains the given version string (SHA, branch name, or pseudo-version).
+// It delegates to probeModuleVersionForBase using the k6 base module path.
+func probeK6ModuleForVersion(ctx context.Context, version string) (string, error) {
+	return probeModuleVersionForBase(ctx, k6BaseModule, version)
+}
+
+// probeModuleVersionForBase asks the Go proxy which major-version of the given
+// base module contains the version string (SHA, branch name, or pseudo-version).
+// It first probes the base module, then iterates v2, v3, … until found or until
+// two consecutive major versions do not exist in the registry.
+func probeModuleVersionForBase(ctx context.Context, baseModule, version string) (string, error) {
+	slog.Debug("Non-canonical version, resolving via .info", "version", version)
+
+	_, baseErr := probeVersionInfo(ctx, baseModule, version)
+	if baseErr == nil {
+		// The proxy enforces that module path in go.mod matches the requested path,
+		// so a 200 here guarantees this commit belongs to baseModule.
+		return baseModule, nil
+	}
+
+	slog.Debug("Base module .info probe failed, falling through to loop", "base", baseModule, "error", baseErr)
+
+	// Fallback loop: iterate v2, v3, … when the base module does not contain the version.
+	slog.Debug("Iterating major versions", "base", baseModule)
+
+	const maxConsecutiveAbsent = 2
+
+	consecutiveAbsent := 0
+
+	for major := 2; ; major++ {
+		modPath := fmt.Sprintf("%s/v%d", baseModule, major)
+
+		if path, ok := probeModuleForVersion(ctx, modPath, version); ok {
+			return path, nil
+		}
+
+		if _, err := getLatestVersion(ctx, modPath); err != nil {
+			consecutiveAbsent++
+			slog.Debug("Major version does not exist", "module", modPath, "consecutiveAbsent", consecutiveAbsent)
+
+			if consecutiveAbsent >= maxConsecutiveAbsent {
+				slog.Debug("Stopping probe after consecutive absent majors", "base", baseModule)
+				break
+			}
+		} else {
+			consecutiveAbsent = 0
+			slog.Debug("Major version exists but does not contain SHA, trying next", "module", modPath)
+		}
+	}
+
+	return "", fmt.Errorf("could not find major version module for %q at version %q", baseModule, version)
+}
+
+// probeModuleForVersion is used by the fallback loop in probeModuleVersionForBase.
+// Returns the module path and true if the version is found under modPath, false otherwise.
+func probeModuleForVersion(ctx context.Context, modPath, version string) (string, bool) {
+	slog.Debug("Probing module for version", "module", modPath, "version", version)
+
+	canonical, err := probeVersionInfo(ctx, modPath, version)
+	if err != nil {
+		slog.Debug("Module .info probe failed", "module", modPath, "version", version, "error", err)
+		return "", false
+	}
+
+	slog.Debug("Resolved canonical version via .info", "module", modPath, "canonical", canonical)
+
+	return modPath, true
+}
+
+// ExtensionModule describes a k6 extension for the purpose of k6 module resolution.
+type ExtensionModule struct {
+	// Path is the Go module path of the extension (e.g. "github.com/grafana/xk6-sql").
+	Path string
+	// Version is the requested version; empty means resolve the latest.
+	Version string
+	// LocalPath is a local directory that replaces the module. When set, the
+	// go.mod is read from there instead of being fetched from the proxy.
+	LocalPath string
+}
+
+// ResolveK6ModuleForExtensions determines which k6 module path and version to
+// use based on the dependencies declared by the given extensions. It reads each
+// extension's go.mod (locally when LocalPath is set, otherwise from the Go
+// proxy) and returns the first k6 require it finds. If none of the extensions
+// declare k6 as a dependency, it falls back to GetOverallLatestK6Version.
+func ResolveK6ModuleForExtensions(
+	ctx context.Context, extensions []ExtensionModule,
+) (modulePath, version string, err error) {
+	slog.Debug("Resolving k6 module from extension dependencies", "count", len(extensions))
+
+	for _, ext := range extensions {
+		slog.Debug("Checking extension go.mod for k6 dependency", "module", ext.Path)
+
+		mf, readErr := resolveExtensionModfile(ctx, ext)
+		if readErr != nil {
+			slog.Debug("Could not read go.mod for extension, skipping", "module", ext.Path, "error", readErr)
+			continue
+		}
+
+		if k6path, k6ver, found := findK6Require(mf); found {
+			slog.Debug("Found k6 dependency in extension", "extension", ext.Path, "k6module", k6path, "k6version", k6ver)
+
+			return k6path, k6ver, nil
+		}
+
+		slog.Debug("Extension does not declare k6 as a dependency", "module", ext.Path)
+	}
+
+	slog.Debug("No extension declared k6, falling back to overall latest")
+
+	return getOverallLatestK6Version(ctx)
+}
+
+func resolveExtensionModfile(ctx context.Context, ext ExtensionModule) (*modfile.File, error) {
+	if ext.LocalPath != "" {
+		slog.Debug("Reading go.mod from local path", "module", ext.Path, "local", ext.LocalPath)
+
+		return loadModfile(ext.LocalPath)
+	}
+
+	ver := ext.Version
+	if ver == "" {
+		slog.Debug("No version specified for extension, resolving latest", "module", ext.Path)
+
+		var err error
+
+		ver, err = getLatestVersion(ctx, ext.Path)
+		if err != nil {
+			return nil, err
+		}
+
+		slog.Debug("Resolved latest version for extension", "module", ext.Path, "version", ver)
+	}
+
+	return getModule(ctx, ext.Path, ver)
+}
+
+func getOverallLatestK6Version(ctx context.Context) (modulePath, version string, err error) {
+	bestPath := k6BaseModule
+
+	bestVersion, err := getLatestVersion(ctx, k6BaseModule)
+	if err != nil {
+		return "", "", err
+	}
+
+	for major := 2; ; major++ {
+		modPath := fmt.Sprintf("%s/v%d", k6BaseModule, major)
+
+		ver, probeErr := getLatestVersion(ctx, modPath)
+		if probeErr != nil {
+			// This major does not exist yet; stop probing.
+			break
+		}
+
+		if semver.Compare(ver, bestVersion) > 0 {
+			bestPath = modPath
+			bestVersion = ver
+		}
+	}
+
+	// probeErr signals the major version does not exist; this is expected, not an error condition.
+	return bestPath, bestVersion, nil //nolint:nilerr
 }
 
 func diffRequires(extModfile, k6Modfile *modfile.File) []*Change {
@@ -133,24 +369,38 @@ func diffRequires(extModfile, k6Modfile *modfile.File) []*Change {
 	return changes
 }
 
-func getK6Version(ctx context.Context, opts *Options, mf *modfile.File) (string, error) {
-	k6Version := opts.K6Version
-	if len(k6Version) == 0 {
-		var found bool
+// resolveK6Module determines the k6 module path and version to sync against.
+// It checks the extension's go.mod for any k6 major version (go.k6.io/k6, go.k6.io/k6/v2, etc.)
+// and falls back to opts.K6Version if set, or the overall latest version otherwise.
+func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modulePath, version string, err error) {
+	if len(opts.K6Version) > 0 {
+		path, err := ResolveK6ModuleForVersion(ctx, opts.K6Version)
+		if err != nil {
+			return "", "", err
+		}
 
-		k6Version, found = findRequire(mf, k6Module)
-		if !found {
-			slog.Info("k6 not found in go.mod, using latest version")
+		return path, opts.K6Version, nil
+	}
 
-			k6Version = latest
+	if path, ver, found := findK6Require(mf); found {
+		return path, ver, nil
+	}
+
+	slog.Info("k6 not found in go.mod, using overall latest version")
+
+	return getOverallLatestK6Version(ctx)
+}
+
+// findK6Require finds a k6 module (any major version) in the given modfile.
+// It matches go.k6.io/k6 as well as go.k6.io/k6/v2, go.k6.io/k6/v3, etc.
+func findK6Require(mf *modfile.File) (path, version string, found bool) {
+	for _, r := range mf.Require {
+		if r.Mod.Path == k6BaseModule || strings.HasPrefix(r.Mod.Path, k6BaseModule+"/v") {
+			return r.Mod.Path, r.Mod.Version, true
 		}
 	}
 
-	if k6Version == latest {
-		return getLatestVersion(ctx, k6Module)
-	}
-
-	return k6Version, nil
+	return "", "", false
 }
 
 func loadModfile(dir string) (*modfile.File, error) {
@@ -167,16 +417,6 @@ func loadModfile(dir string) (*modfile.File, error) {
 	}
 
 	return file, nil
-}
-
-func findRequire(mf *modfile.File, module string) (string, bool) {
-	for _, r := range mf.Require {
-		if r.Mod.Path == module {
-			return r.Mod.Version, true
-		}
-	}
-
-	return "", false
 }
 
 func goproxy() string {
@@ -197,6 +437,10 @@ func getModule(ctx context.Context, pkg string, version string) (*modfile.File, 
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %s, url: /%s/@v/%s.mod", errHTTP, resp.Status, pkg, version)
+	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -221,6 +465,10 @@ func getLatestVersion(ctx context.Context, pkg string) (string, error) {
 		_ = resp.Body.Close()
 	}()
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%w: %s, url: /%s/@latest", errHTTP, resp.Status, pkg)
+	}
+
 	latest := struct {
 		Version string `json:"version"`
 	}{}
@@ -233,20 +481,59 @@ func getLatestVersion(ctx context.Context, pkg string) (string, error) {
 	return latest.Version, nil
 }
 
+// goProxyGet fetches a URL from the Go module proxy and returns the response.
+// It retries on network errors and 5xx responses (up to 3 attempts, with 1s/2s backoff).
+// Responses with non-5xx status codes (including 404) are returned as-is; callers
+// are responsible for checking resp.StatusCode and closing resp.Body.
 func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, goproxy()+url, nil)
-	if err != nil {
-		return nil, err
+	fullURL := goproxy() + url
+
+	slog.Debug("Go proxy request", "url", fullURL)
+
+	const maxAttempts = 3
+
+	var lastErr error
+
+	for attempt := range maxAttempts {
+		if attempt > 0 {
+			delay := time.Duration(1<<(attempt-1)) * time.Second // 1s, 2s
+			t := time.NewTimer(delay)
+			select {
+			case <-t.C:
+			case <-ctx.Done():
+				t.Stop()
+				return nil, ctx.Err()
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+		if err != nil {
+			return nil, err // malformed request, no point retrying
+		}
+
+		resp, err := http.DefaultClient.Do(req) //nolint:gosec
+		if err != nil {
+			slog.Debug("Go proxy request failed", "url", fullURL, "attempt", attempt+1, "error", err)
+			lastErr = err
+
+			continue
+		}
+
+		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode) //nolint:gosec
+
+		// Retry on server-side errors; return everything else to the caller for status checking.
+		if resp.StatusCode >= 500 {
+			slog.Debug("Go proxy server error, will retry", //nolint:gosec
+				"url", fullURL, "attempt", attempt+1, "status", resp.StatusCode)
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+			lastErr = fmt.Errorf("%w: %s, url: %s", errHTTP, resp.Status, url)
+
+			continue
+		}
+
+		return resp, nil
 	}
 
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %s, url: %s", errHTTP, resp.Status, url)
-	}
-
-	return resp, nil
+	return nil, lastErr
 }

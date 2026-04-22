@@ -68,7 +68,6 @@ var nonGoEnvToCopy = []string{ //nolint:gochecknoglobals
 	"TMPDIR",              // required by git for temporary files
 	"TEMP",                // required by git for temporary files on Windows
 	"TMP",                 // required by git for temporary files on Windows
-
 }
 
 func defaultK6Output() string {

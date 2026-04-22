@@ -267,7 +267,7 @@ When `--k6-repo` is not set, xk6 automatically determines the correct k6 module 
 
 - **Clean semver tag (e.g. `v2.0.0`):** the module path is inferred directly from the major version component — no network calls required.
 
-- **SHA, branch name, or pseudo-version:** xk6 uses a two-step Go proxy lookup to find which major-version module the reference belongs to. See [k6 module resolution](../../../docs/k6-module-resolution.md) for the full algorithm.
+- **SHA, branch name, or pseudo-version:** xk6 uses a two-step Go proxy lookup to find which major-version module the reference belongs to. See [k6 module resolution](./docs/k6-module-resolution.md) for the full algorithm.
 
 Pass `--verbose` to log every proxy request and resolution decision.
 

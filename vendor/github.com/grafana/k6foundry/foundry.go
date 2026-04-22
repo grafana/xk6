@@ -25,6 +25,7 @@ type Warning struct {
 // BuildInfo describes the binary
 type BuildInfo struct {
 	Platform    string
+	K6ModPath   string
 	ModVersions map[string]string
 	Warnings    []Warning
 }

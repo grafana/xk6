@@ -148,7 +148,7 @@ func (b *native) Build(
 	if err != nil {
 		return nil, fmt.Errorf("determining k6 module path: %w", err)
 	}
-
+	buildInfo.K6ModPath = k6ModPath
 	b.log.Info("Creating k6 main")
 	err = b.createMain(ctx, workDir, k6ModPath)
 	if err != nil {

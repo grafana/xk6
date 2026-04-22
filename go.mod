@@ -11,7 +11,7 @@ require (
 	github.com/go-git/go-git/v5 v5.18.0
 	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/goreleaser/fileglob v1.4.0
-	github.com/grafana/k6foundry v0.5.1
+	github.com/grafana/k6foundry v0.5.2
 	github.com/lmittmann/tint v1.1.3
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mattn/go-isatty v0.0.20
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/szkiba/docsme v0.2.0
 	github.com/szkiba/efa v0.1.1
-	golang.org/x/mod v0.34.0
+	golang.org/x/mod v0.35.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

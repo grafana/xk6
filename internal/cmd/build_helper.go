@@ -12,8 +12,8 @@ import (
 	"github.com/grafana/k6foundry"
 	"github.com/spf13/pflag"
 	"github.com/szkiba/efa"
-	"golang.org/x/mod/module"
 	"go.k6.io/xk6/internal/sync"
+	"golang.org/x/mod/module"
 )
 
 type buildOptions struct {
@@ -360,4 +360,3 @@ func (m *modules) Type() string {
 
 	return "module[@version][=replacement]"
 }
-

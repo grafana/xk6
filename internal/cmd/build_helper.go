@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/szkiba/efa"
 	"go.k6.io/xk6/internal/sync"
+	"golang.org/x/mod/module"
 )
 
 type buildOptions struct {
@@ -172,11 +173,15 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 
 	// If k6repo is a versioned k6 module path (e.g. go.k6.io/k6/v2), extract the major
 	// version so k6foundry can resolve the correct module path for non-semver versions
-	// such as "latest". For actual forks (e.g. github.com/myfork/k6), set K6Repo instead.
+	// such as "latest". For actual forks (e.g. github.com/myfork/k6/v2), set K6Repo and
+	// extract K6MajorVersion from the /vN suffix so the require path matches.
 	if strings.HasPrefix(opts.k6repo, defaultK6Repo+"/v") {
 		fopts.K6MajorVersion = opts.k6repo[len(defaultK6Repo+"/"):]
 	} else if opts.k6repo != defaultK6Repo {
 		fopts.K6Repo = opts.k6repo
+		if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
+			fopts.K6MajorVersion = module.PathMajorPrefix(pathMajor)
+		}
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {
@@ -274,26 +279,45 @@ func (m *modules) Set(val string) error {
 }
 
 // resolveK6Repo sets opts.k6repo (and opts.k6version when appropriate) to the
-// correct k6 module path when the user has not overridden --k6-repo. This
-// ensures that v2+ releases are used without requiring an explicit flag.
+// correct versioned module path, appending the /vN suffix when needed.
+// For the default repo with no explicit version, extension dependencies are
+// inspected first so their declared k6 version drives the build.
 func resolveK6Repo(ctx context.Context, opts *buildOptions) {
-	if opts.k6repo != defaultK6Repo {
-		slog.Debug("Using explicit k6 repo, skipping auto-resolution", "repo", opts.k6repo)
+	// User already included a /vN suffix — trust it as-is.
+	if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
+		slog.Debug("Using k6 repo with explicit major version suffix", "repo", opts.k6repo)
 		return
 	}
 
 	if opts.k6version == defaultK6Version {
-		slog.Debug("Resolving k6 module from extension dependencies (version: latest)")
+		// For the default repo, inspect extension dependencies first so their
+		// declared k6 version drives the build; fall back to overall latest.
+		if opts.k6repo == defaultK6Repo {
+			slog.Debug("Resolving k6 module from extension dependencies (version: latest)")
 
-		// No explicit version: inspect extension dependencies first, then
-		// fall back to the overall latest across all major versions.
-		path, version, err := sync.ResolveK6ModuleForExtensions(ctx, extensionModules(opts))
-		if err != nil {
-			slog.Warn("Failed to resolve k6 module from extensions, using default", "error", err)
+			path, version, err := sync.ResolveK6ModuleForExtensions(ctx, extensionModules(opts))
+			if err != nil {
+				slog.Warn("Failed to resolve k6 module from extensions, using default", "error", err)
+				return
+			}
+
+			slog.Debug("Resolved k6 module", "repo", path, "version", version)
+
+			opts.k6repo = path
+			opts.k6version = version
+
 			return
 		}
 
-		slog.Debug("Resolved k6 module", "repo", path, "version", version)
+		slog.Debug("Resolving latest version for k6 repo", "repo", opts.k6repo)
+
+		path, version, err := sync.GetOverallLatestVersionFor(ctx, opts.k6repo)
+		if err != nil {
+			slog.Warn("Failed to resolve k6 repo latest version, using as-is", "repo", opts.k6repo, "error", err)
+			return
+		}
+
+		slog.Debug("Resolved k6 repo", "repo", path, "version", version)
 
 		opts.k6repo = path
 		opts.k6version = version
@@ -301,17 +325,17 @@ func resolveK6Repo(ctx context.Context, opts *buildOptions) {
 		return
 	}
 
-	slog.Debug("Resolving k6 module path for explicit version", "version", opts.k6version)
+	// Explicit version (semver, SHA, branch): detect the versioned module path
+	// so that e.g. a v2 SHA resolves to the /v2 path for any repo.
+	slog.Debug("Resolving k6 repo module path for version", "repo", opts.k6repo, "version", opts.k6version)
 
-	// Explicit version (semver, SHA, branch name): detect the module path from
-	// the version itself so that e.g. a v2 SHA resolves to go.k6.io/k6/v2.
-	path, err := sync.ResolveK6ModuleForVersion(ctx, opts.k6version)
+	path, err := sync.ResolveModuleForVersion(ctx, opts.k6repo, opts.k6version)
 	if err != nil {
-		slog.Warn("Failed to resolve k6 module for version, using default", "error", err)
+		slog.Warn("Failed to resolve k6 repo module path, using as-is", "repo", opts.k6repo, "error", err)
 		return
 	}
 
-	slog.Debug("Resolved k6 module path", "repo", path, "version", opts.k6version)
+	slog.Debug("Resolved k6 repo path", "repo", path)
 
 	opts.k6repo = path
 }

@@ -86,7 +86,7 @@ func buildRunE(ctx context.Context, stdout io.Writer, opts *buildOptions) error 
 		slog.Info("A new binary has been built based on k6", "version", k6ver)
 	}
 
-	k6latest, err := sync.GetLatestK6VersionFor(ctx, k6modPath)
+	k6latest, err := sync.GetLatestVersion(ctx, k6modPath)
 	if err == nil && k6ver != k6latest {
 		slog.Warn("Newer k6 version available", "actual", k6ver, "latest", k6latest)
 	} else if err != nil {

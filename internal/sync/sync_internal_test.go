@@ -343,7 +343,7 @@ func TestGetOverallLatestK6Version_OnlyV1(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, version, err := getOverallLatestK6Version(t.Context())
+	path, version, err := getOverallLatestVersionFor(t.Context(), k6BaseModule)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -369,7 +369,7 @@ func TestGetOverallLatestK6Version_V2(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, version, err := getOverallLatestK6Version(t.Context())
+	path, version, err := getOverallLatestVersionFor(t.Context(), k6BaseModule)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -397,7 +397,7 @@ func TestGetOverallLatestK6Version_MultipleVersions(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, version, err := getOverallLatestK6Version(t.Context())
+	path, version, err := getOverallLatestVersionFor(t.Context(), k6BaseModule)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -430,7 +430,7 @@ func TestProbeK6ModuleForVersion_V1SHA(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, err := probeK6ModuleForVersion(t.Context(), sha)
+	path, err := probeModuleVersionForBase(t.Context(), k6BaseModule, sha)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -468,7 +468,7 @@ func TestProbeK6ModuleForVersion_V2SHABaseNotFound(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, err := probeK6ModuleForVersion(t.Context(), sha)
+	path, err := probeModuleVersionForBase(t.Context(), k6BaseModule, sha)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -528,7 +528,7 @@ func TestProbeK6ModuleForVersion_V3SHASkipsV2(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, err := probeK6ModuleForVersion(t.Context(), sha)
+	path, err := probeModuleVersionForBase(t.Context(), k6BaseModule, sha)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -566,13 +566,100 @@ func TestProbeK6ModuleForVersion_V3SHAAbsentV2(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	path, err := probeK6ModuleForVersion(t.Context(), sha)
+	path, err := probeModuleVersionForBase(t.Context(), k6BaseModule, sha)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	if path != k6v3 {
 		t.Errorf("expected %s, got %s", k6v3, path)
+	}
+}
+
+func TestResolveModuleForVersion_V1Semver(t *testing.T) {
+	t.Parallel()
+
+	const base = "github.com/myfork/k6"
+
+	path, err := ResolveModuleForVersion(t.Context(), base, "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if path != base {
+		t.Errorf("expected %s, got %s", base, path)
+	}
+}
+
+func TestResolveModuleForVersion_V2Semver(t *testing.T) {
+	t.Parallel()
+
+	const base = "github.com/myfork/k6"
+	const want = base + "/v2"
+
+	path, err := ResolveModuleForVersion(t.Context(), base, "v2.3.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if path != want {
+		t.Errorf("expected %s, got %s", want, path)
+	}
+}
+
+func TestResolveModuleForVersion_V2SHA(t *testing.T) {
+	// Custom fork base module returns 404; v2 has the SHA.
+	const base = "github.com/myfork/k6"
+	const sha = "aabbccdd11223344"
+	const pseudo = "v2.0.1-0.20260401000000-aabbccdd11223344"
+
+	basev2 := base + "/v2"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case fmt.Sprintf("/%s/@v/%s.info", basev2, sha):
+			_, _ = fmt.Fprint(w, modInfo(pseudo))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("GOPROXY", srv.URL)
+
+	path, err := ResolveModuleForVersion(t.Context(), base, sha)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if path != basev2 {
+		t.Errorf("expected %s, got %s", basev2, path)
+	}
+}
+
+func TestResolveModuleForVersion_V1SHA(t *testing.T) {
+	// Custom fork SHA found directly on the base module (v1).
+	const base = "github.com/myfork/k6"
+	const sha = "112233445566"
+	const pseudo = "v0.55.1-0.20260401000000-112233445566"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case fmt.Sprintf("/%s/@v/%s.info", base, sha):
+			_, _ = fmt.Fprint(w, modInfo(pseudo))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	t.Setenv("GOPROXY", srv.URL)
+
+	path, err := ResolveModuleForVersion(t.Context(), base, sha)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if path != base {
+		t.Errorf("expected %s, got %s", base, path)
 	}
 }
 
@@ -587,7 +674,7 @@ func TestProbeK6ModuleForVersion_UnknownSHA(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("GOPROXY", srv.URL)
 
-	_, err := probeK6ModuleForVersion(t.Context(), sha)
+	_, err := probeModuleVersionForBase(t.Context(), k6BaseModule, sha)
 	if err == nil {
 		t.Fatal("expected error for unknown SHA, got nil")
 	}

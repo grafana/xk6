@@ -175,11 +175,12 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 	// version so k6foundry can resolve the correct module path for non-semver versions
 	// such as "latest". For actual forks (e.g. github.com/myfork/k6/v2), set K6Repo and
 	// extract K6MajorVersion from the /vN suffix so the require path matches.
-	if strings.HasPrefix(opts.k6repo, defaultK6Repo+"/v") {
-		fopts.K6MajorVersion = opts.k6repo[len(defaultK6Repo+"/"):]
+	base, pathMajor, _ := module.SplitPathVersion(opts.k6repo)
+	if base == defaultK6Repo && pathMajor != "" {
+		fopts.K6MajorVersion = module.PathMajorPrefix(pathMajor)
 	} else if opts.k6repo != defaultK6Repo {
 		fopts.K6Repo = opts.k6repo
-		if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
+		if pathMajor != "" {
 			fopts.K6MajorVersion = module.PathMajorPrefix(pathMajor)
 		}
 	}

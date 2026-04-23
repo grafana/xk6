@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"golang.org/x/mod/modfile"
@@ -393,7 +392,8 @@ func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modu
 // It matches go.k6.io/k6 as well as go.k6.io/k6/v2, go.k6.io/k6/v3, etc.
 func findK6Require(mf *modfile.File) (path, version string, found bool) {
 	for _, r := range mf.Require {
-		if r.Mod.Path == k6BaseModule || strings.HasPrefix(r.Mod.Path, k6BaseModule+"/v") {
+		base, _, _ := module.SplitPathVersion(r.Mod.Path)
+		if base == k6BaseModule {
 			return r.Mod.Path, r.Mod.Version, true
 		}
 	}

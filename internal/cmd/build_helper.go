@@ -283,6 +283,14 @@ func (m *modules) Set(val string) error {
 // For the default repo with no explicit version, extension dependencies are
 // inspected first so their declared k6 version drives the build.
 func resolveK6Repo(ctx context.Context, opts *buildOptions) {
+	// Validate the module path early so callers get a clear error rather than
+	// a confusing failure deep in the Go toolchain. Strip any /vN suffix first
+	// since CheckPath expects a bare module path without the major-version suffix.
+	basePath, _, _ := module.SplitPathVersion(opts.k6repo)
+	if err := module.CheckPath(basePath); err != nil {
+		slog.Warn("Invalid k6 repo module path", "repo", opts.k6repo, "error", err)
+	}
+
 	// User already included a /vN suffix — trust it as-is.
 	if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
 		slog.Debug("Using k6 repo with explicit major version suffix", "repo", opts.k6repo)

@@ -12,10 +12,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"
 )
 
@@ -160,7 +160,12 @@ type versionInfo struct {
 // probeVersionInfo calls /@v/<version>.info for pkg.
 // On 200 it returns the canonical version string. Any non-200 response is an error.
 func probeVersionInfo(ctx context.Context, pkg, version string) (string, error) {
-	resp, err := goProxyGet(ctx, fmt.Sprintf("/%s/@v/%s.info", pkg, version))
+	path, err := proxyPath(pkg, fmt.Sprintf("/@v/%s.info", version))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := goProxyGet(ctx, path)
 	if err != nil {
 		return "", err
 	}
@@ -387,7 +392,8 @@ func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modu
 // It matches go.k6.io/k6 as well as go.k6.io/k6/v2, go.k6.io/k6/v3, etc.
 func findK6Require(mf *modfile.File) (path, version string, found bool) {
 	for _, r := range mf.Require {
-		if r.Mod.Path == k6BaseModule || strings.HasPrefix(r.Mod.Path, k6BaseModule+"/v") {
+		base, _, _ := module.SplitPathVersion(r.Mod.Path)
+		if base == k6BaseModule {
 			return r.Mod.Path, r.Mod.Version, true
 		}
 	}
@@ -411,6 +417,17 @@ func loadModfile(dir string) (*modfile.File, error) {
 	return file, nil
 }
 
+// proxyPath builds a proxy URL path with the module path and version properly
+// escaped per the module proxy protocol (uppercase letters encoded as !lowercase).
+func proxyPath(modulePath, suffix string) (string, error) {
+	escaped, err := module.EscapePath(modulePath)
+	if err != nil {
+		return "", fmt.Errorf("invalid module path %q: %w", modulePath, err)
+	}
+
+	return "/" + escaped + suffix, nil
+}
+
 func goproxy() string {
 	proxy := os.Getenv("GOPROXY") //nolint:forbidigo
 	if len(proxy) == 0 {
@@ -421,7 +438,12 @@ func goproxy() string {
 }
 
 func getModule(ctx context.Context, pkg string, version string) (*modfile.File, error) {
-	resp, err := goProxyGet(ctx, fmt.Sprintf("/%s/@v/%s.mod", pkg, version))
+	path, err := proxyPath(pkg, fmt.Sprintf("/@v/%s.mod", version))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := goProxyGet(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +470,12 @@ func getModule(ctx context.Context, pkg string, version string) (*modfile.File, 
 }
 
 func getLatestVersion(ctx context.Context, pkg string) (string, error) {
-	resp, err := goProxyGet(ctx, fmt.Sprintf("/%s/@latest", pkg))
+	path, err := proxyPath(pkg, "/@latest")
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := goProxyGet(ctx, path)
 	if err != nil {
 		return "", err
 	}

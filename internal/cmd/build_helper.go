@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/k6foundry"
 	"github.com/spf13/pflag"
 	"github.com/szkiba/efa"
+	"golang.org/x/mod/module"
 	"go.k6.io/xk6/internal/sync"
 )
 
@@ -178,8 +179,8 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 		fopts.K6MajorVersion = opts.k6repo[len(defaultK6Repo+"/"):]
 	} else if opts.k6repo != defaultK6Repo {
 		fopts.K6Repo = opts.k6repo
-		if maj := majorVersionSuffix(opts.k6repo); maj != "" {
-			fopts.K6MajorVersion = maj
+		if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
+			fopts.K6MajorVersion = module.PathMajorPrefix(pathMajor)
 		}
 	}
 
@@ -283,7 +284,7 @@ func (m *modules) Set(val string) error {
 // inspected first so their declared k6 version drives the build.
 func resolveK6Repo(ctx context.Context, opts *buildOptions) {
 	// User already included a /vN suffix — trust it as-is.
-	if majorVersionSuffix(opts.k6repo) != "" {
+	if _, pathMajor, ok := module.SplitPathVersion(opts.k6repo); ok && pathMajor != "" {
 		slog.Debug("Using k6 repo with explicit major version suffix", "repo", opts.k6repo)
 		return
 	}
@@ -360,24 +361,3 @@ func (m *modules) Type() string {
 	return "module[@version][=replacement]"
 }
 
-// majorVersionSuffix returns the /vN suffix of a module path (e.g. "v2" for
-// "github.com/foo/bar/v2"), or "" if none is present.
-func majorVersionSuffix(path string) string {
-	idx := strings.LastIndex(path, "/")
-	if idx < 0 {
-		return ""
-	}
-
-	last := path[idx+1:]
-	if len(last) < 2 || last[0] != 'v' {
-		return ""
-	}
-
-	for _, c := range last[1:] {
-		if c < '0' || c > '9' {
-			return ""
-		}
-	}
-
-	return last
-}

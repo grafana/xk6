@@ -7,31 +7,6 @@ import (
 	"testing"
 )
 
-func TestMajorVersionSuffix(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		path string
-		want string
-	}{
-		{"github.com/foo/bar/v2", "v2"},
-		{"github.com/foo/bar/v10", "v10"},
-		{"github.com/foo/bar", ""},
-		{"github.com/foo/v2/bar", ""},  // v2 not at end
-		{"github.com/foo/bar/v2x", ""}, // non-digit after v2
-		{"github.com/foo/bar/v", ""},   // just "v" with no digits
-		{"go.k6.io/k6/v2", "v2"},
-		{"go.k6.io/k6", ""},
-	}
-
-	for _, tc := range cases {
-		got := majorVersionSuffix(tc.path)
-		if got != tc.want {
-			t.Errorf("majorVersionSuffix(%q) = %q, want %q", tc.path, got, tc.want)
-		}
-	}
-}
-
 func TestResolveK6Repo_CustomV2SHA(t *testing.T) {
 	const base = "github.com/myfork/k6"
 	const sha = "f520efb45f42"

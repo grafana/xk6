@@ -17,9 +17,9 @@ func TestMajorVersionSuffix(t *testing.T) {
 		{"github.com/foo/bar/v2", "v2"},
 		{"github.com/foo/bar/v10", "v10"},
 		{"github.com/foo/bar", ""},
-		{"github.com/foo/v2/bar", ""},    // v2 not at end
-		{"github.com/foo/bar/v2x", ""},   // non-digit after v2
-		{"github.com/foo/bar/v", ""},     // just "v" with no digits
+		{"github.com/foo/v2/bar", ""},  // v2 not at end
+		{"github.com/foo/bar/v2x", ""}, // non-digit after v2
+		{"github.com/foo/bar/v", ""},   // just "v" with no digits
 		{"go.k6.io/k6/v2", "v2"},
 		{"go.k6.io/k6", ""},
 	}

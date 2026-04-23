@@ -109,47 +109,46 @@ func Sync(ctx context.Context, dir string, opts *Options) (*Result, error) {
 	return result, nil
 }
 
-// GetLatestK6VersionFor retrieves the latest version of the given k6 module path from the Go proxy.
-// Use this for k6 major versions beyond v1 (e.g. "go.k6.io/k6/v2").
-func GetLatestK6VersionFor(ctx context.Context, modulePath string) (string, error) {
+// GetLatestVersion retrieves the latest version of the given module path from the Go proxy.
+func GetLatestVersion(ctx context.Context, modulePath string) (string, error) {
 	return getLatestVersion(ctx, modulePath)
 }
 
-// GetOverallLatestK6Version returns the module path and version of the highest
-// published k6 release across all major versions. It starts with go.k6.io/k6
-// and probes go.k6.io/k6/v2, go.k6.io/k6/v3, ... until a major is not found.
-func GetOverallLatestK6Version(ctx context.Context) (modulePath, version string, err error) {
-	return getOverallLatestK6Version(ctx)
+// GetOverallLatestVersionFor returns the module path and version of the highest
+// published release of baseModule across all major versions. It probes baseModule,
+// baseModule/v2, baseModule/v3, … until a major is not found.
+func GetOverallLatestVersionFor(ctx context.Context, baseModule string) (modulePath, version string, err error) {
+	return getOverallLatestVersionFor(ctx, baseModule)
 }
 
-// ResolveK6ModuleForVersion determines the k6 module path for an explicit version
-// string (semver tag, pseudo-version, SHA, or branch name).
+// ResolveModuleForVersion determines the versioned module path for baseModule at
+// the given version string (semver tag, pseudo-version, SHA, or branch name).
 //
 // For clean release tags (e.g. "v2.0.0") the major version is inferred directly.
-// For everything else (SHAs, pseudo-versions, branch names) the Go proxy is
-// queried: the declared module path inside the fetched go.mod is returned, so
-// a SHA that belongs to a v2 commit will correctly yield "go.k6.io/k6/v2".
-func ResolveK6ModuleForVersion(ctx context.Context, version string) (string, error) {
-	// Clean release tags: derive the module path from the major version suffix.
+// For everything else the Go proxy is queried: starting from baseModule it probes
+// baseModule/v2, baseModule/v3, … until the version is found. This allows callers
+// to pass a custom fork base path (e.g. "github.com/myfork/k6") and get back the
+// correctly versioned path (e.g. "github.com/myfork/k6/v2") without having to
+// know the major version in advance.
+func ResolveModuleForVersion(ctx context.Context, baseModule, version string) (string, error) {
 	if semver.IsValid(version) && semver.Prerelease(version) == "" {
-		path := k6ModulePathForSemver(version)
-		slog.Debug("Inferred k6 module path from semver", "version", version, "path", path)
+		major := semver.Major(version)
+
+		var path string
+		if major == "v0" || major == "v1" {
+			path = baseModule
+		} else {
+			path = baseModule + "/" + major
+		}
+
+		slog.Debug("Inferred module path from semver", "base", baseModule, "version", version, "path", path)
 
 		return path, nil
 	}
 
-	slog.Debug("Non-semver version, probing Go proxy to find k6 module path", "version", version)
+	slog.Debug("Non-semver version, probing Go proxy to find module path", "base", baseModule, "version", version)
 
-	return probeK6ModuleForVersion(ctx, version)
-}
-
-func k6ModulePathForSemver(version string) string {
-	major := semver.Major(version) // e.g. "v0", "v1", "v2"
-	if major == "v0" || major == "v1" {
-		return k6BaseModule
-	}
-
-	return k6BaseModule + "/" + major
+	return probeModuleVersionForBase(ctx, baseModule, version)
 }
 
 // versionInfo is the JSON response from the Go proxy /@v/<version>.info endpoint.
@@ -181,13 +180,6 @@ func probeVersionInfo(ctx context.Context, pkg, version string) (string, error) 
 	}
 
 	return info.Version, nil
-}
-
-// probeK6ModuleForVersion asks the Go proxy which k6 major-version module
-// contains the given version string (SHA, branch name, or pseudo-version).
-// It delegates to probeModuleVersionForBase using the k6 base module path.
-func probeK6ModuleForVersion(ctx context.Context, version string) (string, error) {
-	return probeModuleVersionForBase(ctx, k6BaseModule, version)
 }
 
 // probeModuleVersionForBase asks the Go proxy which major-version of the given
@@ -294,7 +286,7 @@ func ResolveK6ModuleForExtensions(
 
 	slog.Debug("No extension declared k6, falling back to overall latest")
 
-	return getOverallLatestK6Version(ctx)
+	return getOverallLatestVersionFor(ctx, k6BaseModule)
 }
 
 func resolveExtensionModfile(ctx context.Context, ext ExtensionModule) (*modfile.File, error) {
@@ -321,16 +313,16 @@ func resolveExtensionModfile(ctx context.Context, ext ExtensionModule) (*modfile
 	return getModule(ctx, ext.Path, ver)
 }
 
-func getOverallLatestK6Version(ctx context.Context) (modulePath, version string, err error) {
-	bestPath := k6BaseModule
-
-	bestVersion, err := getLatestVersion(ctx, k6BaseModule)
+func getOverallLatestVersionFor(ctx context.Context, baseModule string) (modulePath, version string, err error) {
+	bestVersion, err := getLatestVersion(ctx, baseModule)
 	if err != nil {
 		return "", "", err
 	}
 
+	bestPath := baseModule
+
 	for major := 2; ; major++ {
-		modPath := fmt.Sprintf("%s/v%d", k6BaseModule, major)
+		modPath := fmt.Sprintf("%s/v%d", baseModule, major)
 
 		ver, probeErr := getLatestVersion(ctx, modPath)
 		if probeErr != nil {
@@ -374,7 +366,7 @@ func diffRequires(extModfile, k6Modfile *modfile.File) []*Change {
 // and falls back to opts.K6Version if set, or the overall latest version otherwise.
 func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modulePath, version string, err error) {
 	if len(opts.K6Version) > 0 {
-		path, err := ResolveK6ModuleForVersion(ctx, opts.K6Version)
+		path, err := ResolveModuleForVersion(ctx, k6BaseModule, opts.K6Version)
 		if err != nil {
 			return "", "", err
 		}
@@ -388,7 +380,7 @@ func resolveK6Module(ctx context.Context, opts *Options, mf *modfile.File) (modu
 
 	slog.Info("k6 not found in go.mod, using overall latest version")
 
-	return getOverallLatestK6Version(ctx)
+	return getOverallLatestVersionFor(ctx, k6BaseModule)
 }
 
 // findK6Require finds a k6 module (any major version) in the given modfile.

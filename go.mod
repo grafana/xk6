@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/chainguard-dev/git-urls v1.0.2
 	github.com/ctrf-io/go-ctrf-json-reporter v0.0.15
-	github.com/fatih/color v1.18.0
+	github.com/fatih/color v1.19.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.18.0
 	github.com/go-task/slim-sprig/v3 v3.0.0
@@ -53,7 +53,7 @@ require (
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	gonum.org/v1/gonum v0.8.2 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect

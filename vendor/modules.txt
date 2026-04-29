@@ -72,8 +72,8 @@ github.com/emirpasic/gods/lists/arraylist
 github.com/emirpasic/gods/trees
 github.com/emirpasic/gods/trees/binaryheap
 github.com/emirpasic/gods/utils
-# github.com/fatih/color v1.18.0
-## explicit; go 1.17
+# github.com/fatih/color v1.19.0
+## explicit; go 1.25.0
 github.com/fatih/color
 # github.com/go-enry/go-license-detector/v4 v4.3.1
 ## explicit; go 1.18
@@ -273,8 +273,8 @@ golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
-# golang.org/x/sys v0.38.0
-## explicit; go 1.24.0
+# golang.org/x/sys v0.42.0
+## explicit; go 1.25.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
 golang.org/x/sys/unix

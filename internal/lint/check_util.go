@@ -12,6 +12,8 @@ import (
 	"runtime"
 
 	"github.com/grafana/k6foundry"
+
+	"go.k6.io/xk6/internal/sync"
 )
 
 func findFile(rex *regexp.Regexp, dirs ...string) (string, string, error) {
@@ -91,8 +93,18 @@ func build(ctx context.Context, module string, dir string) (string, error) {
 
 		return "", result
 	}
+	_, version, err := sync.ResolveK6ModuleForExtensions(ctx, []sync.ExtensionModule{
+		{
+			Path:      module,
+			LocalPath: dir,
+		},
+	})
+	if err != nil {
+		result = err
+		return "", err
+	}
 
-	_, result = foundry.Build(ctx, platform, "latest", []k6foundry.Module{{Path: module, ReplacePath: dir}}, nil, nil, exe)
+	_, result = foundry.Build(ctx, platform, version, []k6foundry.Module{{Path: module, ReplacePath: dir}}, nil, nil, exe)
 	if result != nil {
 		return "", result
 	}

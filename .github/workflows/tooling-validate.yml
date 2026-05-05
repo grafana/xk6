@@ -132,7 +132,7 @@ jobs:
           go mod verify
 
       - name: Run golangci-lint with k6 ruleset
-        uses: grafana/k6/.github/actions/lint@90515d551d44d688c8c91add1ab03dba7cdb4251 # master
+        uses: grafana/k6/.github/actions/lint@a4da91dc19ec8304fbff3be8030b25bb64377214 # master
 
   smoke:
     name: Smoke

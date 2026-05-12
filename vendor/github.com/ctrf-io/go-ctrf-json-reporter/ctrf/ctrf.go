@@ -147,6 +147,7 @@ type Summary struct {
 	Pending int   `json:"pending"`
 	Skipped int   `json:"skipped"`
 	Other   int   `json:"other"`
+	Flaky   int   `json:"flaky,omitempty"`
 	Suites  int   `json:"suites,omitempty"`
 	Start   int64 `json:"start"`
 	Stop    int64 `json:"stop"`
@@ -179,16 +180,18 @@ func (summary *Summary) Validate() []error {
 	if summary.Stop < 0 {
 		errs = append(errs, errors.New("invalid property 'results.summary.stop'"))
 	}
+	if summary.Flaky < 0 {
+		errs = append(errs, errors.New("invalid property 'results.summary.flaky'"))
+	}
 	if summary.Suites < 0 {
 		errs = append(errs, errors.New("invalid property 'results.summary.suites'"))
 	}
 	if summary.Start > summary.Stop {
 		errs = append(errs, errors.New("invalid summary timestamps: start can't be greater than stop"))
 	}
-	testsSum := summary.Passed + summary.Failed + summary.Pending + summary.Skipped + summary.Other
+	testsSum := summary.Passed + summary.Failed + summary.Pending + summary.Skipped + summary.Other + summary.Flaky
 	if summary.Tests != testsSum {
 		errs = append(errs, fmt.Errorf("invalid summary counts: tests (%d) must be the sum of passed, failed, pending, skipped, and other (%d)", summary.Tests, testsSum))
-
 	}
 	return errs
 }
@@ -203,27 +206,43 @@ const (
 	TestOther   TestStatus = "other"
 )
 
+type RetryAttempt struct {
+	Attempt  int        `json:"attempt"`
+	Status   TestStatus `json:"status"`
+	Duration int64      `json:"duration,omitempty"`
+	Message  string     `json:"message,omitempty"`
+	Trace    string     `json:"trace,omitempty"`
+	Line     int        `json:"line,omitempty"`
+	Snippet  string     `json:"snippet,omitempty"`
+	Stdout   []string   `json:"stdout,omitempty"`
+	Stderr   []string   `json:"stderr,omitempty"`
+	Start    int64      `json:"start,omitempty"`
+	Stop     int64      `json:"stop,omitempty"`
+	Extra    any        `json:"extra,omitempty"`
+}
+
 type TestResult struct {
-	Name       string     `json:"name"`
-	Status     TestStatus `json:"status"`
-	Duration   int64      `json:"duration"`
-	Start      int64      `json:"start,omitempty"`
-	Stop       int64      `json:"stop,omitempty"`
-	Suite      string     `json:"suite,omitempty"`
-	Message    string     `json:"message,omitempty"`
-	Trace      string     `json:"trace,omitempty"`
-	RawStatus  string     `json:"rawStatus,omitempty"`
-	Tags       []string   `json:"tags,omitempty"`
-	Type       string     `json:"type,omitempty"`
-	Filepath   string     `json:"filePath,omitempty"`
-	Retry      int        `json:"retry,omitempty"`
-	Flake      bool       `json:"flake,omitempty"`
-	Browser    string     `json:"browser,omitempty"`
-	Device     string     `json:"device,omitempty"`
-	Screenshot string     `json:"screenshot,omitempty"`
-	Parameters any        `json:"parameters,omitempty"`
-	Steps      []any      `json:"steps,omitempty"`
-	Extra      any        `json:"extra,omitempty"`
+	Name          string         `json:"name"`
+	Status        TestStatus     `json:"status"`
+	Duration      int64          `json:"duration"`
+	Start         int64          `json:"start,omitempty"`
+	Stop          int64          `json:"stop,omitempty"`
+	Suite         string         `json:"suite,omitempty"`
+	Message       string         `json:"message,omitempty"`
+	Trace         string         `json:"trace,omitempty"`
+	RawStatus     string         `json:"rawStatus,omitempty"`
+	Tags          []string       `json:"tags,omitempty"`
+	Type          string         `json:"type,omitempty"`
+	Filepath      string         `json:"filePath,omitempty"`
+	Retries       int            `json:"retries,omitempty"`
+	Flaky         bool           `json:"flaky,omitempty"`
+	Browser       string         `json:"browser,omitempty"`
+	Device        string         `json:"device,omitempty"`
+	Screenshot    string         `json:"screenshot,omitempty"`
+	Parameters    any            `json:"parameters,omitempty"`
+	Steps         []any          `json:"steps,omitempty"`
+	RetryAttempts []RetryAttempt `json:"retryAttempts,omitempty"`
+	Extra         any            `json:"extra,omitempty"`
 }
 
 type Environment struct {

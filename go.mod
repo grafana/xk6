@@ -7,7 +7,7 @@ toolchain go1.25.10
 require (
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/chainguard-dev/git-urls v1.0.2
-	github.com/ctrf-io/go-ctrf-json-reporter v0.0.15
+	github.com/ctrf-io/go-ctrf-json-reporter v0.1.0
 	github.com/fatih/color v1.19.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.19.0

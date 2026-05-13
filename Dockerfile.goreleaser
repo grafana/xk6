@@ -1,6 +1,6 @@
 # Base image pinned to Chainguard's latest-dev stream to ensure zero CVEs.
 # Note: This specific digest resolves to Go 1.26.x
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:7f26a2bede516baf8756a84ba30229cc2bbfabd5deffa78d8249a1017df2eea3
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6fa17165405eb83325d57b0e0123e2a8e77727806458620bbb1abb2c258c72fa
 
 # Define global build arguments for the tools to install from source
 ARG GOSEC_VERSION=v2.25.0

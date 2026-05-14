@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "ignorePaths": ["**/vendor/**"],
-  "prConcurrentLimit": 20,
+  "extends": [
+    "github>grafana/grafana-renovate-config//presets/k6/k6-engine-base.json"
+  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -122,15 +123,6 @@
   ],
   "packageRules": [
     {
-      "description": "Update GitHub Actions workflow dependencies",
-      "matchManagers": ["github-actions"]
-    },
-    {
-      "description": "Update Docker base images",
-      "matchManagers": ["dockerfile"],
-      "extends": ["schedule:daily"]
-    },
-    {
       "description": "Update workflow tooling versions (golangci-lint, goreleaser)",
       "matchManagers": ["custom.regex"],
       "matchDepNames": ["golangci/golangci-lint", "goreleaser/goreleaser"],
@@ -157,50 +149,6 @@
       "matchFileNames": [".devcontainer/**"],
       "groupName": "workflow tooling",
       "extends": ["schedule:weekly"]
-    },
-    {
-      "description": "Update Go modules with automatic tidying and import path updates",
-      "matchManagers": ["gomod"],
-      "enabled": true,
-      "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
-      "extends": ["schedule:weekly"]
-    },
-    {
-      "description": "Skip indirect Go dependency updates",
-      "matchManagers": ["gomod"],
-      "matchDepTypes": ["indirect"],
-      "enabled": false
-    },
-    {
-      "description": "Skip Go runtime versions with zero patch number (allow 1.23.1 but skip 1.23.0)",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["go"],
-      "allowedVersions": "/^(?:v)?\\d+\\.\\d+\\.[1-9]\\d*$/",
-      "extends": ["schedule:daily"]
-    },
-    {
-      "description": "Update k6 core and ecosystem packages",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": [
-        "/^go\\.k6\\.io\\/k6/",
-        "/^github\\.com\\/grafana\\/k6/"
-      ],
-      "groupName": "k6 ecosystem",
-      "extends": ["schedule:daily"]
-    },
-    {
-      "description": "Group golang.org/x module updates",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^golang\\.org\\/x\\//"],
-      "groupName": "golang.org/x packages",
-      "extends": ["schedule:daily"]
-    },
-    {
-      "description": "Group google.golang.org module updates",
-      "matchManagers": ["gomod"],
-      "matchPackageNames": ["/^google\\.golang\\.org\\//"],
-      "groupName": "google.golang.org packages",
-      "extends": ["schedule:daily"]
     }
   ]
 }

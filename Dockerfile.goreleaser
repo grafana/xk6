@@ -3,7 +3,7 @@
 ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:6fa17165405eb83325d57b0e0123e2a8e77727806458620bbb1abb2c258c72fa
 
 # Define global build arguments for the tools to install from source
-ARG GOSEC_VERSION=v2.25.0
+ARG GOSEC_VERSION=v2.26.1
 ARG GOVULNCHECK_VERSION=v1.1.4
 
 # ==========================================

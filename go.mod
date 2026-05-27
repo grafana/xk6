@@ -10,7 +10,7 @@ require (
 	github.com/ctrf-io/go-ctrf-json-reporter v0.1.0
 	github.com/fatih/color v1.19.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/goreleaser/fileglob v1.4.0
 	github.com/grafana/k6foundry v0.5.2

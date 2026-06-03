@@ -1,8 +1,6 @@
 module go.k6.io/xk6
 
-go 1.25.0
-
-toolchain go1.25.10
+go 1.25.11
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0

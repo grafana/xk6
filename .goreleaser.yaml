@@ -3,6 +3,9 @@ version: 2
 
 env:
   - IMAGE=grafana/{{.ProjectName}}
+  # Docker Hub publishing goes through the GAR image mirror (gar-image-mirror
+  # copies us-docker.pkg.dev/.../dockerhub-xk6-prod-mirror -> docker.io/grafana).
+  - MIRROR_IMAGE=us-docker.pkg.dev/grafanalabs-global/dockerhub-{{.ProjectName}}-prod-mirror/{{.ProjectName}}
 
 before:
   hooks:
@@ -75,10 +78,10 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
+      - '{{ .Env.MIRROR_IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}-amd64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
+      - "{{ .Env.MIRROR_IMAGE }}:latest-amd64"
 
       - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
@@ -100,10 +103,10 @@ dockers:
     use: buildx
     extra_files: ["docker-entrypoint.sh"]
     image_templates:
-      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
-      - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
+      - '{{ .Env.MIRROR_IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}-arm64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
+      - "{{ .Env.MIRROR_IMAGE }}:latest-arm64"
 
       - 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
       - "ghcr.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
@@ -120,25 +123,25 @@ dockers:
 
 docker_manifests:
   - id: tag
-    name_template: 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}'
+    name_template: '{{ .Env.MIRROR_IMAGE }}:{{ replace .Tag "v" "" }}'
     image_templates:
-      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
-      - 'docker.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
+      - '{{ .Env.MIRROR_IMAGE }}:{{ replace .Tag "v" "" }}-amd64'
+      - '{{ .Env.MIRROR_IMAGE }}:{{ replace .Tag "v" "" }}-arm64'
   - id: major
-    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Major }}"
+    name_template: "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}-arm64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}-amd64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}-arm64"
   - id: major-minor
-    name_template: "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}"
+    name_template: "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}.{{ .Minor }}"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}.{{ .Minor }}-amd64"
+      - "{{ .Env.MIRROR_IMAGE }}:{{ .Major }}.{{ .Minor }}-arm64"
   - id: latest
-    name_template: "docker.io/{{ .Env.IMAGE }}:latest"
+    name_template: "{{ .Env.MIRROR_IMAGE }}:latest"
     image_templates:
-      - "docker.io/{{ .Env.IMAGE }}:latest-amd64"
-      - "docker.io/{{ .Env.IMAGE }}:latest-arm64"
+      - "{{ .Env.MIRROR_IMAGE }}:latest-amd64"
+      - "{{ .Env.MIRROR_IMAGE }}:latest-arm64"
 
   - id: tag-ghcr
     name_template: 'ghcr.io/{{ .Env.IMAGE }}:{{ replace .Tag "v" "" }}'

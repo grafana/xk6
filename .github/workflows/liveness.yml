@@ -216,7 +216,20 @@ jobs:
 
           echo "::notice::Pulling Docker image: grafana/xk6:$XK6_VERSION"
 
-          docker pull grafana/xk6:$XK6_VERSION
+          # Docker Hub publishing is async via gar-image-mirror, so the image
+          # may not be on docker.io immediately after the release job. Retry
+          # the pull until the mirror has copied it (up to ~10 minutes).
+          n=0
+          max=30
+          until docker pull "grafana/xk6:$XK6_VERSION"; do
+            n=$((n + 1))
+            if [ "$n" -ge "$max" ]; then
+              echo "::error::grafana/xk6:$XK6_VERSION not on Docker Hub after $((max * 20))s"
+              exit 1
+            fi
+            echo "::notice::Image not yet mirrored to Docker Hub; retry $n/$max in 20s"
+            sleep 20
+          done
 
           cat >> $GITHUB_STEP_SUMMARY <<END
 

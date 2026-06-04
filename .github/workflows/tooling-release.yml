@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker: ${{steps.configure.outputs.docker}}
-      docker-io: ${{steps.configure.outputs.docker-io}}
+      gar: ${{steps.configure.outputs.gar}}
       ghcr-io: ${{steps.configure.outputs.ghcr-io}}
     steps:
       - name: Checkout code
@@ -43,9 +43,9 @@ jobs:
             echo "docker=true" >> $GITHUB_OUTPUT
             echo "ghcr-io=true" >> $GITHUB_OUTPUT
           fi
-          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q docker.io ; then
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q us-docker.pkg.dev ; then
             echo "docker=true" >> $GITHUB_OUTPUT
-            echo "docker-io=true" >> $GITHUB_OUTPUT
+            echo "gar=true" >> $GITHUB_OUTPUT
           fi
       - name: Summary
         env:
@@ -54,7 +54,7 @@ jobs:
           GORELEASER_VERSION: ${{ inputs.goreleaser-version }}
           K6_VERSIONS: ${{ join(fromJSON(inputs.k6-versions),' ') }}
           GHCR_IO: ${{ steps.configure.outputs.ghcr-io }}
-          DOCKER_IO: ${{ steps.configure.outputs.docker-io }}
+          GAR: ${{ steps.configure.outputs.gar }}
         run: |
           cat >> $GITHUB_STEP_SUMMARY <<END
 
@@ -73,8 +73,8 @@ jobs:
           if [ -n "${GHCR_IO}" ]; then
             echo "Push Docker image to ghcr.io" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -n "${DOCKER_IO}" ]; then
-            echo "Push Docker image to docker.io" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${GAR}" ]; then
+            echo "Push Docker image to GAR (mirrored to docker.io/grafana)" >> $GITHUB_STEP_SUMMARY
           fi
 
   security:
@@ -158,9 +158,11 @@ jobs:
           set -e
           bats $BATS | tee -a $GITHUB_STEP_SUMMARY
 
-      - name: Login to Docker Hub
-        if: ${{ needs.config.outputs.docker-io == 'true' }}
-        uses: grafana/shared-workflows/actions/dockerhub-login@ef3a62a3ca4c1a15505b4235a5a51493194da3c7 # dockerhub-login/v1.0.4
+      - name: Login to GAR
+        if: ${{ needs.config.outputs.gar == 'true' }}
+        uses: grafana/shared-workflows/actions/login-to-gar@c7ad5f57693ac858c698d95783685a9cbfd91223 # login-to-gar/v1.0.1
+        with:
+          registry: us-docker.pkg.dev
 
       - name: Login to GitHub Packages
         if: ${{ needs.config.outputs.ghcr-io == 'true' }}

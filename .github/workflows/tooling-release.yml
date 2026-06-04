@@ -43,7 +43,10 @@ jobs:
             echo "docker=true" >> $GITHUB_OUTPUT
             echo "ghcr-io=true" >> $GITHUB_OUTPUT
           fi
-          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q us-docker.pkg.dev ; then
+          # GAR image templates reference the registry via the MIRROR_IMAGE
+          # env var, so the literal registry host is not present in the
+          # rendered template strings here -- match the env var instead.
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q MIRROR_IMAGE ; then
             echo "docker=true" >> $GITHUB_OUTPUT
             echo "gar=true" >> $GITHUB_OUTPUT
           fi

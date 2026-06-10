@@ -21,6 +21,6 @@ jobs:
       go-versions: '["1.25.x","1.26.x"]'
       goreleaser-version: "2.16.0"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
-      k6-versions: '["v1.2.3","v1.0.0"]'
+      k6-versions: '["v2.0.0"]'
       bats: .github/validate.bats
       # #endregion inputs

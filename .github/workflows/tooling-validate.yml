@@ -132,7 +132,12 @@ jobs:
           go mod verify
 
       - name: Run golangci-lint with k6 ruleset
-        uses: grafana/k6/.github/actions/lint@1646ca06eeb44c5e495426f1226c9a4bc241d741 # master
+        # `ref` is passed explicitly because this workflow is itself a
+        # workflow_call: action_ref doesn't propagate through nested
+        # workflow_call -> composite action chains.
+        uses: grafana/k6-ci/.github/actions/lint@143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
+        with:
+          ref: 143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
 
   smoke:
     name: Smoke

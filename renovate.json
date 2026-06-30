@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>grafana/grafana-renovate-config//presets/k6/k6-engine-base.json"
+    "github>grafana/grafana-renovate-config//presets/k6/k6-engine-base.json",
+    "github>grafana/grafana-renovate-config//presets/k6/k6-engine-automerge.json"
   ],
   "customManagers": [
     {
@@ -32,7 +33,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "managerFilePatterns": [
+        "/\\.github/workflows/.+\\.yml$/"
+      ],
       "matchStrings": [
         "GORELEASER_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
@@ -42,7 +45,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "managerFilePatterns": [
+        "/\\.github/workflows/.+\\.yml$/"
+      ],
       "matchStrings": [
         "GOVULNCHECK_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
@@ -52,7 +57,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "managerFilePatterns": [
+        "/\\.github/workflows/.+\\.yml$/"
+      ],
       "matchStrings": [
         "GOSEC_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
@@ -62,7 +69,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.github/workflows/.+\\.yml$/"],
+      "managerFilePatterns": [
+        "/\\.github/workflows/.+\\.yml$/"
+      ],
       "matchStrings": [
         "bats-version:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
@@ -72,7 +81,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "managerFilePatterns": [
+        "/\\.devcontainer/devcontainer\\.json$/"
+      ],
       "matchStrings": [
         "\"golangciLintVersion\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
@@ -82,7 +93,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "managerFilePatterns": [
+        "/\\.devcontainer/devcontainer\\.json$/"
+      ],
       "matchStrings": [
         "ghcr\\.io/guiyomh/features/goreleaser:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
@@ -92,7 +105,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "managerFilePatterns": [
+        "/\\.devcontainer/devcontainer\\.json$/"
+      ],
       "matchStrings": [
         "ghcr\\.io/szkiba/devcontainer-features/gosec:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
@@ -102,7 +117,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "managerFilePatterns": [
+        "/\\.devcontainer/devcontainer\\.json$/"
+      ],
       "matchStrings": [
         "ghcr\\.io/szkiba/devcontainer-features/govulncheck:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
@@ -112,7 +129,9 @@
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/\\.devcontainer/devcontainer\\.json$/"],
+      "managerFilePatterns": [
+        "/\\.devcontainer/devcontainer\\.json$/"
+      ],
       "matchStrings": [
         "ghcr\\.io/szkiba/devcontainer-features/bats:\\d+\":[^}]+\"version\":\\s+\"(?<currentValue>[0-9.]+)\""
       ],
@@ -124,31 +143,56 @@
   "packageRules": [
     {
       "description": "Update workflow tooling versions (golangci-lint, goreleaser)",
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["golangci/golangci-lint", "goreleaser/goreleaser"],
-      "matchFileNames": [".github/workflows/**", "docs/workflows/README.md"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "golangci/golangci-lint",
+        "goreleaser/goreleaser"
+      ],
+      "matchFileNames": [
+        ".github/workflows/**",
+        "docs/workflows/README.md"
+      ],
       "groupName": "workflow tooling",
-      "extends": ["schedule:weekly"]
+      "extends": [
+        "schedule:weekly"
+      ]
     },
     {
       "description": "Update devcontainer tooling versions (golangci-lint, goreleaser)",
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["golangci/golangci-lint", "goreleaser/goreleaser"],
-      "matchFileNames": [".devcontainer/**"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "golangci/golangci-lint",
+        "goreleaser/goreleaser"
+      ],
+      "matchFileNames": [
+        ".devcontainer/**"
+      ],
       "groupName": "workflow tooling",
-      "extends": ["schedule:weekly"]
+      "extends": [
+        "schedule:weekly"
+      ]
     },
     {
       "description": "Update devcontainer security tools (gosec, govulncheck)",
-      "matchManagers": ["custom.regex"],
+      "matchManagers": [
+        "custom.regex"
+      ],
       "matchDepNames": [
         "securego/gosec",
         "golang.org/x/vuln/cmd/govulncheck",
         "bats-core/bats-core"
       ],
-      "matchFileNames": [".devcontainer/**"],
+      "matchFileNames": [
+        ".devcontainer/**"
+      ],
       "groupName": "workflow tooling",
-      "extends": ["schedule:weekly"]
+      "extends": [
+        "schedule:weekly"
+      ]
     }
   ]
 }

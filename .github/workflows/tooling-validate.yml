@@ -134,6 +134,33 @@ jobs:
       - name: Run golangci-lint with k6 ruleset
         uses: grafana/k6/.github/actions/lint@1646ca06eeb44c5e495426f1226c9a4bc241d741 # master
 
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version: "${{ inputs.go-version }}"
+          check-latest: true
+
+      - name: Install documentation tools
+        run: |
+          mkdir -p "${RUNNER_TEMP}/go/bin"
+          echo "${RUNNER_TEMP}/go/bin" >> "${GITHUB_PATH}"
+          GOBIN="${RUNNER_TEMP}/go/bin" go install github.com/szkiba/mdcode@v0.2.0
+
+      - name: Check generated documentation
+        run: |
+          make doc
+          git diff --exit-code
+
   smoke:
     name: Smoke
     runs-on: ubuntu-latest

@@ -25,9 +25,9 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 ```yaml file=../../.github/workflows/validate.yml region=inputs
       go-version: "1.26.x"
       go-versions: '["1.25.x","1.26.x"]'
-      goreleaser-version: "2.13.3"
+      goreleaser-version: "2.16.0"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
-      k6-versions: '["v1.2.3","v1.0.0"]'
+      k6-versions: '["v2.0.0"]'
       bats: .github/validate.bats
 ```
 
@@ -48,8 +48,8 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
       go-version: "1.25.x"
-      goreleaser-version: "2.13.3"
-      k6-versions: '["v1.2.3","v1.0.0"]'
+      goreleaser-version: "2.16.0"
+      k6-versions: '["v2.0.0"]'
       bats: ./.github/release.bats
 ```
 
@@ -79,6 +79,8 @@ The **Tooling Validate** ([`tooling-validate.yml`](../../.github/workflows/tooli
   --no-config --presets bugs --enable gofmt
   ```
   In case of an error, the workflow will stop with an error.
+
+- **Docs**: Regenerate documentation and fail if generated files are not up to date.
 
 - **Smoke**: Run short Go tests (`-short` flag) on single platform and single go version. In case of an error, the workflow will stop with an error. The role of this job is to quickly stop the workflow in case of trivial test errors, preventing slower tests from running on multiple platforms using multiple go versions.
 

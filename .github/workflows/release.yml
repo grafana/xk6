@@ -19,7 +19,7 @@ jobs:
     with:
       # #region inputs
       go-version: "1.25.x"
-      goreleaser-version: "2.16.0"
+      goreleaser-version: "2.17.0"
       k6-versions: '["v2.0.0"]'
       bats: ./.github/release.bats
       # #endregion inputs

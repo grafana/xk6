@@ -46,7 +46,7 @@ jobs:
       codecov: ${{steps.configure.outputs.codecov}}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
       - name: Configure
@@ -92,7 +92,7 @@ jobs:
     needs: ["config"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
@@ -114,12 +114,12 @@ jobs:
     needs: ["config"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "${{ inputs.go-version }}"
           check-latest: true
@@ -132,7 +132,12 @@ jobs:
           go mod verify
 
       - name: Run golangci-lint with k6 ruleset
-        uses: grafana/k6/.github/actions/lint@e491808f392623e15bc3092ff0851425709740b4 # master
+        # `ref` is passed explicitly because this workflow is itself a
+        # workflow_call: action_ref doesn't propagate through nested
+        # workflow_call -> composite action chains.
+        uses: grafana/k6-ci/.github/actions/lint@143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
+        with:
+          ref: 143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
 
   smoke:
     name: Smoke
@@ -140,12 +145,12 @@ jobs:
     needs: ["config"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ inputs.go-version }}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "${{ inputs.go-version }}"
           check-latest: true
@@ -167,12 +172,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: ${{ matrix.go-version }}
           check-latest: true
@@ -194,13 +199,13 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: ${{ matrix.go-version }}
           check-latest: true
@@ -250,12 +255,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
       - name: Setup Go ${{inputs.go-version}}
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version: "${{inputs.go-version}}"
           check-latest: true
@@ -284,7 +289,7 @@ jobs:
       GORELEASER_VERSION: ""
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 

@@ -26,7 +26,7 @@
     "ghcr.io/devcontainers/features/go:1": { "version": "1.26" },
     "ghcr.io/guiyomh/features/goreleaser:0": { "version": "2.17.0" },
     "ghcr.io/guiyomh/features/gotestsum:0": { "version": "1.12.1" },
-    "ghcr.io/szkiba/devcontainer-features/gosec:1": { "version": "2.27.1" },
+    "ghcr.io/szkiba/devcontainer-features/gosec:1": { "version": "2.28.0" },
     "ghcr.io/szkiba/devcontainer-features/govulncheck:1": { "version": "1.1.4" },
     "ghcr.io/szkiba/devcontainer-features/bats:1": { "version": "1.13.0" },
     "ghcr.io/szkiba/devcontainer-features/cdo:1": { "version": "0.1.2" },

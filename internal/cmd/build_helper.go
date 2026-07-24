@@ -48,7 +48,7 @@ const (
 	defaultCgo          = 0
 	defaultRaceDetector = 0
 	defaultSkipCleanup  = 0
-	defaultBuildFlags   = "-trimpath,-ldflags=-s -w"
+	defaultBuildFlags   = "-trimpath,-ldflags=-s -w,-buildvcs=false"
 )
 
 var nonGoEnvToCopy = []string{ //nolint:gochecknoglobals

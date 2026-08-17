@@ -47,7 +47,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/\\.github/workflows/.+\\.yml$/",
-        "/Dockerfile$/"
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
       ],
       "matchStrings": [
         "GOVULNCHECK_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
@@ -60,7 +61,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/\\.github/workflows/.+\\.yml$/",
-        "/Dockerfile$/"
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
       ],
       "matchStrings": [
         "GOSEC_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"

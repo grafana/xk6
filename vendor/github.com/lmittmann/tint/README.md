@@ -1,7 +1,6 @@
 # `tint`: 🌈 **slog.Handler** that writes tinted logs
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/lmittmann/tint.svg)](https://pkg.go.dev/github.com/lmittmann/tint#section-documentation)
-[![Go Report Card](https://goreportcard.com/badge/github.com/lmittmann/tint)](https://goreportcard.com/report/github.com/lmittmann/tint)
 
 <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://github.com/lmittmann/tint/assets/3458786/3d42f8d5-8bdf-40db-a16a-1939c88689cb">
@@ -28,11 +27,11 @@ go get github.com/lmittmann/tint
 w := os.Stderr
 
 // Create a new logger
-logger := slog.New(tint.NewHandler(w, nil))
+logger := slog.New(tint.NewTextHandler(w, nil))
 
 // Set global logger with custom options
 slog.SetDefault(slog.New(
-    tint.NewHandler(w, &tint.Options{
+    tint.NewTextHandler(w, &tint.Options{
         Level:      slog.LevelDebug,
         TimeFormat: time.Kitchen,
     }),
@@ -50,7 +49,7 @@ for details.
 const LevelTrace = slog.LevelDebug - 4
 
 w := os.Stderr
-logger := slog.New(tint.NewHandler(w, &tint.Options{
+logger := slog.New(tint.NewTextHandler(w, &tint.Options{
     Level: LevelTrace,
     ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
         if a.Key == slog.LevelKey && len(groups) == 0 {
@@ -68,7 +67,7 @@ logger := slog.New(tint.NewHandler(w, &tint.Options{
 // Create a new logger that doesn't write the time
 w := os.Stderr
 logger := slog.New(
-    tint.NewHandler(w, &tint.Options{
+    tint.NewTextHandler(w, &tint.Options{
         ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
             if a.Key == slog.TimeKey && len(groups) == 0 {
                 return slog.Attr{}
@@ -83,7 +82,7 @@ logger := slog.New(
 // Create a new logger that writes all errors in red
 w := os.Stderr
 logger := slog.New(
-    tint.NewHandler(w, &tint.Options{
+    tint.NewTextHandler(w, &tint.Options{
         ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
             if a.Value.Kind() == slog.KindAny {
                 if _, ok := a.Value.Any().(error); ok {
@@ -105,7 +104,7 @@ e.g., the [`go-isatty`](https://github.com/mattn/go-isatty) package:
 ```go
 w := os.Stderr
 logger := slog.New(
-    tint.NewHandler(w, &tint.Options{
+    tint.NewTextHandler(w, &tint.Options{
         NoColor: !isatty.IsTerminal(w.Fd()),
     }),
 )
@@ -119,6 +118,6 @@ Color support on Windows can be added by using e.g., the
 ```go
 w := os.Stderr
 logger := slog.New(
-    tint.NewHandler(colorable.NewColorable(w), nil),
+    tint.NewTextHandler(colorable.NewColorable(w), nil),
 )
 ```

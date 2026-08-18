@@ -146,7 +146,7 @@ func initLogging() *slog.LevelVar {
 		topts.TimeFormat = time.Kitchen
 	}
 
-	logger := slog.New(tint.NewHandler(colorable.NewColorable(w), topts))
+	logger := slog.New(tint.NewTextHandler(colorable.NewColorable(w), topts))
 
 	slog.SetDefault(logger)
 

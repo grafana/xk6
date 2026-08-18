@@ -17,7 +17,7 @@ Create a new logger with a custom TRACE level:
 	const LevelTrace = slog.LevelDebug - 4
 
 	w := os.Stderr
-	logger := slog.New(tint.NewHandler(w, &tint.Options{
+	logger := slog.New(tint.NewTextHandler(w, &tint.Options{
 		Level: LevelTrace,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.LevelKey && len(groups) == 0 {
@@ -34,7 +34,7 @@ Create a new logger that doesn't write the time:
 
 	w := os.Stderr
 	logger := slog.New(
-		tint.NewHandler(w, &tint.Options{
+		tint.NewTextHandler(w, &tint.Options{
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.TimeKey && len(groups) == 0 {
 					return slog.Attr{}
@@ -48,7 +48,7 @@ Create a new logger that writes all errors in red:
 
 	w := os.Stderr
 	logger := slog.New(
-		tint.NewHandler(w, &tint.Options{
+		tint.NewTextHandler(w, &tint.Options{
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Value.Kind() == slog.KindAny {
 					if _, ok := a.Value.Any().(error); ok {
@@ -68,7 +68,7 @@ e.g., the [go-isatty] package:
 
 	w := os.Stderr
 	logger := slog.New(
-		tint.NewHandler(w, &tint.Options{
+		tint.NewTextHandler(w, &tint.Options{
 			NoColor: !isatty.IsTerminal(w.Fd()),
 		}),
 	)
@@ -79,7 +79,7 @@ Color support on Windows can be added by using e.g., the [go-colorable] package:
 
 	w := os.Stderr
 	logger := slog.New(
-		tint.NewHandler(colorable.NewColorable(w), nil),
+		tint.NewTextHandler(colorable.NewColorable(w), nil),
 	)
 
 [zerolog.ConsoleWriter]: https://pkg.go.dev/github.com/rs/zerolog#ConsoleWriter
@@ -152,9 +152,9 @@ func (o *Options) setDefaults() {
 	}
 }
 
-// NewHandler creates a [slog.Handler] that writes tinted logs to Writer w,
+// NewTextHandler creates a [slog.Handler] that writes tinted logs to Writer w,
 // using the default options. If opts is nil, the default options are used.
-func NewHandler(w io.Writer, opts *Options) slog.Handler {
+func NewTextHandler(w io.Writer, opts *Options) slog.Handler {
 	if opts == nil {
 		opts = &Options{}
 	}
@@ -165,6 +165,16 @@ func NewHandler(w io.Writer, opts *Options) slog.Handler {
 		w:    w,
 		opts: *opts,
 	}
+}
+
+// NewHandler creates a [slog.Handler] that writes tinted logs to Writer w,
+// using the default options. If opts is nil, the default options are used.
+//
+// Deprecated: Use [NewTextHandler] instead.
+//
+//go:fix inline
+func NewHandler(w io.Writer, opts *Options) slog.Handler {
+	return NewTextHandler(w, opts)
 }
 
 // handler implements a [slog.Handler].
@@ -203,18 +213,20 @@ func (h *handler) Handle(_ context.Context, r slog.Record) error {
 
 	// write time
 	if !r.Time.IsZero() {
-		val := r.Time.Round(0) // strip monotonic to match Attr behavior
 		if rep == nil {
 			h.appendTintTime(buf, r.Time, -1)
 			buf.WriteByte(' ')
-		} else if a := rep(nil /* groups */, slog.Time(slog.TimeKey, val)); a.Key != "" {
-			val, color := h.resolve(a.Value)
-			if val.Kind() == slog.KindTime {
-				h.appendTintTime(buf, val.Time(), color)
-			} else {
-				h.appendTintValue(buf, val, false, color, true)
+		} else {
+			val := r.Time.Round(0) // strip monotonic to match Attr behavior
+			if a := rep(nil /* groups */, slog.Time(slog.TimeKey, val)); a.Key != "" {
+				val, color := h.resolve(a.Value)
+				if val.Kind() == slog.KindTime {
+					h.appendTintTime(buf, val.Time(), color)
+				} else {
+					h.appendTintValue(buf, val, false, color, true)
+				}
+				buf.WriteByte(' ')
 			}
-			buf.WriteByte(' ')
 		}
 	}
 
@@ -495,9 +507,34 @@ func (h *handler) appendValue(buf *buffer, v slog.Value, quote bool) {
 		case *slog.Source:
 			appendSource(buf, cv)
 		default:
+			if bs, ok := byteSlice(cv); ok {
+				if quote {
+					*buf = strconv.AppendQuote(*buf, string(bs))
+				} else {
+					buf.Write(bs)
+				}
+				break
+			}
 			appendString(buf, fmt.Sprintf("%+v", cv), quote, !h.opts.NoColor)
 		}
 	}
+}
+
+// byteSlice returns its argument as a []byte if the argument's
+// underlying type is []byte, along with a second return value of true.
+// Otherwise it returns nil, false.
+//
+// Copied from log/slog/text_handler.go.
+func byteSlice(a any) ([]byte, bool) {
+	if bs, ok := a.([]byte); ok {
+		return bs, true
+	}
+	// Like Printf's %s, we allow both the slice type and the byte element type to be named.
+	t := reflect.TypeOf(a)
+	if t != nil && t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8 {
+		return reflect.ValueOf(a).Bytes(), true
+	}
+	return nil, false
 }
 
 func (h *handler) appendTintValue(buf *buffer, val slog.Value, quote bool, color int16, faint bool) {

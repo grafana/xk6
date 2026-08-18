@@ -46,10 +46,12 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/\\.github/workflows/.+\\.yml$/"
+        "/\\.github/workflows/.+\\.yml$/",
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
       ],
       "matchStrings": [
-        "GOVULNCHECK_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+        "GOVULNCHECK_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "golang.org/x/vuln/cmd/govulncheck",
@@ -58,10 +60,12 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/\\.github/workflows/.+\\.yml$/"
+        "/\\.github/workflows/.+\\.yml$/",
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
       ],
       "matchStrings": [
-        "GOSEC_VERSION:\\s+[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+        "GOSEC_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "securego/gosec",

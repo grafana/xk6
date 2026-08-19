@@ -135,7 +135,7 @@ jobs:
         # `ref` is passed explicitly because this workflow is itself a
         # workflow_call: action_ref doesn't propagate through nested
         # workflow_call -> composite action chains.
-        uses: grafana/k6-ci/.github/actions/lint@143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
+        uses: grafana/k6-ci/.github/actions/lint@777962b022a831166517639e542630d8b7d1455f # v0.4.0
         with:
           ref: 143ec80c1678ae96a54b82389ea862d4748c27e1 # v0.3.0
 

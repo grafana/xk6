@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -25,14 +26,14 @@ func TestRepositoryOperations(t *testing.T) {
 	runGit(t, source, "config", "user.name", "xk6 tests")
 	runGit(t, source, "config", "commit.gpgsign", "false")
 
-	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("v1\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("v1\n"), 0o644); err != nil { //nolint:forbidigo
 		t.Fatal(err)
 	}
 	runGit(t, source, "add", "README.md")
 	runGit(t, source, "commit", "-m", "initial")
 	runGit(t, source, "tag", "v1.0.0")
 
-	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("v2\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "README.md"), []byte("v2\n"), 0o644); err != nil { //nolint:forbidigo
 		t.Fatal(err)
 	}
 	runGit(t, source, "add", "README.md")
@@ -68,7 +69,7 @@ func TestRepositoryOperations(t *testing.T) {
 	if err := Checkout(ctx, clone, "v1.0.0"); err != nil {
 		t.Fatal(err)
 	}
-	content, err := os.ReadFile(filepath.Join(clone, "README.md"))
+	content, err := os.ReadFile(filepath.Join(clone, "README.md")) //nolint:forbidigo
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,19 +79,13 @@ func TestRepositoryOperations(t *testing.T) {
 }
 
 func contains(values []string, want string) bool {
-	for _, value := range values {
-		if value == want {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(values, want)
 }
 
 func runGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
 
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(context.Background(), "git", args...)
 	cmd.Dir = dir
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)

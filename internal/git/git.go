@@ -51,7 +51,7 @@ func Tags(ctx context.Context, dir string) ([]string, error) {
 	}
 
 	var tags []string
-	for _, tag := range strings.Split(out, "\n") {
+	for tag := range strings.SplitSeq(out, "\n") {
 		tag = strings.TrimSuffix(tag, "\r")
 		if tag != "" {
 			tags = append(tags, tag)

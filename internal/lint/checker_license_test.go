@@ -58,7 +58,7 @@ func TestCheckerLicense(t *testing.T) {
 
 			dir := t.TempDir()
 			if tt.name != "missing root license" {
-				err := os.WriteFile(filepath.Join(dir, licenseFilename), []byte(tt.contents), 0o600)
+				err := os.WriteFile(filepath.Join(dir, licenseFilename), []byte(tt.contents), 0o600) //nolint:forbidigo
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -80,12 +80,12 @@ func TestCheckerLicenseDoesNotScanSubdirectories(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	err := os.Mkdir(filepath.Join(dir, "nested"), 0o700)
+	err := os.Mkdir(filepath.Join(dir, "nested"), 0o700) //nolint:forbidigo
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = os.WriteFile(filepath.Join(dir, "nested", licenseFilename), []byte("Apache License\nVersion 2.0"), 0o600)
+	err = os.WriteFile(filepath.Join(dir, "nested", licenseFilename), []byte("Apache License\nVersion 2.0"), 0o600) //nolint:forbidigo
 	if err != nil {
 		t.Fatal(err)
 	}

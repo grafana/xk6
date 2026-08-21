@@ -3,6 +3,7 @@ package lint
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +16,7 @@ func checkerLicense(_ context.Context, dir string) *checkResult {
 
 	data, err := os.ReadFile(filepath.Clean(filename)) //nolint:forbidigo
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return checkFailed("no root `%s` file found", licenseFilename)
 		}
 
@@ -35,7 +36,7 @@ func identifyLicense(contents string) string {
 
 	// SPDX identifiers are unambiguous and allow projects to use a customized
 	// license file while still declaring the applicable standard license.
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		const prefix = "SPDX-LICENSE-IDENTIFIER:"
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, prefix) {
@@ -61,7 +62,9 @@ func identifyLicense(contents string) string {
 		return "GPL-3.0"
 	case strings.Contains(text, "APACHE LICENSE") && strings.Contains(text, "VERSION 2.0"):
 		return "Apache-2.0"
-	case strings.Contains(text, "PERMISSION IS HEREBY GRANTED, FREE OF CHARGE, TO ANY PERSON OBTAINING A COPY OF THIS SOFTWARE"):
+	case strings.Contains(text,
+		"PERMISSION IS HEREBY GRANTED, FREE OF CHARGE, TO ANY PERSON OBTAINING A COPY OF THIS SOFTWARE",
+	):
 		return "MIT"
 	case strings.Contains(text, "REDISTRIBUTION AND USE IN SOURCE AND BINARY FORMS") &&
 		strings.Contains(text, "NEITHER THE NAME"):

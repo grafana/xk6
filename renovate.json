@@ -72,6 +72,34 @@
       "versioningTemplate": "semver"
     },
     {
+      "description": "Transitive dependency overrides for the security tools built into the image",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
+      ],
+      "matchStrings": [
+        "XMOD_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "golang.org/x/mod",
+      "versioningTemplate": "semver"
+    },
+    {
+      "description": "Transitive dependency overrides for the security tools built into the image",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Dockerfile$/",
+        "/Dockerfile\\.goreleaser$/"
+      ],
+      "matchStrings": [
+        "GRPC_VERSION[:=]\\s*[\"']?(?<currentValue>v?[0-9.]+)[\"']?"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "google.golang.org/grpc",
+      "versioningTemplate": "semver"
+    },
+    {
       "customType": "regex",
       "managerFilePatterns": [
         "/\\.github/workflows/.+\\.yml$/"

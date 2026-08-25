@@ -1,10 +1,15 @@
 # Base image pinned to Chainguard's latest-dev stream to ensure zero CVEs.
-# Note: This specific digest resolves to Go 1.26.x
-ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:9037a8af6e7da42863009baf03973773f28b90402a4118b561a8510bc8deb529
+# Note: This specific digest resolves to Go 1.27.x
+ARG GO_IMAGE=cgr.dev/chainguard/go:latest-dev@sha256:9eb676cef7df351a8511e7b11ff3822778b884dfde8ddadba81d43a33d24253f
 
 # Define global build arguments for the tools to install from source
 ARG GOSEC_VERSION=v2.28.0
-ARG GOVULNCHECK_VERSION=v1.3.0
+ARG GOVULNCHECK_VERSION=v1.7.0
+
+# Patched releases of transitive dependencies that gosec and govulncheck still
+# pin to vulnerable versions (CVE-2026-56864, CVE-2026-56865, GHSA-hrxh-6v49-42gf)
+ARG XMOD_VERSION=v0.40.0
+ARG GRPC_VERSION=v1.83.1
 
 # ==========================================
 # STAGE 1: Builder
@@ -14,6 +19,8 @@ FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS builder
 # Pull global ARGs into this stage's scope
 ARG GOSEC_VERSION
 ARG GOVULNCHECK_VERSION
+ARG XMOD_VERSION
+ARG GRPC_VERSION
 
 # Docker automatically injects these during multi-platform builds
 ARG TARGETOS
@@ -32,12 +39,18 @@ ENV GOSEC_VERSION=${GOSEC_VERSION} \
     GOOS=${TARGETOS} \
     GOARCH=${TARGETARCH}
 
-# Install security tools (Go hides them in the GOPATH when cross-compiling)
-RUN go install -ldflags="-s -w" golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}
-RUN go install -ldflags="-s -w" github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
-
-# Fish the installed tools out of the GOPATH and move them to our working dir
-RUN find $(go env GOPATH)/bin -type f -exec mv {} /build/ \;
+# Build the security tools from a throwaway module. 'go install tool@version'
+# would honour the tools' own go.mod pins, which still reference vulnerable
+# releases of golang.org/x/mod and google.golang.org/grpc; a scratch module lets
+# us force the patched ones in. Building instead of installing also drops the
+# binaries straight into /build, so there is no GOPATH to fish them out of.
+RUN mkdir /tools && cd /tools && \
+    go mod init xk6-tools && \
+    go get golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION} \
+           github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION} && \
+    go get golang.org/x/mod@${XMOD_VERSION} google.golang.org/grpc@${GRPC_VERSION} && \
+    go build -ldflags="-s -w" -o /build/govulncheck golang.org/x/vuln/cmd/govulncheck && \
+    go build -ldflags="-s -w" -o /build/gosec github.com/securego/gosec/v2/cmd/gosec
 
 # Compile xk6 and fixids statically
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o xk6 -trimpath .

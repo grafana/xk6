@@ -3,11 +3,11 @@ package lint
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5"
+	gitcmd "go.k6.io/xk6/internal/git"
 )
 
-func checkerGit(_ context.Context, dir string) *checkResult {
-	_, err := git.PlainOpen(dir)
+func checkerGit(ctx context.Context, dir string) *checkResult {
+	err := gitcmd.IsWorktree(ctx, dir)
 	if err != nil {
 		return checkError(err)
 	}

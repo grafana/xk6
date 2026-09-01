@@ -227,7 +227,7 @@ type TestResult struct {
 	Duration      int64          `json:"duration"`
 	Start         int64          `json:"start,omitempty"`
 	Stop          int64          `json:"stop,omitempty"`
-	Suite         string         `json:"suite,omitempty"`
+	Suite         []string       `json:"suite,omitempty"`
 	Message       string         `json:"message,omitempty"`
 	Trace         string         `json:"trace,omitempty"`
 	RawStatus     string         `json:"rawStatus,omitempty"`

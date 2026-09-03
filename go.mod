@@ -13,7 +13,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-task/slim-sprig/v3 v3.0.0
 	github.com/goreleaser/fileglob v1.4.0
-	github.com/grafana/k6foundry v0.5.2
+	github.com/grafana/k6foundry v0.5.3-0.20260903154735-9b3d581d3815
 	github.com/lmittmann/tint v1.2.0
 	github.com/mattn/go-colorable v0.1.15
 	github.com/mattn/go-isatty v0.0.24

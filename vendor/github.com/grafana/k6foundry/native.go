@@ -46,6 +46,9 @@ type NativeFoundryOpts struct {
 	// Only used when the k6Version passed to Build is not a valid semver (e.g. "latest" or a commit SHA).
 	// Example: set to "v2" to build against go.k6.io/k6/v2@latest.
 	K6MajorVersion string
+	// BuildOrigin, when not empty, is written into the internal/build.BuildOrigin variable
+	// of binaries built from k6 v2 or later
+	BuildOrigin string
 	// don't cleanup work environment (useful for debugging)
 	SkipCleanup bool
 	// redirect stdout
@@ -169,8 +172,8 @@ func (b *native) Build(
 	b.warnK6VersionConflicts(ctx, k6ModPath, buildEnv, buildInfo)
 
 	b.log.Info("Building k6")
-	err = buildEnv.compile(ctx, k6Binary, buildOpts...)
-	if err != nil {
+	buildArgs := buildArgsWithOrigin(buildEnv.getenv("GOFLAGS"), buildOpts, k6ModPath, b.BuildOrigin)
+	if err = buildEnv.compile(ctx, k6Binary, buildArgs...); err != nil {
 		return nil, err
 	}
 
@@ -180,6 +183,82 @@ func (b *native) Build(
 	}
 
 	return buildInfo, nil
+}
+
+// buildArgsWithOrigin merges every caller -ldflags value into one cmdline entry ending with the
+// origin assignment, so go's PerPackageFlag last-matching rule keeps every caller option and
+// makes the configured origin win over any BuildOrigin the caller set.
+func buildArgsWithOrigin(goflags string, buildArgs []string, k6ModPath, origin string) []string {
+	if origin == "" || !moduleVersionRegexp.MatchString(k6ModPath) {
+		return buildArgs
+	}
+
+	var values, other []string
+	collect := func(arg string) bool {
+		v, ok := ldflagsValue(arg)
+		if !ok {
+			return false
+		}
+		if v != "" {
+			values = append(values, v)
+		}
+		return true
+	}
+
+	for _, setting := range splitGoflags(goflags) {
+		collect(setting)
+	}
+
+	for i := 0; i < len(buildArgs); i++ {
+		arg := buildArgs[i]
+		if (arg == "-ldflags" || arg == "--ldflags") && i+1 < len(buildArgs) {
+			i++
+			arg = "-ldflags=" + buildArgs[i]
+		}
+		if !collect(arg) {
+			other = append(other, arg)
+		}
+	}
+
+	values = append(values, fmt.Sprintf("-X=%s/internal/build.BuildOrigin=%s", k6ModPath, origin))
+	return append([]string{"-ldflags=" + strings.Join(values, " ")}, other...)
+}
+
+func ldflagsValue(arg string) (string, bool) {
+	name, value, ok := strings.Cut(arg, "=")
+	if !ok || (name != "-ldflags" && name != "--ldflags") {
+		return "", false
+	}
+	return value, true
+}
+
+// splitGoflags mirrors go's own GOFLAGS parsing so a quoted setting stays intact and an inner quote
+// stays literal, and strings.Fields cannot serve.
+func splitGoflags(goflags string) []string {
+	const space = " \t\n\r"
+
+	var settings []string
+	for {
+		goflags = strings.TrimLeft(goflags, space)
+		if goflags == "" {
+			return settings
+		}
+
+		if quote := goflags[:1]; quote == "'" || quote == `"` {
+			setting, rest, _ := strings.Cut(goflags[1:], quote)
+			settings = append(settings, setting)
+			goflags = rest
+			continue
+		}
+
+		end := strings.IndexAny(goflags, space)
+		if end < 0 {
+			return append(settings, goflags)
+		}
+
+		settings = append(settings, goflags[:end])
+		goflags = goflags[end:]
+	}
 }
 
 func (b *native) copyBinary(path string, dst io.Writer) error {

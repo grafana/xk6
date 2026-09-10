@@ -137,6 +137,16 @@ func newGoEnv(
 	}, nil
 }
 
+func (e goEnv) getenv(name string) string {
+	for _, entry := range e.env {
+		if key, value, _ := strings.Cut(entry, "="); key == name {
+			return value
+		}
+	}
+
+	return ""
+}
+
 func (e goEnv) close(ctx context.Context) error {
 	var err error
 

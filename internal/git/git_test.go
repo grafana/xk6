@@ -78,6 +78,19 @@ func TestRepositoryOperations(t *testing.T) {
 	}
 }
 
+func TestGitNotFound(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	_, err := Tags(context.Background(), t.TempDir())
+	if err == nil {
+		t.Fatal("Tags() error = nil, want missing Git error")
+	}
+
+	if !strings.Contains(err.Error(), "git is required but was not found on PATH") {
+		t.Fatalf("Tags() error = %q, want missing Git message", err)
+	}
+}
+
 func contains(values []string, want string) bool {
 	return slices.Contains(values, want)
 }

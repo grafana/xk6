@@ -69,7 +69,15 @@ func Checkout(ctx context.Context, dir, ref string) error {
 }
 
 func run(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "git", args...) // #nosec G204 -- arguments are passed directly without a shell
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		return "", fmt.Errorf(
+			"git is required but was not found on PATH; "+
+				"install Git and ensure it is available in PATH: %w", err,
+		)
+	}
+
+	cmd := exec.CommandContext(ctx, gitPath, args...) // #nosec G204 -- arguments are passed directly without a shell
 	cmd.Dir = dir
 
 	out, err := cmd.CombinedOutput()

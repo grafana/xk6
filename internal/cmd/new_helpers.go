@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	giturls "github.com/chainguard-dev/git-urls"
-	"github.com/go-git/go-git/v5"
+	gitcmd "go.k6.io/xk6/internal/git"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 )
@@ -32,22 +32,8 @@ func getModulePath(dir string) (string, error) {
 	return mod.Module.Mod.Path, nil
 }
 
-func getGitURL(dir string) (string, error) {
-	repo, err := git.PlainOpen(dir)
-	if err != nil {
-		return "", err
-	}
-
-	remote, err := repo.Remote("origin")
-	if err != nil {
-		return "", err
-	}
-
-	if len(remote.Config().URLs) == 0 {
-		return "", git.ErrMissingURL
-	}
-
-	return remote.Config().URLs[0], nil
+func getGitURL(ctx context.Context, dir string) (string, error) {
+	return gitcmd.RemoteURL(ctx, dir, "origin")
 }
 
 func parseGitURL(gitURL string) (string, string, string, error) {

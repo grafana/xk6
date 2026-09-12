@@ -3,11 +3,9 @@ package lint
 import (
 	"context"
 	"sort"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	gitcmd "go.k6.io/xk6/internal/git"
 )
 
 type version struct {
@@ -15,33 +13,19 @@ type version struct {
 	tag    string
 }
 
-func checkerVersions(_ context.Context, dir string) *checkResult {
-	repo, err := git.PlainOpen(dir)
+func checkerVersions(ctx context.Context, dir string) *checkResult {
+	tags, err := gitcmd.Tags(ctx, dir)
 	if err != nil {
 		return checkError(err)
 	}
-
-	iter, err := repo.Tags()
-	if err != nil {
-		return checkError(err)
-	}
-
-	const tagPrefix = "refs/tags/"
 
 	versions := make([]*version, 0)
 
-	err = iter.ForEach(func(ref *plumbing.Reference) error {
-		tag := strings.TrimPrefix(ref.Name().String(), tagPrefix)
-
+	for _, tag := range tags {
 		ver, err := semver.NewVersion(tag)
 		if err == nil {
 			versions = append(versions, &version{semver: ver, tag: tag})
 		}
-
-		return nil
-	})
-	if err != nil {
-		return checkError(err)
 	}
 
 	if len(versions) == 0 {

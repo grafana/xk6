@@ -9,16 +9,29 @@ on:
     branches: ["main", "master"]
   # #endregion triggers
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
+  configure:
+    name: Configure
+    runs-on: ubuntu-latest
+    outputs:
+      go-current: ${{ steps.go-versions.outputs.current }}
+      go-prev: ${{ steps.go-versions.outputs.prev }}
+    steps:
+      - name: Resolve Go versions
+        id: go-versions
+        uses: grafana/k6-ci/.github/actions/go-versions@03469f9ae7aad25369827832c456e8f8b7b8c1c2 # v0.5.0
+
   validate:
     name: Validate
+    needs: configure
     uses: ./.github/workflows/tooling-validate.yml
     with:
       # #region inputs
-      go-version: "1.26.x"
-      go-versions: '["1.25.x","1.26.x"]'
+      go-version: ${{ needs.configure.outputs.go-current }}
+      go-versions: '["${{ needs.configure.outputs.go-prev }}","${{ needs.configure.outputs.go-current }}"]'
       goreleaser-version: "2.17.1"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
       k6-versions: '["v2.0.0"]'

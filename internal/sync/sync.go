@@ -530,7 +530,7 @@ func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 			return nil, err // malformed request, no point retrying
 		}
 
-		resp, err := http.DefaultClient.Do(req) //nolint:gosec
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			slog.Debug("Go proxy request failed", "url", fullURL, "attempt", attempt+1, "error", err)
 			lastErr = err
@@ -538,11 +538,11 @@ func goProxyGet(ctx context.Context, url string) (*http.Response, error) {
 			continue
 		}
 
-		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode) //nolint:gosec
+		slog.Debug("Go proxy response", "url", fullURL, "status", resp.StatusCode)
 
 		// Retry on server-side errors; return everything else to the caller for status checking.
 		if resp.StatusCode >= 500 {
-			slog.Debug("Go proxy server error, will retry", //nolint:gosec
+			slog.Debug("Go proxy server error, will retry",
 				"url", fullURL, "attempt", attempt+1, "status", resp.StatusCode)
 			_, _ = io.Copy(io.Discard, resp.Body)
 			_ = resp.Body.Close()

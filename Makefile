@@ -70,18 +70,13 @@ it:
 		bats -r .;\
 	)
 
-# Download linter config from main k6 repository if not present
-.PHONY: linter-config
-linter-config:
-	@(\
-		test -s .golangci.yml || (echo "No linter config, downloading from main k6 repository..." && curl --silent --show-error --fail --no-location https://raw.githubusercontent.com/grafana/k6/master/.golangci.yml --output .golangci.yml);\
-	)
-
 # Run the linter
 .PHONY: lint
-lint: linter-config
+lint:
 	@(\
-		golangci-lint run ./...;\
+		K6_CI_REF=$$(grep -oE 'grafana/k6-ci/[^@[:space:]]+@[A-Za-z0-9._/-]+' .github/workflows/tooling-validate.yml | head -n1 | cut -d@ -f2);\
+		curl --silent --show-error --fail --no-location "https://raw.githubusercontent.com/grafana/k6-ci/$${K6_CI_REF}/.golangci.yml" --output .golangci.yml;\
+		go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$$(head -n1 .golangci.yml | tr -d '# ') run --config=.golangci.yml ./...;\
 	)
 
 # Generate the Makefile
@@ -113,4 +108,3 @@ test:
 	@(\
 		go test -count 1 -race -coverprofile=coverage.txt -timeout 2m ./...;\
 	)
-

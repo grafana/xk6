@@ -52,9 +52,9 @@ func adjustCmd() *cobra.Command {
 	return cmd
 }
 
-func probeModuleFromGitURL(opts *adjustOptions) bool {
+func probeModuleFromGitURL(ctx context.Context, opts *adjustOptions) bool {
 	if len(opts.Module) == 0 {
-		gitURL, err := getGitURL(opts.directory)
+		gitURL, err := getGitURL(ctx, opts.directory)
 		if err != nil {
 			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
 
@@ -74,7 +74,7 @@ func probeModuleFromGitURL(opts *adjustOptions) bool {
 
 func probeDescriptionFromGitURL(ctx context.Context, opts *adjustOptions) bool {
 	if len(opts.Description) == 0 {
-		gitURL, err := getGitURL(opts.directory)
+		gitURL, err := getGitURL(ctx, opts.directory)
 		if err != nil {
 			slog.Info("Missing git origin URL, skipping customization", "directory", opts.directory)
 
@@ -110,7 +110,7 @@ func adjustRunE(ctx context.Context, opts *adjustOptions) error {
 		return nil
 	}
 
-	if !probeModuleFromGitURL(opts) {
+	if !probeModuleFromGitURL(ctx, opts) {
 		return nil
 	}
 

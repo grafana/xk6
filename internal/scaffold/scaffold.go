@@ -13,20 +13,18 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	gitcmd "go.k6.io/xk6/internal/git"
 )
 
 // Scaffold scaffolds a new k6 extension based on provided sample and actual sample parameters.
 func Scaffold(ctx context.Context, sample *Sample, actual *Sample, parentDir string) error {
 	dir := filepath.Join(parentDir, path.Base(actual.Module))
 
-	repo, err := git.PlainCloneContext(ctx, dir, false, &git.CloneOptions{URL: sample.Repository})
-	if err != nil {
+	if err := gitcmd.Clone(ctx, sample.Repository, dir); err != nil {
 		return err
 	}
 
-	latest, err := getLatest(repo)
+	latest, err := getLatest(ctx, dir)
 	if err != nil {
 		return err
 	}
@@ -34,8 +32,7 @@ func Scaffold(ctx context.Context, sample *Sample, actual *Sample, parentDir str
 	if len(latest) == 0 {
 		slog.Warn("No releases, the default branch will be used!", "repo", sample.Repository)
 	} else {
-		err = checkout(repo, latest)
-		if err != nil {
+		if err := checkout(ctx, dir, latest); err != nil {
 			return err
 		}
 	}
@@ -53,24 +50,19 @@ func Adjust(dir string, sample *Sample, actual *Sample) error {
 	return customize(dir, newReplacer(sample, actual))
 }
 
-func getLatest(repo *git.Repository) (plumbing.ReferenceName, error) {
-	iter, err := repo.Tags()
+func getLatest(ctx context.Context, dir string) (string, error) {
+	tags, err := gitcmd.Tags(ctx, dir)
 	if err != nil {
 		return "", err
 	}
 
 	versions := make([]*semver.Version, 0)
 
-	err = iter.ForEach(func(ref *plumbing.Reference) error {
-		ver, err := semver.NewVersion(ref.Name().Short())
+	for _, tag := range tags {
+		ver, err := semver.NewVersion(tag)
 		if err == nil {
 			versions = append(versions, ver)
 		}
-
-		return nil
-	})
-	if err != nil {
-		return "", err
 	}
 
 	if len(versions) == 0 {
@@ -81,16 +73,11 @@ func getLatest(repo *git.Repository) (plumbing.ReferenceName, error) {
 		return versions[j].LessThan(versions[i])
 	})
 
-	return plumbing.NewTagReferenceName(versions[0].Original()), nil
+	return versions[0].Original(), nil
 }
 
-func checkout(repo *git.Repository, name plumbing.ReferenceName) error {
-	wt, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	return wt.Checkout(&git.CheckoutOptions{Branch: name})
+func checkout(ctx context.Context, dir, name string) error {
+	return gitcmd.Checkout(ctx, dir, name)
 }
 
 func cleanup(dir string) error {

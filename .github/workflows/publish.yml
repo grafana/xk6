@@ -1,0 +1,161 @@
+name: Publish
+#
+# STATUS: staging, not yet live. Not the release pipeline replacement yet --
+# trimmed down to only what's needed to prove out Windows binary signing in
+# isolation. Everything unrelated to that (security scans, Docker build/push,
+# liveness, winget submission) is left out for now and comes back once
+# signing itself is proven end-to-end.
+#
+# Why this file exists at all (not a change to tooling-release.yml): that
+# reusable workflow is also consumed externally (grafana/k6registry,
+# szkiba/md2xk6, szkiba/k6registry-backup, all pinned to specific tags), and
+# wraps a single `goreleaser release --clean` job that builds, archives and
+# publishes atomically -- no seam to sign xk6.exe before it goes public.
+# Restructuring it to add signing would force that shape (and its Vault/
+# environment prerequisites) onto every external consumer just to serve
+# xk6's own needs. So this inlines a build step instead, free to restructure
+# without touching the reusable workflow or its consumers.
+#
+# `sign-windows-artifacts` below is hardcoded `true` rather than computed --
+# there's nothing to detect here, this workflow's only job is to test
+# signing. Once this becomes the real replacement for release.yml, this is
+# where a real opt-in gate (or removing it and always signing) gets decided.
+#
+# Trigger is workflow_dispatch plus a temporary push trigger scoped to
+# `try/**` branches. workflow_dispatch alone can't be used yet: GitHub only
+# allows manually dispatching a workflow that already exists on the default
+# branch, and this hasn't been merged there. Pushing to a `try/**` branch
+# sidesteps that -- GitHub evaluates push-triggered workflows straight from
+# the pushed commit, no prior registration needed. Remove the push trigger
+# once this is merged and dispatch is usable normally; it's only here so
+# this can be iterated on and run from a branch before that.
+#
+# Do not add a tag-push trigger yet -- release.yml still owns real releases
+# on every `v*.*.*` push, and this workflow doesn't create a GitHub release
+# at all (snapshot build only), so there's nothing for it to conflict with
+# in the meantime.
+
+on:
+  push:
+    branches: ["try/**"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to build from. Defaults to the pushed branch when triggered by push.
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      sign-windows-artifacts: ${{ steps.configure.outputs.sign-windows-artifacts }}
+    steps:
+      - name: Configure
+        id: configure
+        run: echo "sign-windows-artifacts=true" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go 1.25.x
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.25.x"
+          check-latest: true
+          cache: false
+
+      - name: GoReleaser snapshot
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "2.17.1"
+          args: release --clean --snapshot
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: windows-binaries
+          path: dist/*_windows_*.zip
+          retention-days: 1
+          if-no-files-found: error
+
+  sign-windows-binaries:
+    name: Sign Windows Binaries
+    needs: ["config", "release"]
+    if: ${{ needs.config.outputs.sign-windows-artifacts == 'true' }}
+    strategy:
+      matrix:
+        arch: ["amd64", "arm64"]
+    runs-on: windows-2025
+    environment:
+      name: azure-trusted-signing
+    permissions:
+      contents: read
+      id-token: write # Required for Vault
+    steps:
+      - name: Download Windows binaries
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: windows-binaries
+          path: dist
+
+      - name: Unzip Windows binary
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist -Filter "*_windows_${{ matrix.arch }}.zip"
+          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging\
+
+      - name: Upload artifact for signing
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xk6-exe-${{ matrix.arch }}
+          path: packaging/xk6.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Get secrets for Azure Trusted Signing
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # get-vault-secrets/v1.3.2
+        id: get-signing-secrets
+        with:
+          export_env: false
+          repo_secrets: |
+            client-id=azure-trusted-signing:client-id
+            subscription-id=azure-trusted-signing:subscription-id
+            tenant-id=azure-trusted-signing:tenant-id
+
+      - name: Sign Windows binary
+        uses: grafana/shared-workflows/actions/azure-trusted-signing@6a042eda14a697e71944976ab618d27104d9fed4 # azure-trusted-signing/v1.0.3
+        id: sign-artifacts
+        with:
+          application-description: "xk6"
+          artifact-to-sign: xk6-exe-${{ matrix.arch }}
+          azure-client-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).client-id }}
+          azure-subscription-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).subscription-id }}
+          azure-tenant-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).tenant-id }}
+          signed-artifact-name: xk6-exe-${{ matrix.arch }}-signed
+
+      - name: Download signed Windows binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ steps.sign-artifacts.outputs.artifact-name }}
+          path: packaging
+
+      - name: Verify signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          Write-Output "Signer: $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }

@@ -23,11 +23,11 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 **inputs**
 
 ```yaml file=../../.github/workflows/validate.yml region=inputs
-      go-version: "1.26.x"
-      go-versions: '["1.25.x","1.26.x"]'
-      goreleaser-version: "2.13.3"
+      go-version: ${{ needs.configure.outputs.go-current }}
+      go-versions: '["${{ needs.configure.outputs.go-prev }}","${{ needs.configure.outputs.go-current }}"]'
+      goreleaser-version: "2.17.1"
       platforms: '["ubuntu-latest", "windows-latest", "macos-latest"]'
-      k6-versions: '["v1.2.3","v1.0.0"]'
+      k6-versions: '["v2.0.0"]'
       bats: .github/validate.bats
 ```
 
@@ -47,9 +47,9 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 **inputs**
 
 ```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: "1.25.x"
-      goreleaser-version: "2.13.3"
-      k6-versions: '["v1.2.3","v1.0.0"]'
+      go-version: ${{ needs.configure.outputs.go-current }}
+      goreleaser-version: "2.17.1"
+      k6-versions: '["v2.0.0"]'
       bats: ./.github/release.bats
 ```
 
@@ -74,11 +74,11 @@ The **Tooling Validate** ([`tooling-validate.yml`](../../.github/workflows/tooli
 
 - **DevContainer**: If a [Development Container](https://containers.dev/) configuration exists, it validates its parameters based on the workflow input parameters. In case of incorrect configuration, it indicates an error but does not stop the workflow.
 
-- **Lint**: Static analysis of the source code using the [golangci-lint](https://golangci-lint.run/) tool.  It uses the golangci-lint configuration found in the repository, or if it is missing, the following arguments:
-  ```
-  --no-config --presets bugs --enable gofmt
-  ```
-  In case of an error, the workflow will stop with an error.
+- **k6 CI**: Dependency verification and static analysis using the reusable
+  [k6-ci](https://github.com/grafana/k6-ci) workflow and its canonical
+  golangci-lint configuration. Its generic test and extension-build jobs are
+  skipped because the xk6-specific Test and Build jobs below provide the
+  required multi-platform and GoReleaser coverage.
 
 - **Smoke**: Run short Go tests (`-short` flag) on single platform and single go version. In case of an error, the workflow will stop with an error. The role of this job is to quickly stop the workflow in case of trivial test errors, preventing slower tests from running on multiple platforms using multiple go versions.
 

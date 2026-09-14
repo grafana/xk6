@@ -81,7 +81,11 @@ jobs:
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: "2.17.1"
-          args: release --clean --snapshot
+          # --skip=docker: this run only needs the Windows zips to sign. The
+          # dockers pipe still builds (not just pushes) images even in
+          # --snapshot mode, and arm64 needs QEMU emulation this trimmed
+          # workflow doesn't set up -- skip the whole pipe instead.
+          args: release --clean --snapshot --skip=docker
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

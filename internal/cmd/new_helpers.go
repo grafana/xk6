@@ -79,7 +79,7 @@ func getDescription(ctx context.Context, gitURL string) (string, error) {
 		return "", err
 	}
 
-	res, err := http.DefaultClient.Do(req) //nolint:gosec
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}

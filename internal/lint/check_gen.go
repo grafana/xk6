@@ -42,7 +42,7 @@ var CheckDefinitions = []CheckDefinition{
         ID:          CheckIDLicense,
         Description: "Validates that the extension includes a recognized open-source license file compatible with the k6 ecosystem and Go module distribution requirements.",
         Rationale:   "A clear license is legally required for code distribution and defines usage rights for users, contributors, and organizations. Without proper licensing, extensions cannot be safely used in commercial environments or contributed to by the community. Accepted licenses ensure compatibility with k6's Apache 2.0 license.",
-        Resolution:  "Add a `LICENSE` file to the repository root with one of the approved licenses: MIT (recommended for maximum compatibility), Apache-2.0 (best for corporate environments), BSD-2-Clause or BSD-3-Clause, or GPL-3.0, LGPL-3.0, or AGPL-3.0 (for copyleft requirements).",
+        Resolution:  "Add a `LICENSE` or `LICENSE.md` file to the repository root with one of the approved licenses: MIT (recommended for maximum compatibility), Apache-2.0 (best for corporate environments), BSD-2-Clause or BSD-3-Clause, or GPL-3.0, LGPL-3.0, or AGPL-3.0 (for copyleft requirements).",
     },
     {
         ID:          CheckIDGit,

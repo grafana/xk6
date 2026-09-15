@@ -43,7 +43,7 @@ func checkerSmoke(ctx context.Context, dir string) *checkResult {
 		return checkFailed("no smoke test file found")
 	}
 
-	cmd := exec.CommandContext(ctx, exe, "run", "--no-usage-report", "--no-summary", "--quiet", filename) // #nosec G204
+	cmd := exec.CommandContext(ctx, exe, "run", "--no-usage-report", "--summary-mode=disabled", "--quiet", filename) // #nosec G204
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {

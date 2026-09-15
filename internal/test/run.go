@@ -156,10 +156,8 @@ func errorToResult(err error, details string, filename string) *ctrf.TestResult 
 	if len(message) == 0 {
 		message = err.Error()
 
-		var exiterr *exec.ExitError
-
 		// Check if it's an exit error to extract the exit code
-		if errors.As(err, &exiterr) {
+		if exiterr, ok := errors.AsType[*exec.ExitError](err); ok {
 			code := exiterr.ExitCode()
 
 			// Map the exit code to a known k6 exit code description

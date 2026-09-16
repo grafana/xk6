@@ -1,10 +1,9 @@
 name: Publish
 #
-# STATUS: staging, not yet live. Not the release pipeline replacement yet --
-# trimmed down to only what's needed to prove out Windows binary signing in
-# isolation. Everything unrelated to that (security scans, Docker build/push,
-# liveness, winget submission) is left out for now and comes back once
-# signing itself is proven end-to-end.
+# STATUS: staging, not yet live. This is now a full release-pipeline
+# replacement candidate for release.yml, not just a signing test -- security
+# scans, Docker build/push, liveness, and winget submission are all back in,
+# plus real Windows binary signing of the actual published release assets.
 #
 # Why this file exists at all (not a change to tooling-release.yml): that
 # reusable workflow is also consumed externally (grafana/k6registry,
@@ -13,31 +12,60 @@ name: Publish
 # publishes atomically -- no seam to sign xk6.exe before it goes public.
 # Restructuring it to add signing would force that shape (and its Vault/
 # environment prerequisites) onto every external consumer just to serve
-# xk6's own needs. So this inlines a build step instead, free to restructure
-# without touching the reusable workflow or its consumers.
+# xk6's own needs. So this inlines the release job instead, free to
+# restructure without touching the reusable workflow or its consumers.
 #
-# `sign-windows-artifacts` below is hardcoded `true` rather than computed --
-# there's nothing to detect here, this workflow's only job is to test
-# signing. Once this becomes the real replacement for release.yml, this is
-# where a real opt-in gate (or removing it and always signing) gets decided.
+# Why not goreleaser's own `signs` pipe: checked, it's a dead end here, not
+# a goreleaser limitation specifically. Authenticode signing of .exe/.dll
+# files only works on Windows (the `dotnet sign` CLI the shared signing
+# action wraps says so directly, and recommends exactly the split-job shape
+# used below: build on one agent, sign on another that runs Windows). The
+# `release` job here builds Docker images too, which needs to stay on
+# Linux, so there's no single-job goreleaser invocation that could do both.
+#
+# How signing fits in: `goreleaser release --clean` is atomic (build,
+# archive, checksum, and publish all in one command), so nothing can be
+# injected mid-command to sign before the release goes public. Signing here
+# happens after the real release is published: download the two Windows
+# zip assets back, sign xk6.exe inside each, re-zip, and overwrite the
+# published assets with `gh release upload --clobber`, then patch and
+# re-upload checksums.txt to match. This means there's a brief window where
+# the unsigned zips are technically live before being replaced -- accepted
+# as a reasonable tradeoff for xk6 rather than the alternative (a two-phase
+# `goreleaser release --skip=publish` + `goreleaser publish` split with
+# hand-patched checksums in between), which would be more "correct" but
+# risks subtly breaking the currently-working Docker publish behavior
+# across that skip/resume boundary for uncertain benefit.
+#
+# The sign job deliberately isn't a matrix over architectures: both zips
+# share one checksums.txt, and two matrix legs patching and re-uploading it
+# concurrently would race. It signs amd64 then arm64 sequentially in one
+# job instead, so the final checksums.txt patch only happens once.
+#
+# liveness and submit-winget-manifest both depend on sign-windows-binaries,
+# not just release, so they run against the final signed assets rather
+# than the soon-to-be-overwritten unsigned ones. liveness in particular
+# downloads and runs the real Windows zip (see liveness.yml's `native`
+# windows leg), so it doubles as a check that re-zipping didn't corrupt
+# anything.
 #
 # Trigger is workflow_dispatch plus a temporary push trigger scoped to
-# `try/**` branches. workflow_dispatch alone can't be used yet: GitHub only
-# allows manually dispatching a workflow that already exists on the default
-# branch, and this hasn't been merged there. Pushing to a `try/**` branch
-# sidesteps that -- GitHub evaluates push-triggered workflows straight from
-# the pushed commit, no prior registration needed. Remove the push trigger
-# once this is merged and dispatch is usable normally; it's only here so
-# this can be iterated on and run from a branch before that.
-#
-# Do not add a tag-push trigger yet -- release.yml still owns real releases
-# on every `v*.*.*` push, and this workflow doesn't create a GitHub release
-# at all (snapshot build only), so there's nothing for it to conflict with
-# in the meantime.
+# `try/**` branches (see prior commits for why: workflow_dispatch alone
+# needs the file merged to the default branch first, which hasn't happened
+# yet). Do not add a tag-push trigger yet -- release.yml still owns real
+# releases on every `v*.*.*` push. Note the `release` job here now runs a
+# real `goreleaser release --clean`, not `--snapshot`: unlike the earlier
+# signing-only version of this file, this can only be run end-to-end
+# against a real tag, not an arbitrary branch, since goreleaser derives the
+# version from `git describe` and refuses to publish without one.
 
 on:
   push:
     branches: ["try/**"]
+    # Exact-match test tag only, not a glob -- this must never risk
+    # matching a real release tag. Remove once the real-release path has
+    # been exercised end-to-end.
+    tags: ["v1.4.13-rc.1"]
   workflow_dispatch:
     inputs:
       ref:
@@ -52,16 +80,61 @@ jobs:
     name: Config
     runs-on: ubuntu-latest
     outputs:
-      sign-windows-artifacts: ${{ steps.configure.outputs.sign-windows-artifacts }}
+      docker: ${{steps.configure.outputs.docker}}
+      gar: ${{steps.configure.outputs.gar}}
+      ghcr-io: ${{steps.configure.outputs.ghcr-io}}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
       - name: Configure
         id: configure
-        run: echo "sign-windows-artifacts=true" >> "$GITHUB_OUTPUT"
+        run: |
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q ghcr.io ; then
+            echo "docker=true" >> $GITHUB_OUTPUT
+            echo "ghcr-io=true" >> $GITHUB_OUTPUT
+          fi
+          # GAR image templates reference the registry via the MIRROR_IMAGE
+          # env var, so the literal registry host is not present in the
+          # rendered template strings here -- match the env var instead.
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q MIRROR_IMAGE ; then
+            echo "docker=true" >> $GITHUB_OUTPUT
+            echo "gar=true" >> $GITHUB_OUTPUT
+          fi
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: ["config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@9e75c0576c9878035d4221392108d458abe10fc3 # v2.28.0
+        with:
+          args: ./...
+
+      - name: Run Vulnerability Checker
+        id: govulncheck
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
+        with:
+          go-version-input: "1.25.x"
+          go-package: ./...
 
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: ["config"]
+    needs: ["config", "security"]
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -77,58 +150,78 @@ jobs:
           check-latest: true
           cache: false
 
+      - name: Set up QEMU
+        if: ${{needs.config.outputs.docker == 'true'}}
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        with:
+          platforms: "amd64,arm64"
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
+        with:
+          bats-version: "1.14.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
+
       - name: GoReleaser snapshot
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           version: "2.17.1"
-          # --skip=docker: this run only needs the Windows zips to sign. The
-          # dockers pipe still builds (not just pushes) images even in
-          # --snapshot mode, and arm64 needs QEMU emulation this trimmed
-          # workflow doesn't set up -- skip the whole pipe instead.
-          args: release --clean --snapshot --skip=docker
+          args: release --clean --snapshot
 
-      - name: Upload Windows binaries
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - name: Integration Test
+        env:
+          K6_VERSIONS: v2.0.0
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          set -e
+          bats ./.github/release.bats | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Login to GAR
+        if: ${{ needs.config.outputs.gar == 'true' }}
+        uses: grafana/shared-workflows/actions/login-to-gar@1f541877ceb22c7be7667d8a8df04984aeac9f9d # login-to-gar/v1.0.3
         with:
-          name: windows-binaries
-          path: dist/*_windows_*.zip
-          retention-days: 1
-          if-no-files-found: error
+          registry: us-docker.pkg.dev
 
+      - name: Login to GitHub Packages
+        if: ${{ needs.config.outputs.ghcr-io == 'true' }}
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: GoReleaser release
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "2.17.1"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Adapted from k6's submit-winget-manifest job:
+  # https://github.com/grafana/k6/blob/0608c0173bbc81851753f7c4fd9a57e2c2217c44/.github/workflows/build.yml#L599-L634
   sign-windows-binaries:
     name: Sign Windows Binaries
-    needs: ["config", "release"]
-    if: ${{ needs.config.outputs.sign-windows-artifacts == 'true' }}
-    strategy:
-      matrix:
-        arch: ["amd64", "arm64"]
+    needs: ["release"]
     runs-on: windows-2025
     environment:
       name: azure-trusted-signing
     permissions:
-      contents: read
+      contents: write # to overwrite release assets
       id-token: write # Required for Vault
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ inputs.ref || github.ref_name }}
     steps:
-      - name: Download Windows binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: windows-binaries
-          path: dist
-
-      - name: Unzip Windows binary
-        shell: pwsh
-        run: |
-          $zip = Get-ChildItem -Path dist -Filter "*_windows_${{ matrix.arch }}.zip"
-          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging\
-
-      - name: Upload artifact for signing
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: xk6-exe-${{ matrix.arch }}
-          path: packaging/xk6.exe
-          retention-days: 1
-          if-no-files-found: error
-
       - name: Get secrets for Azure Trusted Signing
         uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # get-vault-secrets/v1.3.2
         id: get-signing-secrets
@@ -139,29 +232,186 @@ jobs:
             subscription-id=azure-trusted-signing:subscription-id
             tenant-id=azure-trusted-signing:tenant-id
 
-      - name: Sign Windows binary
+      # --- amd64 ---
+
+      - name: Download amd64 release asset
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_windows_amd64.zip" --dir dist-amd64 --clobber
+
+      - name: Unzip amd64 binary
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist-amd64 -Filter "*.zip"
+          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging-amd64\
+
+      - name: Upload amd64 artifact for signing
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xk6-exe-amd64
+          path: packaging-amd64/xk6.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Sign amd64 Windows binary
         uses: grafana/shared-workflows/actions/azure-trusted-signing@6a042eda14a697e71944976ab618d27104d9fed4 # azure-trusted-signing/v1.0.3
-        id: sign-artifacts
+        id: sign-amd64
         with:
           application-description: "xk6"
-          artifact-to-sign: xk6-exe-${{ matrix.arch }}
+          artifact-to-sign: xk6-exe-amd64
           azure-client-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).client-id }}
           azure-subscription-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).subscription-id }}
           azure-tenant-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).tenant-id }}
-          signed-artifact-name: xk6-exe-${{ matrix.arch }}-signed
+          signed-artifact-name: xk6-exe-amd64-signed
 
-      - name: Download signed Windows binary
+      - name: Download signed amd64 binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: ${{ steps.sign-artifacts.outputs.artifact-name }}
-          path: packaging
+          name: ${{ steps.sign-amd64.outputs.artifact-name }}
+          path: packaging-amd64
 
-      - name: Verify signature
+      - name: Verify amd64 signature, re-zip and re-upload
         shell: pwsh
         run: |
-          $sig = Get-AuthenticodeSignature -FilePath .\packaging\xk6.exe
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-amd64\xk6.exe
           Write-Output "Status: $($sig.Status)"
-          Write-Output "Signer: $($sig.SignerCertificate.Subject)"
           if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }
 
-# trigger
+          $zipName = (Get-ChildItem -Path dist-amd64 -Filter "*.zip").Name
+          Compress-Archive -Path .\packaging-amd64\* -DestinationPath ".\$zipName" -Force
+
+          $hash = (Get-FileHash -Algorithm SHA256 -Path ".\$zipName").Hash.ToLower()
+          "AMD64_SHA256=$hash" >> $env:GITHUB_ENV
+          "AMD64_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+          gh release upload $env:TAG ".\$zipName" --clobber
+
+      # --- arm64 ---
+
+      - name: Download arm64 release asset
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_windows_arm64.zip" --dir dist-arm64 --clobber
+
+      - name: Unzip arm64 binary
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist-arm64 -Filter "*.zip"
+          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging-arm64\
+
+      - name: Upload arm64 artifact for signing
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xk6-exe-arm64
+          path: packaging-arm64/xk6.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Sign arm64 Windows binary
+        uses: grafana/shared-workflows/actions/azure-trusted-signing@6a042eda14a697e71944976ab618d27104d9fed4 # azure-trusted-signing/v1.0.3
+        id: sign-arm64
+        with:
+          application-description: "xk6"
+          artifact-to-sign: xk6-exe-arm64
+          azure-client-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).client-id }}
+          azure-subscription-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).subscription-id }}
+          azure-tenant-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).tenant-id }}
+          signed-artifact-name: xk6-exe-arm64-signed
+
+      - name: Download signed arm64 binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ steps.sign-arm64.outputs.artifact-name }}
+          path: packaging-arm64
+
+      - name: Verify arm64 signature, re-zip and re-upload
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-arm64\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }
+
+          $zipName = (Get-ChildItem -Path dist-arm64 -Filter "*.zip").Name
+          Compress-Archive -Path .\packaging-arm64\* -DestinationPath ".\$zipName" -Force
+
+          $hash = (Get-FileHash -Algorithm SHA256 -Path ".\$zipName").Hash.ToLower()
+          "ARM64_SHA256=$hash" >> $env:GITHUB_ENV
+          "ARM64_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+          gh release upload $env:TAG ".\$zipName" --clobber
+
+      # --- checksums, once both are done ---
+
+      - name: Patch and re-upload checksums.txt
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_checksums.txt" --dir dist-checksums --clobber
+          $checksumFile = Get-ChildItem -Path dist-checksums -Filter "*.txt"
+
+          $updated = Get-Content $checksumFile.FullName | ForEach-Object {
+            if ($_ -match "^\S+\s+$([regex]::Escape($env:AMD64_ZIP_NAME))$") {
+              "$env:AMD64_SHA256  $env:AMD64_ZIP_NAME"
+            } elseif ($_ -match "^\S+\s+$([regex]::Escape($env:ARM64_ZIP_NAME))$") {
+              "$env:ARM64_SHA256  $env:ARM64_ZIP_NAME"
+            } else {
+              $_
+            }
+          }
+          $updated | Set-Content $checksumFile.FullName
+
+          gh release upload $env:TAG $checksumFile.FullName --clobber
+
+  liveness:
+    name: Liveness
+    needs: ["release", "sign-windows-binaries"]
+    uses: ./.github/workflows/liveness.yml
+    permissions:
+      contents: read
+    with:
+      xk6-version: "${{ inputs.ref || github.ref_name }}"
+      xk6-it-version: "submodule"
+
+  submit-winget-manifest:
+    name: Submit WinGet Manifest
+    needs: ["release", "sign-windows-binaries"]
+    # Skip prereleases and snapshot builds (both use a hyphenated version,
+    # e.g. v1.4.13-rc.1 or goreleaser's own 1.4.13-next+<sha> snapshot
+    # template) per grafana/xk6#572's acceptance criteria: only stable tags
+    # should open a winget-pkgs PR.
+    if: ${{ !contains(inputs.ref || github.ref_name, '-') }}
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Install WingetCreate
+        shell: pwsh
+        run: |
+          Import-Module Appx -UseWindowsPowerShell
+          $appxBundleFile = Join-Path ${env:RUNNER_TEMP} "wingetcreate.msixbundle"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest/msixbundle -OutFile $appxBundleFile
+          Add-AppxPackage $appxBundleFile
+
+      - name: Get WinGet token
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # v1.3.2
+        id: get-token
+        with:
+          export_env: false
+          common_secrets: |
+            token=winget-packages:token
+
+      - name: Submit WinGet Manifest
+        env:
+          PACKAGE_ID: GrafanaLabs.xk6
+          TAG: ${{ inputs.ref || github.ref_name }}
+          WINGET_CREATE_GITHUB_TOKEN: ${{ fromJSON(steps.get-token.outputs.secrets).token }}
+        shell: pwsh
+        run: |
+          $version = "${env:TAG}".TrimStart("v")
+          $base = "${env:GITHUB_SERVER_URL}/${env:GITHUB_REPOSITORY}/releases/download/${env:TAG}"
+
+          wingetcreate token --store
+          wingetcreate update ${env:PACKAGE_ID} `
+            --urls "$base/xk6_${version}_windows_amd64.zip" "$base/xk6_${version}_windows_arm64.zip" `
+            --version $version `
+            --submit

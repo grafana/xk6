@@ -115,16 +115,18 @@ make makefile
 
 The [golangci-lint] tool is used for static analysis of the source code. It is advisable to run it before committing the changes.
 
-The linter configuration is taken from the main [k6 repository]. If no local `.golangci.yml` is found, it is downloaded automatically.
+The linter configuration and golangci-lint version are taken from the
+[k6-ci repository] release pinned in `.github/workflows/tooling-validate.yml`.
 
 ```bash
-test -s .golangci.yml || (echo "No linter config, downloading from main k6 repository..." && curl --silent --show-error --fail --no-location https://raw.githubusercontent.com/grafana/k6/master/.golangci.yml --output .golangci.yml)
-golangci-lint run ./...
+K6_CI_REF=$(grep -oE 'grafana/k6-ci/[^@[:space:]]+@[A-Za-z0-9._/-]+' .github/workflows/tooling-validate.yml | head -n1 | cut -d@ -f2)
+curl --silent --show-error --fail --no-location "https://raw.githubusercontent.com/grafana/k6-ci/${K6_CI_REF}/.golangci.yml" --output .golangci.yml
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(head -n1 .golangci.yml | tr -d '# ') run --config=.golangci.yml ./...
 ```
 
 [lint]: <#lint---run-the-linter>
 [golangci-lint]: https://github.com/golangci/golangci-lint
-[k6 repository]: https://github.com/grafana/k6
+[k6-ci repository]: https://github.com/grafana/k6-ci
 
 ### security - Run security and vulnerability checks
 

@@ -9,8 +9,19 @@ on:
 permissions: {}
 
 jobs:
+  configure:
+    name: Configure
+    runs-on: ubuntu-latest
+    outputs:
+      go-current: ${{ steps.go-versions.outputs.current }}
+    steps:
+      - name: Resolve Go versions
+        id: go-versions
+        uses: grafana/k6-ci/.github/actions/go-versions@03469f9ae7aad25369827832c456e8f8b7b8c1c2 # v0.5.0
+
   release:
     name: Release
+    needs: configure
     uses: ./.github/workflows/tooling-release.yml
     permissions:
       contents: write
@@ -18,8 +29,8 @@ jobs:
       id-token: write
     with:
       # #region inputs
-      go-version: "1.25.x"
-      goreleaser-version: "2.17.1"
+      go-version: ${{ needs.configure.outputs.go-current }}
+      goreleaser-version: "2.18.1"
       k6-versions: '["v2.0.0"]'
       bats: ./.github/release.bats
       # #endregion inputs

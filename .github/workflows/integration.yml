@@ -12,7 +12,7 @@ jobs:
     name: Integration
     runs-on: ubuntu-latest
     env:
-      GORELEASER_VERSION: "2.17.1"
+      GORELEASER_VERSION: "2.18.1"
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -20,10 +20,14 @@ jobs:
           submodules: true
           persist-credentials: false
 
+      - name: Resolve Go versions
+        id: go-versions
+        uses: grafana/k6-ci/.github/actions/go-versions@03469f9ae7aad25369827832c456e8f8b7b8c1c2 # v0.5.0
+
       - name: Setup Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version: "1.25.x"
+          go-version: ${{ steps.go-versions.outputs.current }}
           check-latest: true
           cache: false
 
@@ -50,7 +54,7 @@ jobs:
 
       - name: Setup gosec
         env:
-          GOSEC_VERSION: v2.28.0
+          GOSEC_VERSION: v2.29.0
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@${GOSEC_VERSION}
 

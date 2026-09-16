@@ -169,6 +169,7 @@ func newFoundry(ctx context.Context, opts *buildOptions) (k6foundry.Foundry, err
 		},
 		SkipCleanup: opts.skipCleanup != 0,
 		Logger:      logger,
+		BuildOrigin: "xk6",
 	}
 
 	// If k6repo is a versioned k6 module path (e.g. go.k6.io/k6/v2), extract the major

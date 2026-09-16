@@ -163,3 +163,5 @@ jobs:
           Write-Output "Status: $($sig.Status)"
           Write-Output "Signer: $($sig.SignerCertificate.Subject)"
           if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }
+
+# trigger

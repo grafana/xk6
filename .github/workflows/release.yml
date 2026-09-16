@@ -1,4 +1,6 @@
 name: Release
+#
+# Builds and publishes an xk6 release on a version tag push.
 
 on:
   # #region triggers
@@ -19,21 +21,133 @@ jobs:
         id: go-versions
         uses: grafana/k6-ci/.github/actions/go-versions@03469f9ae7aad25369827832c456e8f8b7b8c1c2 # v0.5.0
 
+  config:
+    name: Config
+    runs-on: ubuntu-latest
+    outputs:
+      docker: ${{steps.configure.outputs.docker}}
+      gar: ${{steps.configure.outputs.gar}}
+      ghcr-io: ${{steps.configure.outputs.ghcr-io}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+      - name: Configure
+        id: configure
+        run: |
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q ghcr.io ; then
+            echo "docker=true" >> $GITHUB_OUTPUT
+            echo "ghcr-io=true" >> $GITHUB_OUTPUT
+          fi
+          # GAR image templates reference the registry via the MIRROR_IMAGE
+          # env var, so the literal registry host is not present in the
+          # rendered template strings here -- match the env var instead.
+          if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q MIRROR_IMAGE ; then
+            echo "docker=true" >> $GITHUB_OUTPUT
+            echo "gar=true" >> $GITHUB_OUTPUT
+          fi
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: ["configure", "config"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@deb54465fea23d19a77f037e11e6589021f8501d # v2.29.0
+        with:
+          args: ./...
+
+      - name: Run Vulnerability Checker
+        id: govulncheck
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
+        with:
+          go-version-input: ${{ needs.configure.outputs.go-current }}
+          go-package: ./...
+
   release:
     name: Release
-    needs: configure
-    uses: ./.github/workflows/tooling-release.yml
+    runs-on: ubuntu-latest
+    needs: ["configure", "config", "security"]
     permissions:
       contents: write
       packages: write
       id-token: write
-    with:
-      # #region inputs
-      go-version: ${{ needs.configure.outputs.go-current }}
-      goreleaser-version: "2.18.1"
-      k6-versions: '["v2.0.0"]'
-      bats: ./.github/release.bats
-      # #endregion inputs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ needs.configure.outputs.go-current }}
+          check-latest: true
+          cache: false
+
+      - name: Set up QEMU
+        if: ${{needs.config.outputs.docker == 'true'}}
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        with:
+          platforms: "amd64,arm64"
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@77d6fb60505b4d0d1d73e48bd035b55074bbfb43 # 4.0.0
+        with:
+          bats-version: "1.14.0"
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
+
+      - name: GoReleaser snapshot
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "2.18.1"
+          args: release --clean --snapshot
+
+      - name: Integration Test
+        env:
+          K6_VERSIONS: v2.0.0
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<END
+
+          ### Integration Test
+
+          END
+
+          set -e
+          bats ./.github/release.bats | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Login to GAR
+        if: ${{ needs.config.outputs.gar == 'true' }}
+        uses: grafana/shared-workflows/actions/login-to-gar@1f541877ceb22c7be7667d8a8df04984aeac9f9d # login-to-gar/v1.0.3
+        with:
+          registry: us-docker.pkg.dev
+
+      - name: Login to GitHub Packages
+        if: ${{ needs.config.outputs.ghcr-io == 'true' }}
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: GoReleaser release
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "2.18.1"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   liveness:
     name: Liveness
     needs: ["release"]

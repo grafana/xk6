@@ -93,6 +93,7 @@ jobs:
       docker: ${{steps.configure.outputs.docker}}
       gar: ${{steps.configure.outputs.gar}}
       ghcr-io: ${{steps.configure.outputs.ghcr-io}}
+      winget: ${{steps.configure.outputs.winget}}
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -101,6 +102,8 @@ jobs:
           persist-credentials: false
       - name: Configure
         id: configure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q ghcr.io ; then
             echo "docker=true" >> $GITHUB_OUTPUT
@@ -112,6 +115,21 @@ jobs:
           if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q MIRROR_IMAGE ; then
             echo "docker=true" >> $GITHUB_OUTPUT
             echo "gar=true" >> $GITHUB_OUTPUT
+          fi
+
+          # GrafanaLabs.xk6's first winget-pkgs submission
+          # (https://github.com/microsoft/winget-pkgs/pull/431292) hasn't
+          # merged yet, and `wingetcreate update` only works against a
+          # package that already has a manifest there. Check the live
+          # default branch rather than the PR's status -- that's the actual
+          # ground truth for "does winget install GrafanaLabs.xk6 work right
+          # now". Any failure of this check (rate limit, network) is treated
+          # as "not yet available" rather than failing the release --
+          # winget submission is not release-critical.
+          if gh api repos/microsoft/winget-pkgs/contents/manifests/g/GrafanaLabs/xk6 --silent 2>/dev/null; then
+            echo "winget=true" >> $GITHUB_OUTPUT
+          else
+            echo "winget=false" >> $GITHUB_OUTPUT
           fi
 
   security:
@@ -383,12 +401,19 @@ jobs:
 
   submit-winget-manifest:
     name: Submit WinGet Manifest
-    needs: ["release", "sign-windows-binaries"]
-    # Skip prereleases and snapshot builds (both use a hyphenated version,
-    # e.g. v1.4.14-rc.1 or goreleaser's own <version>-next+<sha> snapshot
-    # template) per grafana/xk6#572's acceptance criteria: only stable tags
-    # should open a winget-pkgs PR.
-    if: ${{ !contains(inputs.ref || github.ref_name, '-') }}
+    needs: ["config", "release", "sign-windows-binaries"]
+    # needs.config.outputs.winget: GrafanaLabs.xk6's first winget-pkgs
+    # submission (https://github.com/microsoft/winget-pkgs/pull/431292)
+    # hasn't merged yet, and `wingetcreate update` only works against a
+    # package that already has a manifest there. The config job checks the
+    # live default branch each run, so this turns on by itself once that
+    # PR merges -- nothing to flip manually here.
+    #
+    # The other half skips prereleases and snapshot builds (both use a
+    # hyphenated version, e.g. v1.4.14-rc.1 or goreleaser's own
+    # <version>-next+<sha> snapshot template) per grafana/xk6#572's
+    # acceptance criteria -- only stable tags should open a winget-pkgs PR.
+    if: ${{ needs.config.outputs.winget == 'true' && !contains(inputs.ref || github.ref_name, '-') }}
     runs-on: windows-2025
     permissions:
       contents: read

@@ -28,6 +28,7 @@ jobs:
       docker: ${{steps.configure.outputs.docker}}
       gar: ${{steps.configure.outputs.gar}}
       ghcr-io: ${{steps.configure.outputs.ghcr-io}}
+      winget: ${{steps.configure.outputs.winget}}
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -35,6 +36,8 @@ jobs:
           persist-credentials: false
       - name: Configure
         id: configure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q ghcr.io ; then
             echo "docker=true" >> $GITHUB_OUTPUT
@@ -46,6 +49,17 @@ jobs:
           if yq -r '.dockers[].image_templates[]' .goreleaser.y*ml | grep -q MIRROR_IMAGE ; then
             echo "docker=true" >> $GITHUB_OUTPUT
             echo "gar=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check the live default branch, not the bootstrap PR's status.
+          # That is the actual ground truth for whether wingetcreate
+          # update would work right now. Any failure of this check (rate
+          # limit, network) resolves to winget=false rather than failing
+          # the release, since winget submission is not release critical.
+          if gh api repos/microsoft/winget-pkgs/contents/manifests/g/GrafanaLabs/xk6 --silent 2>/dev/null; then
+            echo "winget=true" >> $GITHUB_OUTPUT
+          else
+            echo "winget=false" >> $GITHUB_OUTPUT
           fi
 
   security:
@@ -325,3 +339,49 @@ jobs:
     with:
       xk6-version: "${{github.ref_name}}"
       xk6-it-version: "submodule"
+
+  # Adapted from k6's submit-winget-manifest job:
+  # https://github.com/grafana/k6/blob/0608c0173bbc81851753f7c4fd9a57e2c2217c44/.github/workflows/build.yml#L599-L634
+  submit-winget-manifest:
+    name: Submit WinGet Manifest
+    needs: ["config", "release", "sign-windows-binaries"]
+    # Skips prereleases and snapshot builds (both use a hyphenated
+    # version, e.g. v1.4.14-rc.1 or goreleaser's own <version>-next+<sha>
+    # snapshot template). Only stable tags should open a winget-pkgs PR.
+    if: ${{ needs.config.outputs.winget == 'true' && !contains(github.ref_name, '-') }}
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Install WingetCreate
+        shell: pwsh
+        run: |
+          Import-Module Appx -UseWindowsPowerShell
+          $appxBundleFile = Join-Path ${env:RUNNER_TEMP} "wingetcreate.msixbundle"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest/msixbundle -OutFile $appxBundleFile
+          Add-AppxPackage $appxBundleFile
+
+      - name: Get WinGet token
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # v1.3.2
+        id: get-token
+        with:
+          export_env: false
+          common_secrets: |
+            token=winget-packages:token
+
+      - name: Submit WinGet Manifest
+        env:
+          PACKAGE_ID: GrafanaLabs.xk6
+          TAG: ${{ github.ref_name }}
+          WINGET_CREATE_GITHUB_TOKEN: ${{ fromJSON(steps.get-token.outputs.secrets).token }}
+        shell: pwsh
+        run: |
+          $version = "${env:TAG}".TrimStart("v")
+          $base = "${env:GITHUB_SERVER_URL}/${env:GITHUB_REPOSITORY}/releases/download/${env:TAG}"
+
+          wingetcreate token --store
+          wingetcreate update ${env:PACKAGE_ID} `
+            --urls "$base/xk6_${version}_windows_amd64.zip" "$base/xk6_${version}_windows_arm64.zip" `
+            --version $version `
+            --submit

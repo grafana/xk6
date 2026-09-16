@@ -76,6 +76,16 @@ on:
 permissions: {}
 
 jobs:
+  configure:
+    name: Configure
+    runs-on: ubuntu-latest
+    outputs:
+      go-current: ${{ steps.go-versions.outputs.current }}
+    steps:
+      - name: Resolve Go versions
+        id: go-versions
+        uses: grafana/k6-ci/.github/actions/go-versions@03469f9ae7aad25369827832c456e8f8b7b8c1c2 # v0.5.0
+
   config:
     name: Config
     runs-on: ubuntu-latest
@@ -107,7 +117,7 @@ jobs:
   security:
     name: Security
     runs-on: ubuntu-latest
-    needs: ["config"]
+    needs: ["configure", "config"]
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -116,7 +126,7 @@ jobs:
           persist-credentials: false
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@9e75c0576c9878035d4221392108d458abe10fc3 # v2.28.0
+        uses: securego/gosec@deb54465fea23d19a77f037e11e6589021f8501d # v2.29.0
         with:
           args: ./...
 
@@ -124,13 +134,13 @@ jobs:
         id: govulncheck
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
-          go-version-input: "1.25.x"
+          go-version-input: ${{ needs.configure.outputs.go-current }}
           go-package: ./...
 
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: ["config", "security"]
+    needs: ["configure", "config", "security"]
     permissions:
       contents: write
       packages: write
@@ -143,10 +153,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up Go 1.25.x
+      - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version: "1.25.x"
+          go-version: ${{ needs.configure.outputs.go-current }}
           check-latest: true
           cache: false
 
@@ -168,7 +178,7 @@ jobs:
       - name: GoReleaser snapshot
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          version: "2.17.1"
+          version: "2.18.1"
           args: release --clean --snapshot
 
       - name: Integration Test
@@ -201,7 +211,7 @@ jobs:
       - name: GoReleaser release
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          version: "2.17.1"
+          version: "2.18.1"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

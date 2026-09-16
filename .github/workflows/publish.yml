@@ -65,7 +65,7 @@ on:
     # Exact-match test tag only, not a glob -- this must never risk
     # matching a real release tag. Remove once the real-release path has
     # been exercised end-to-end.
-    tags: ["v1.4.13-rc.1"]
+    tags: ["v1.4.14-rc.1"]
   workflow_dispatch:
     inputs:
       ref:
@@ -385,7 +385,7 @@ jobs:
     name: Submit WinGet Manifest
     needs: ["release", "sign-windows-binaries"]
     # Skip prereleases and snapshot builds (both use a hyphenated version,
-    # e.g. v1.4.13-rc.1 or goreleaser's own 1.4.13-next+<sha> snapshot
+    # e.g. v1.4.14-rc.1 or goreleaser's own <version>-next+<sha> snapshot
     # template) per grafana/xk6#572's acceptance criteria: only stable tags
     # should open a winget-pkgs PR.
     if: ${{ !contains(inputs.ref || github.ref_name, '-') }}

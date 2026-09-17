@@ -1,12 +1,22 @@
 name: Sign Latest Release
 #
-# Temporary workflow. Signs the Windows binaries of whatever release is
-# currently "latest" on grafana/xk6, if they are not already signed.
-# Exists to backfill signing on v1.4.13, which was published before
-# Windows binary signing existed. Delete this workflow and the branch
-# it lives on once it has run successfully.
+# Temporary workflow. Signs the Windows binaries of a release on
+# grafana/xk6, if they are not already signed. Exists to backfill
+# signing on releases published before Windows binary signing existed.
+# Delete this workflow and the branch it lives on once it is no longer
+# needed.
+#
+# workflow_dispatch's "tag" input only works once this file is merged
+# to the default branch. Until then, trigger by editing FALLBACK_TAG
+# below to the tag you want and pushing to this branch.
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to sign (e.g. v1.4.12). Defaults to FALLBACK_TAG below.
+        required: false
+        type: string
   push:
     branches: ["sign-latest-release"]
 
@@ -24,12 +34,16 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
+      TAG_INPUT: ${{ inputs.tag }}
+      FALLBACK_TAG: v1.4.12
     steps:
-      - name: Resolve latest release tag
+      - name: Resolve target release tag
         shell: pwsh
         run: |
-          $tag = gh release view --json tagName -q .tagName
-          Write-Output "Latest release: $tag"
+          $tag = $env:TAG_INPUT
+          if (-not $tag) { $tag = $env:FALLBACK_TAG }
+          if (-not $tag) { $tag = gh release view --json tagName -q .tagName }
+          Write-Output "Target release: $tag"
           "TAG=$tag" >> $env:GITHUB_ENV
 
       - name: Get secrets for Azure Trusted Signing

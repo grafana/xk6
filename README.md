@@ -98,6 +98,10 @@ For example, let's say `1.2.3` is the latest xk6 Docker image version.
 
 Precompiled binaries can be downloaded and installed from the [Releases] page.
 
+On Windows, xk6 can also be installed with [WinGet], which installs Go along with it:
+
+    winget install GrafanaLabs.xk6
+
 **Prerequisites**
 
 A [stable version] of the Go toolkit must be installed.
@@ -110,6 +114,7 @@ This will install the `xk6` binary in `$GOPATH/bin` directory.
 
 [Releases]: https://github.com/grafana/xk6/releases
 [stable version]: https://go.dev/dl/
+[WinGet]: https://learn.microsoft.com/windows/package-manager/winget/
 
 ### Building private extensions
 

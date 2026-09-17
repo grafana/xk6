@@ -33,7 +33,7 @@ The [`validate.bats`](../../.github/validate.bats) script is passed as the integ
 
 ### Release
 
-The **Release** ([`release.yml`](../../.github/workflows/release.yml)) workflow generates and publishes the release artifacts in case of version tag creation. This workflow calls the [Tooling Release](#tooling-release) reusable workflow with appropriate parameters. The parameters can be configured in GitHub repository variables and GitHub repository secrets.
+The **Release** ([`release.yml`](../../.github/workflows/release.yml)) workflow generates and publishes the release artifacts in case of version tag creation, signs the Windows binaries, and submits the WinGet manifest update. It does not call the [Tooling Release](#tooling-release) reusable workflow: Windows binary signing needs xk6-specific requirements that should not be forced onto tooling-release.yml's external consumers, so the build and release steps are kept inline in this file instead.
 
 The [`release.bats`](../../.github/release.bats) script is passed as the integration test. One test case builds a k6 using xk6 with a specific extension using the k6 versions specified in the `K6_VERSIONS` repository variable. After a successful build, it runs the built k6 with the `version` command and checks if the specific extension is included in the output. The other test case does the same thing, but uses the xk6 Docker image to build the k6.
 
@@ -42,15 +42,6 @@ The [`release.bats`](../../.github/release.bats) script is passed as the integra
 ```yaml file=../../.github/workflows/release.yml region=triggers
   push:
     tags: ["v*.*.*"]
-```
-
-**inputs**
-
-```yaml file=../../.github/workflows/release.yml region=inputs
-      go-version: ${{ needs.configure.outputs.go-current }}
-      goreleaser-version: "2.17.1"
-      k6-versions: '["v2.0.0"]'
-      bats: ./.github/release.bats
 ```
 
 ## Tooling workflows

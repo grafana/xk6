@@ -1,0 +1,205 @@
+name: Sign Latest Release
+#
+# Temporary workflow. Signs the Windows binaries of whatever release is
+# currently "latest" on grafana/xk6, if they are not already signed.
+# Exists to backfill signing on v1.4.13, which was published before
+# Windows binary signing existed. Delete this workflow and the branch
+# it lives on once it has run successfully.
+
+on:
+  push:
+    branches: ["sign-latest-release"]
+
+permissions: {}
+
+jobs:
+  sign-latest-release:
+    name: Sign Latest Release
+    runs-on: windows-2025
+    environment:
+      name: azure-trusted-signing
+    permissions:
+      contents: write # to overwrite release assets
+      id-token: write # Required for Vault
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Resolve latest release tag
+        shell: pwsh
+        run: |
+          $tag = gh release view --json tagName -q .tagName
+          Write-Output "Latest release: $tag"
+          "TAG=$tag" >> $env:GITHUB_ENV
+
+      - name: Get secrets for Azure Trusted Signing
+        uses: grafana/shared-workflows/actions/get-vault-secrets@a53fc80bc30b0a16a262520465db899fa3af08b7 # get-vault-secrets/v1.3.2
+        id: get-signing-secrets
+        with:
+          export_env: false
+          repo_secrets: |
+            client-id=azure-trusted-signing:client-id
+            subscription-id=azure-trusted-signing:subscription-id
+            tenant-id=azure-trusted-signing:tenant-id
+
+      # --- amd64 ---
+
+      - name: Download amd64 release asset
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_windows_amd64.zip" --dir dist-amd64 --clobber
+
+      - name: Unzip amd64 binary
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist-amd64 -Filter "*.zip"
+          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging-amd64\
+
+      - name: Check amd64 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-amd64\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          if ($sig.Status -eq "Valid") {
+            Write-Output "amd64 already signed, skipping"
+            "AMD64_ALREADY_SIGNED=true" >> $env:GITHUB_ENV
+          } else {
+            "AMD64_ALREADY_SIGNED=false" >> $env:GITHUB_ENV
+          }
+
+      - name: Upload amd64 artifact for signing
+        if: ${{ env.AMD64_ALREADY_SIGNED != 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xk6-exe-amd64
+          path: packaging-amd64/xk6.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Sign amd64 Windows binary
+        if: ${{ env.AMD64_ALREADY_SIGNED != 'true' }}
+        uses: grafana/shared-workflows/actions/azure-trusted-signing@6a042eda14a697e71944976ab618d27104d9fed4 # azure-trusted-signing/v1.0.3
+        id: sign-amd64
+        with:
+          application-description: "xk6"
+          artifact-to-sign: xk6-exe-amd64
+          azure-client-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).client-id }}
+          azure-subscription-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).subscription-id }}
+          azure-tenant-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).tenant-id }}
+          signed-artifact-name: xk6-exe-amd64-signed
+
+      - name: Download signed amd64 binary
+        if: ${{ env.AMD64_ALREADY_SIGNED != 'true' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ steps.sign-amd64.outputs.artifact-name }}
+          path: packaging-amd64
+
+      - name: Verify amd64 signature, re-zip and re-upload
+        if: ${{ env.AMD64_ALREADY_SIGNED != 'true' }}
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-amd64\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }
+
+          $zipName = (Get-ChildItem -Path dist-amd64 -Filter "*.zip").Name
+          Compress-Archive -Path .\packaging-amd64\* -DestinationPath ".\$zipName" -Force
+
+          $hash = (Get-FileHash -Algorithm SHA256 -Path ".\$zipName").Hash.ToLower()
+          "AMD64_SHA256=$hash" >> $env:GITHUB_ENV
+          "AMD64_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+          gh release upload $env:TAG ".\$zipName" --clobber
+
+      # --- arm64 ---
+
+      - name: Download arm64 release asset
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_windows_arm64.zip" --dir dist-arm64 --clobber
+
+      - name: Unzip arm64 binary
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path dist-arm64 -Filter "*.zip"
+          Expand-Archive -Path $zip.FullName -DestinationPath .\packaging-arm64\
+
+      - name: Check arm64 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-arm64\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          if ($sig.Status -eq "Valid") {
+            Write-Output "arm64 already signed, skipping"
+            "ARM64_ALREADY_SIGNED=true" >> $env:GITHUB_ENV
+          } else {
+            "ARM64_ALREADY_SIGNED=false" >> $env:GITHUB_ENV
+          }
+
+      - name: Upload arm64 artifact for signing
+        if: ${{ env.ARM64_ALREADY_SIGNED != 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xk6-exe-arm64
+          path: packaging-arm64/xk6.exe
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Sign arm64 Windows binary
+        if: ${{ env.ARM64_ALREADY_SIGNED != 'true' }}
+        uses: grafana/shared-workflows/actions/azure-trusted-signing@6a042eda14a697e71944976ab618d27104d9fed4 # azure-trusted-signing/v1.0.3
+        id: sign-arm64
+        with:
+          application-description: "xk6"
+          artifact-to-sign: xk6-exe-arm64
+          azure-client-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).client-id }}
+          azure-subscription-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).subscription-id }}
+          azure-tenant-id: ${{ fromJSON(steps.get-signing-secrets.outputs.secrets).tenant-id }}
+          signed-artifact-name: xk6-exe-arm64-signed
+
+      - name: Download signed arm64 binary
+        if: ${{ env.ARM64_ALREADY_SIGNED != 'true' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ steps.sign-arm64.outputs.artifact-name }}
+          path: packaging-arm64
+
+      - name: Verify arm64 signature, re-zip and re-upload
+        if: ${{ env.ARM64_ALREADY_SIGNED != 'true' }}
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath .\packaging-arm64\xk6.exe
+          Write-Output "Status: $($sig.Status)"
+          if ($sig.Status -ne "Valid") { throw "signature not valid: $($sig.Status)" }
+
+          $zipName = (Get-ChildItem -Path dist-arm64 -Filter "*.zip").Name
+          Compress-Archive -Path .\packaging-arm64\* -DestinationPath ".\$zipName" -Force
+
+          $hash = (Get-FileHash -Algorithm SHA256 -Path ".\$zipName").Hash.ToLower()
+          "ARM64_SHA256=$hash" >> $env:GITHUB_ENV
+          "ARM64_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+          gh release upload $env:TAG ".\$zipName" --clobber
+
+      # --- checksums, only if something actually changed ---
+
+      - name: Patch and re-upload checksums.txt
+        if: ${{ env.AMD64_ALREADY_SIGNED != 'true' || env.ARM64_ALREADY_SIGNED != 'true' }}
+        shell: pwsh
+        run: |
+          gh release download $env:TAG --pattern "*_checksums.txt" --dir dist-checksums --clobber
+          $checksumFile = Get-ChildItem -Path dist-checksums -Filter "*.txt"
+
+          $updated = Get-Content $checksumFile.FullName | ForEach-Object {
+            if ($env:AMD64_ZIP_NAME -and $_ -match "^\S+\s+$([regex]::Escape($env:AMD64_ZIP_NAME))$") {
+              "$env:AMD64_SHA256  $env:AMD64_ZIP_NAME"
+            } elseif ($env:ARM64_ZIP_NAME -and $_ -match "^\S+\s+$([regex]::Escape($env:ARM64_ZIP_NAME))$") {
+              "$env:ARM64_SHA256  $env:ARM64_ZIP_NAME"
+            } else {
+              $_
+            }
+          }
+          $updated | Set-Content $checksumFile.FullName
+
+          gh release upload $env:TAG $checksumFile.FullName --clobber

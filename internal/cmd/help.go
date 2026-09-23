@@ -28,8 +28,8 @@ func helpTopics() []*cobra.Command {
 	return []*cobra.Command{
 		helpTopic("features", featuresHelp),
 		helpTopic("devcontainers", devcontainersHelp),
-		helpTopic("docker", dockerHelp),
 		helpTopic("install", installHelp),
+		helpTopic("docker", dockerHelp),
 		helpTopic("private", privateHelp),
 	}
 }

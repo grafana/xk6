@@ -1,6 +1,6 @@
 Use with Docker
 
-The easiest way to use xk6 is via our [Docker image]. This avoids having to setup a local Go environment, and install xk6 manually.
+If you don't want to set up a Go environment at all, for example to build an existing extension combination in CI, or to try xk6 without installing anything, you can use our [Docker image] instead.
 
 **Linux**
 

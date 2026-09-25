@@ -27,9 +27,40 @@ Check out the [k6 extension development quickstart guide] and [k6 extension deve
 [k6 extension development quickstart guide]: https://github.com/grafana/xk6/wiki/k6-extension-development-quick-start-guide
 [k6 extension development tutorial]: https://github.com/grafana/xk6/wiki/k6-extension-development-tutorial
 
+### Installation
+
+If you want to develop locally, outside a dev container, you'll need a Go toolchain either way, so installing xk6 as a package that brings Go along is usually the simplest option.
+
+**Windows**
+
+Install with [WinGet], which installs Go along with it:
+
+    winget install GrafanaLabs.xk6
+
+**macOS or Linux**
+
+Install with [Homebrew], which installs Go along with it:
+
+    brew install xk6
+
+**Other platforms, or installing xk6 into an existing Go setup**
+
+If you already have a [stable version] of Go installed, or your platform isn't covered by WinGet or Homebrew, install xk6 with:
+
+    go install go.k6.io/xk6@latest
+
+This installs the `xk6` binary in the `$GOPATH/bin` directory.
+
+Precompiled binaries are also available from the [Releases] page.
+
+[Homebrew]: https://brew.sh/
+[Releases]: https://github.com/grafana/xk6/releases
+[stable version]: https://go.dev/dl/
+[WinGet]: https://learn.microsoft.com/windows/package-manager/winget/
+
 ### Use with Docker
 
-The easiest way to use xk6 is via our [Docker image]. This avoids having to setup a local Go environment, and install xk6 manually.
+If you don't want to set up a Go environment at all, for example to build an existing extension combination in CI, or to try xk6 without installing anything, you can use our [Docker image] instead.
 
 **Linux**
 
@@ -93,28 +124,6 @@ For example, let's say `1.2.3` is the latest xk6 Docker image version.
 
 [Docker image]: https://hub.docker.com/r/grafana/xk6
 [xk6-faker]: https://github.com/grafana/xk6-faker
-
-### Local Installation
-
-Precompiled binaries can be downloaded and installed from the [Releases] page.
-
-On Windows, xk6 can also be installed with [WinGet], which installs Go along with it:
-
-    winget install GrafanaLabs.xk6
-
-**Prerequisites**
-
-A [stable version] of the Go toolkit must be installed.
-
-The xk6 tool can also be installed using the `go install` command.
-
-    go install go.k6.io/xk6@latest
-
-This will install the `xk6` binary in `$GOPATH/bin` directory.
-
-[Releases]: https://github.com/grafana/xk6/releases
-[stable version]: https://go.dev/dl/
-[WinGet]: https://learn.microsoft.com/windows/package-manager/winget/
 
 ### Building private extensions
 

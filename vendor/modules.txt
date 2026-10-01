@@ -169,7 +169,7 @@ github.com/golang/groupcache/lru
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/goreleaser/fileglob v1.4.0
+# github.com/goreleaser/fileglob v1.4.1
 ## explicit; go 1.25
 github.com/goreleaser/fileglob
 # github.com/grafana/k6foundry v0.5.3

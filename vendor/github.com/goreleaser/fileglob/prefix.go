@@ -34,7 +34,7 @@ func staticText(node *ast.Node) (text string, ok bool) {
 	//nolint:exhaustive
 	switch node.Kind {
 	case ast.KindPattern:
-		text := ""
+		var sb strings.Builder
 
 		for _, child := range node.Children {
 			childText, ok := staticText(child)
@@ -42,10 +42,10 @@ func staticText(node *ast.Node) (text string, ok bool) {
 				return "", false
 			}
 
-			text += childText
+			sb.WriteString(childText)
 		}
 
-		return text, true
+		return sb.String(), true
 	case ast.KindText:
 		t, ok := node.Value.(ast.Text)
 		if !ok {

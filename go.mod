@@ -11,7 +11,7 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-task/slim-sprig/v3 v3.0.0
-	github.com/goreleaser/fileglob v1.4.0
+	github.com/goreleaser/fileglob v1.4.1
 	github.com/grafana/k6foundry v0.5.3
 	github.com/lmittmann/tint v1.2.0
 	github.com/mattn/go-colorable v0.1.15

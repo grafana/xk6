@@ -8,7 +8,7 @@ ARG GOVULNCHECK_VERSION=v1.7.0
 
 # Patched releases of transitive dependencies that gosec and govulncheck still
 # pin to vulnerable versions (CVE-2026-56864, CVE-2026-56865, GHSA-hrxh-6v49-42gf)
-ARG XMOD_VERSION=v0.40.0
+ARG XMOD_VERSION=v0.41.0
 ARG GRPC_VERSION=v1.84.0
 
 # ==========================================

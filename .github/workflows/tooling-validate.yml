@@ -110,11 +110,11 @@ jobs:
 
   k6-ci:
     name: k6 CI
-    uses: grafana/k6-ci/.github/workflows/all.yml@4437a05286b70dbd87d6bce2bea5220694a40474 # v0.5.2
+    uses: grafana/k6-ci/.github/workflows/all.yml@7dc7a71c57a30eddd3f1591ee0cc5abaeedafa14 # v0.5.4
     permissions:
       contents: read
     with:
-      k6-ci-ref: 4437a05286b70dbd87d6bce2bea5220694a40474 # v0.5.2
+      k6-ci-ref: 7dc7a71c57a30eddd3f1591ee0cc5abaeedafa14 # v0.5.4
       skip-tests: true # The xk6-specific matrix below also covers macOS and GoReleaser builds.
       skip-extension-testing: true # xk6 is the builder, not an extension.
 

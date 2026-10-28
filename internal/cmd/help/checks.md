@@ -60,7 +60,7 @@ _A clear license is legally required for code distribution and defines usage rig
 
 Resolution
 
-Add a `LICENSE` file to the repository root with one of the approved licenses: MIT (recommended for maximum compatibility), Apache-2.0 (best for corporate environments), BSD-2-Clause or BSD-3-Clause, or GPL-3.0, LGPL-3.0, or AGPL-3.0 (for copyleft requirements).
+Add a `LICENSE` or `LICENSE.md` file to the repository root with one of the approved licenses: MIT (recommended for maximum compatibility), Apache-2.0 (best for corporate environments), BSD-2-Clause or BSD-3-Clause, or GPL-3.0, LGPL-3.0, or AGPL-3.0 (for copyleft requirements).
 
 #### `git`
 

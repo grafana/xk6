@@ -12,7 +12,7 @@ jobs:
     name: Integration
     runs-on: ubuntu-latest
     env:
-      GORELEASER_VERSION: "2.18.3"
+      GORELEASER_VERSION: "2.19.0"
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

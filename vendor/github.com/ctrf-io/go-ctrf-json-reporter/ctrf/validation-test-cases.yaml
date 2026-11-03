@@ -2,22 +2,26 @@
 - name: Minimal valid report
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {
         "tool": {
           "name": "tool-name"
         },
         "summary": {
-          "tests": 15,
-          "passed": 5,
-          "failed": 4,
-          "pending": 3,
-          "skipped": 2,
-          "other": 1
+          "tests": 1,
+          "passed": 1,
+          "failed": 0,
+          "pending": 0,
+          "skipped": 0,
+          "other": 0,
+          "start": 0,
+          "stop": 0
         },
         "tests": [
           {
             "name": "test-name",
-            "status": "pass",
+            "status": "passed",
             "duration": 1
           }
         ]
@@ -37,6 +41,8 @@
     - "missing property 'results.tests'"
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {}
     }
 
@@ -45,6 +51,8 @@
     - "missing property 'results.tool.name'"
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {
         "tool": {}
       }
@@ -63,6 +71,8 @@
     - "invalid property 'results.summary.suites'"
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {
         "summary": {
           "tests": -1,
@@ -83,6 +93,8 @@
     - "invalid summary timestamps: start can't be greater than stop"
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {
         "summary": {
           "start": 5,
@@ -96,6 +108,8 @@
     - "invalid summary counts: tests (5) must be the sum of passed, failed, pending, skipped, and other (15)"
   report: |
     {
+      "reportFormat": "CTRF",
+      "specVersion": "0.2.0",
       "results": {
         "summary": {
           "tests": 5,

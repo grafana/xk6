@@ -37,7 +37,7 @@ github.com/grafana/k6foundry
 github.com/inconshreveable/mousetrap
 # github.com/kr/pretty v0.3.1
 ## explicit; go 1.12
-# github.com/lmittmann/tint v1.2.0
+# github.com/lmittmann/tint v1.2.1
 ## explicit; go 1.21
 github.com/lmittmann/tint
 # github.com/mattn/go-colorable v0.1.16

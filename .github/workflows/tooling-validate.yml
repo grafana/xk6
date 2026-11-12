@@ -96,6 +96,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Go ${{ inputs.go-version }}
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "${{ inputs.go-version }}"
+          check-latest: true
+
       - name: Run Gosec Security Scanner
         uses: securego/gosec@5eb1d104ef85ff2c905c877eb600e8c1dee33a22 # v2.30.0
         with:

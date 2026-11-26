@@ -297,7 +297,7 @@ The **Extension Release** ([`extension-release.yml`](../../.github/workflows/ext
 
 ```yaml file=../../.github/workflows/extension-release.yml region=inputs
       k6-version:
-        description: The k6 versions to be used.
+        description: The k6 version to be used. Use vN.x to select the latest vN release.
         type: string
         required: true
       xk6-version:
